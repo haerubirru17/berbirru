@@ -1,6 +1,6 @@
 export async function sendMagicEmail(toEmail: string, magicUrl: string, env: any = null): Promise<boolean> {
   const apiKey = (env && env.RESEND_API_KEY) || '';
-  const fromEmail = (env && env.RESEND_FROM) || 'BERBIRRU <onboarding@resend.dev>';
+  const fromEmail = (env && env.RESEND_FROM) || 'BERBIRRU <noreply@berbirru.com>';
 
   if (!apiKey) {
     console.warn('RESEND_API_KEY is not configured in environment');
