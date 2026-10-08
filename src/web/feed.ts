@@ -7,7 +7,7 @@ export function renderFeedPage(user: any = null): string {
   <title>Beranda Warkah — BERBIRRU.COM</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Kalam:wght@700&family=Plus+Jakarta+Sans:wght@500;700;800;900&family=Space+Grotesk:wght@600;700;800&family=JetBrains+Mono:wght@600;800&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Alex+Brush&family=Allura&family=Plus+Jakarta+Sans:wght@500;700;800;900&family=Space+Grotesk:wght@600;700;800&family=JetBrains+Mono:wght@600;800&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -131,12 +131,12 @@ export function renderFeedPage(user: any = null): string {
       .studio-card-full { border-left: none; border-right: none; }
     }
     .studio-header {
-      background: var(--bg-blue-subtle); padding: 14px 18px; display: flex; justify-content: space-between;
+      background: var(--bg-blue-subtle); padding: 12px 18px; display: flex; justify-content: space-between;
       align-items: center; border-bottom: var(--border-thick); position: sticky; top: 0; z-index: 10;
     }
     .studio-title-handwriting {
-      font-family: 'Kalam', 'Caveat', cursive; font-size: 24px; font-weight: 700;
-      color: var(--blue-deep); display: flex; align-items: center; gap: 8px; line-height: 1;
+      font-family: 'Great Vibes', 'Alex Brush', cursive; font-size: 30px; font-weight: 700;
+      color: var(--blue-primary); display: flex; align-items: center; gap: 8px; line-height: 1;
     }
     .btn-studio-close {
       background: #FFF; border: var(--border-med); border-radius: var(--radius-sm);
@@ -144,38 +144,42 @@ export function renderFeedPage(user: any = null): string {
     }
     .btn-studio-close:active { transform: translate(1px, 1px); box-shadow: none; }
     .studio-body {
-      padding: 18px; display: flex; flex-direction: column; gap: 14px; flex: 1;
+      padding: 16px; display: flex; flex-direction: column; gap: 12px; flex: 1;
     }
 
     /* Judul Warkah */
     .input-title {
-      width: 100%; border: none; border-bottom: 2.5px dashed #CBD5E1; padding: 8px 0;
-      font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 800; color: var(--ink);
+      width: 100%; border: none; border-bottom: 2.5px dashed #CBD5E1; padding: 6px 0;
+      font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 800; color: var(--ink);
       outline: none; background: transparent;
     }
     .input-title::placeholder { color: #94A3B8; font-weight: 700; }
 
-    /* Rich Toolbar */
+    /* Single-Row Clean Formatting Toolbar */
     .rich-toolbar {
-      display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
-      background: var(--bg-blue-subtle); padding: 8px 10px; border: var(--border-med);
+      display: flex; gap: 6px; align-items: center; justify-content: space-between;
+      background: var(--bg-blue-subtle); padding: 6px 8px; border: var(--border-med);
       border-radius: var(--radius-sm); box-shadow: var(--shadow-hard-sm);
     }
-    .toolbar-group { display: flex; gap: 4px; align-items: center; border-right: 2px solid #CBD5E1; padding-right: 6px; margin-right: 2px; }
-    .toolbar-group:last-child { border-right: none; padding-right: 0; margin-right: 0; }
+    .toolbar-left-group { display: flex; gap: 4px; align-items: center; }
     .tool-btn {
       background: #FFFFFF; border: 1.5px solid var(--ink); border-radius: 6px;
       padding: 5px 10px; font-size: 12px; font-weight: 900; cursor: pointer;
-      box-shadow: 1.5px 1.5px 0 var(--shadow-ink); display: inline-flex; align-items: center; gap: 4px;
-      transition: all 0.1s ease;
+      box-shadow: 1px 1px 0 var(--shadow-ink); display: inline-flex; align-items: center; gap: 3px;
+      transition: all 0.05s ease;
     }
     .tool-btn:active { transform: translate(1px, 1px); box-shadow: none; }
     .tool-btn.active {
       background: var(--blue-primary); color: #FFFFFF; border-color: var(--ink);
-      box-shadow: inset 1.5px 1.5px 0 rgba(0,0,0,0.3); transform: translate(1px, 1px);
+      box-shadow: inset 1px 1px 0 rgba(0,0,0,0.3); transform: translate(1px, 1px);
     }
-    .tool-btn-pill { background: #F1F5F9; font-size: 11px; }
-    .tool-btn-pill.active { background: var(--accent-yellow); color: var(--ink); }
+    
+    /* Sleek Font Dropdown */
+    .font-select-picker {
+      background: #FFFFFF; border: 1.5px solid var(--ink); border-radius: 6px;
+      padding: 5px 8px; font-size: 11.5px; font-weight: 800; color: var(--ink);
+      box-shadow: 1px 1px 0 var(--shadow-ink); outline: none; cursor: pointer;
+    }
 
     /* Canvas Kanvas Tulis ContentEditable Native Full Screen */
     .rich-editor-canvas {
@@ -187,12 +191,13 @@ export function renderFeedPage(user: any = null): string {
     .rich-editor-canvas:empty:before { content: attr(placeholder); color: #94A3B8; font-weight: 600; }
 
     .studio-footer {
-      padding: 14px 18px; background: #F8FAFC; border-top: var(--border-thick);
+      padding: 12px 18px; background: #F8FAFC; border-top: var(--border-thick);
       display: flex; justify-content: space-between; align-items: center; position: sticky; bottom: 0; z-index: 10;
     }
+    .studio-counter { font-size: 12px; font-weight: 800; color: #64748B; font-family: 'JetBrains Mono', monospace; }
     .btn-publish {
       background: var(--blue-primary); color: #FFF; border: var(--border-thick); border-radius: var(--radius-sm);
-      padding: 10px 22px; font-size: 14px; font-weight: 900; cursor: pointer; box-shadow: var(--shadow-hard);
+      padding: 9px 20px; font-size: 13.5px; font-weight: 900; cursor: pointer; box-shadow: var(--shadow-hard);
       display: inline-flex; align-items: center; gap: 6px;
     }
     .btn-publish:active { transform: translate(2px, 2px); box-shadow: none; }
@@ -268,25 +273,27 @@ export function renderFeedPage(user: any = null): string {
       <div class="studio-body">
         <input type="text" class="input-title" id="studioTitle" placeholder="Beri judul warkah (opsional)...">
         
-        <!-- Rich Formatting Toolbar with Active States -->
+        <!-- Single-Row Sleek Formatting Toolbar -->
         <div class="rich-toolbar">
-          <div class="toolbar-group">
-            <button type="button" class="tool-btn" id="btnBold" onclick="formatCmd('bold')"><b>B</b></button>
-            <button type="button" class="tool-btn" id="btnItalic" onclick="formatCmd('italic')"><i>I</i></button>
-            <button type="button" class="tool-btn" id="btnUnderline" onclick="formatCmd('underline')"><u>U</u></button>
+          <div class="toolbar-left-group">
+            <button type="button" class="tool-btn" id="btnBold" onclick="formatCmd('bold')" title="Tebal"><b>B</b></button>
+            <button type="button" class="tool-btn" id="btnItalic" onclick="formatCmd('italic')" title="Miring"><i>I</i></button>
+            <button type="button" class="tool-btn" id="btnUnderline" onclick="formatCmd('underline')" title="Garis Bawah"><u>U</u></button>
+            <button type="button" class="tool-btn" id="btnQuote" onclick="formatCmd('formatBlock', 'blockquote')" title="Kutipan">” Kutipan</button>
           </div>
-          <div class="toolbar-group">
-            <button type="button" class="tool-btn tool-btn-pill" id="fontSerifBtn" onclick="selectFont('font-serif', this)">Serif</button>
-            <button type="button" class="tool-btn tool-btn-pill active" id="fontSansBtn" onclick="selectFont('font-sans', this)">Sans</button>
-            <button type="button" class="tool-btn tool-btn-pill" id="fontMonoBtn" onclick="selectFont('font-mono', this)">Mono</button>
-          </div>
-          <button type="button" class="tool-btn" id="btnQuote" onclick="formatCmd('formatBlock', 'blockquote')">Kutipan</button>
+
+          <!-- Font Dropdown Selector (Zero Clutter) -->
+          <select class="font-select-picker" id="fontDropdown" onchange="handleFontDropdown(this.value)">
+            <option value="font-sans">Font: Sans (Modern)</option>
+            <option value="font-serif">Font: Serif (Sastra)</option>
+            <option value="font-mono">Font: Mono (Mesin Tik)</option>
+          </select>
         </div>
 
-        <div class="rich-editor-canvas" id="editorCanvas" contenteditable="true" placeholder="Tuliskan bait puisi, cerita absurd, atau resensimu di sini..."></div>
+        <div class="rich-editor-canvas font-sans" id="editorCanvas" contenteditable="true" placeholder="Tuliskan bait puisi, cerita absurd, atau resensimu di sini..."></div>
       </div>
       <div class="studio-footer">
-        <span style="font-size:11px;font-weight:700;color:#64748B;">Format aktif otomatis menyesuaikan</span>
+        <span class="studio-counter" id="studioWordCount">0 kata · 0 karakter</span>
         <button class="btn-publish" onclick="submitStudioWarkah()">
           <svg class="ico" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           <span>Terbitkan Warkah</span>
@@ -299,7 +306,7 @@ export function renderFeedPage(user: any = null): string {
     let currentMode = 'viral';
     let searchQuery = '';
     let currentChainParentId = null;
-    let currentActiveFontClass = 'font-sans';
+    let currentFontClass = 'font-sans';
     const isUserLoggedIn = ${Boolean(user)};
 
     function formatTimestamp(isoStr) {
@@ -406,6 +413,7 @@ export function renderFeedPage(user: any = null): string {
       document.body.style.overflow = 'hidden';
       document.getElementById('editorCanvas').focus();
       updateToolbarState();
+      updateWordCounter();
     }
 
     function closeStudioModal() {
@@ -421,39 +429,45 @@ export function renderFeedPage(user: any = null): string {
       document.getElementById('btnUnderline').classList.toggle('active', document.queryCommandState('underline'));
     }
 
+    function updateWordCounter() {
+      const text = document.getElementById('editorCanvas').innerText || '';
+      const chars = text.length;
+      const words = text.trim() ? text.trim().split(/\\s+/).length : 0;
+      document.getElementById('studioWordCount').textContent = words + ' kata · ' + chars + ' karakter';
+    }
+
     function formatCmd(cmd, val = null) {
       document.execCommand(cmd, false, val);
       document.getElementById('editorCanvas').focus();
       updateToolbarState();
+      updateWordCounter();
     }
 
-    function selectFont(className, btn) {
-      document.querySelectorAll('.tool-btn-pill').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentActiveFontClass = className;
-
+    function handleFontDropdown(fontClass) {
+      currentFontClass = fontClass;
       const selection = window.getSelection();
       const canvas = document.getElementById('editorCanvas');
 
       if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
+        // Terapkan ke teks yang disorot saja (Inline formatting)
         const range = selection.getRangeAt(0);
         const span = document.createElement('span');
-        span.className = className;
+        span.className = fontClass;
         span.appendChild(range.extractContents());
         range.insertNode(span);
         selection.removeAllRanges();
       } else {
-        // Terapkan font langsung ke canvas/typing stream tanpa alert
-        canvas.className = 'rich-editor-canvas ' + className;
+        // Ganti gaya font kalimat yang sedang diketik selanjutnya
+        document.execCommand('insertHTML', false, '<span class="' + fontClass + '">&#8203;</span>');
       }
       canvas.focus();
     }
 
     const editorEl = document.getElementById('editorCanvas');
     if (editorEl) {
-      editorEl.addEventListener('keyup', updateToolbarState);
+      editorEl.addEventListener('keyup', () => { updateToolbarState(); updateWordCounter(); });
       editorEl.addEventListener('mouseup', updateToolbarState);
-      editorEl.addEventListener('click', updateToolbarState);
+      editorEl.addEventListener('input', updateWordCounter);
     }
 
     async function submitStudioWarkah() {
