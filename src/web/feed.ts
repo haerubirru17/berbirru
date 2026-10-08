@@ -7,7 +7,7 @@ export function renderFeedPage(user: any = null): string {
   <title>Beranda Warkah — BERBIRRU.COM</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800;900&family=Space+Grotesk:wght@600;700;800&family=JetBrains+Mono:wght@600;800&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Kalam:wght@700&family=Plus+Jakarta+Sans:wght@500;700;800;900&family=Space+Grotesk:wght@600;700;800&family=JetBrains+Mono:wght@600;800&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -116,68 +116,88 @@ export function renderFeedPage(user: any = null): string {
       cursor: pointer; display: inline-flex; align-items: center; gap: 5px; box-shadow: 1.5px 1.5px 0 var(--shadow-ink);
     }
 
-    /* Modal Bilik Warkah (Rich Inline Editor) */
+    /* FULLSCREEN BILIK WARKAH MODAL */
     .studio-overlay {
       display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(11, 25, 44, 0.75); z-index: 1000; justify-content: center; align-items: flex-start;
-      padding: 16px; overflow-y: auto;
+      background: var(--bg-main); z-index: 10000; overflow-y: auto;
+      flex-direction: column;
     }
-    .studio-card {
-      background: #FFFFFF; border: var(--border-thick); border-radius: var(--radius);
-      box-shadow: var(--shadow-hard-lg); width: 100%; max-width: 480px; margin: 10px auto;
-      overflow: hidden; display: flex; flex-direction: column;
+    .studio-card-full {
+      width: 100%; max-width: 640px; min-height: 100vh; margin: 0 auto;
+      background: #FFFFFF; border-left: var(--border-thick); border-right: var(--border-thick);
+      display: flex; flex-direction: column;
+    }
+    @media (max-width: 640px) {
+      .studio-card-full { border-left: none; border-right: none; }
     }
     .studio-header {
-      background: var(--bg-blue-subtle); padding: 12px 16px; display: flex; justify-content: space-between;
-      align-items: center; border-bottom: var(--border-thick);
+      background: var(--bg-blue-subtle); padding: 14px 18px; display: flex; justify-content: space-between;
+      align-items: center; border-bottom: var(--border-thick); position: sticky; top: 0; z-index: 10;
     }
-    .studio-title-badge { font-family: 'Space Grotesk', sans-serif; font-size: 13.5px; font-weight: 800; color: var(--blue-deep); display: flex; align-items: center; gap: 6px; }
-    .btn-studio-close { background: #FFF; border: var(--border-thin); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: 900; cursor: pointer; }
-    .studio-body { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .studio-title-handwriting {
+      font-family: 'Kalam', 'Caveat', cursive; font-size: 24px; font-weight: 700;
+      color: var(--blue-deep); display: flex; align-items: center; gap: 8px; line-height: 1;
+    }
+    .btn-studio-close {
+      background: #FFF; border: var(--border-med); border-radius: var(--radius-sm);
+      padding: 6px 12px; font-size: 12px; font-weight: 900; cursor: pointer; box-shadow: var(--shadow-hard-sm);
+    }
+    .btn-studio-close:active { transform: translate(1px, 1px); box-shadow: none; }
+    .studio-body {
+      padding: 18px; display: flex; flex-direction: column; gap: 14px; flex: 1;
+    }
 
     /* Judul Warkah */
     .input-title {
-      width: 100%; border: none; border-bottom: 2px dashed #CBD5E1; padding: 6px 0;
-      font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 800; color: var(--ink);
-      outline: none;
+      width: 100%; border: none; border-bottom: 2.5px dashed #CBD5E1; padding: 8px 0;
+      font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 800; color: var(--ink);
+      outline: none; background: transparent;
     }
     .input-title::placeholder { color: #94A3B8; font-weight: 700; }
 
     /* Rich Toolbar */
     .rich-toolbar {
       display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
-      background: var(--bg-blue-subtle); padding: 6px 8px; border: var(--border-thin);
+      background: var(--bg-blue-subtle); padding: 8px 10px; border: var(--border-med);
       border-radius: var(--radius-sm); box-shadow: var(--shadow-hard-sm);
     }
     .toolbar-group { display: flex; gap: 4px; align-items: center; border-right: 2px solid #CBD5E1; padding-right: 6px; margin-right: 2px; }
     .toolbar-group:last-child { border-right: none; padding-right: 0; margin-right: 0; }
     .tool-btn {
       background: #FFFFFF; border: 1.5px solid var(--ink); border-radius: 6px;
-      padding: 4px 8px; font-size: 11px; font-weight: 900; cursor: pointer;
-      box-shadow: 1px 1px 0 var(--shadow-ink); display: inline-flex; align-items: center; gap: 3px;
+      padding: 5px 10px; font-size: 12px; font-weight: 900; cursor: pointer;
+      box-shadow: 1.5px 1.5px 0 var(--shadow-ink); display: inline-flex; align-items: center; gap: 4px;
+      transition: all 0.1s ease;
     }
     .tool-btn:active { transform: translate(1px, 1px); box-shadow: none; }
-    .tool-btn-pill { background: #F1F5F9; font-size: 10.5px; }
+    .tool-btn.active {
+      background: var(--blue-primary); color: #FFFFFF; border-color: var(--ink);
+      box-shadow: inset 1.5px 1.5px 0 rgba(0,0,0,0.3); transform: translate(1px, 1px);
+    }
+    .tool-btn-pill { background: #F1F5F9; font-size: 11px; }
+    .tool-btn-pill.active { background: var(--accent-yellow); color: var(--ink); }
 
-    /* Canvas Kanvas Tulis ContentEditable Native */
+    /* Canvas Kanvas Tulis ContentEditable Native Full Screen */
     .rich-editor-canvas {
-      width: 100%; min-height: 180px; border: var(--border-med); border-radius: var(--radius-sm);
-      padding: 14px; font-size: 14.5px; line-height: 1.65; color: var(--ink); background: #FAFAFA;
+      width: 100%; flex: 1; min-height: 280px; border: var(--border-med); border-radius: var(--radius-sm);
+      padding: 16px; font-size: 15.5px; line-height: 1.7; color: var(--ink); background: #FAFAFA;
       outline: none; box-shadow: inset 1px 1px 0 rgba(0,0,0,0.05); overflow-y: auto;
     }
     .rich-editor-canvas:focus { background: #FFFFFF; border-color: var(--blue-primary); }
     .rich-editor-canvas:empty:before { content: attr(placeholder); color: #94A3B8; font-weight: 600; }
 
     .studio-footer {
-      padding: 12px 16px; background: #F8FAFC; border-top: var(--border-thin);
-      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 18px; background: #F8FAFC; border-top: var(--border-thick);
+      display: flex; justify-content: space-between; align-items: center; position: sticky; bottom: 0; z-index: 10;
     }
     .btn-publish {
       background: var(--blue-primary); color: #FFF; border: var(--border-thick); border-radius: var(--radius-sm);
-      padding: 8px 18px; font-size: 13px; font-weight: 900; cursor: pointer; box-shadow: var(--shadow-hard-sm);
+      padding: 10px 22px; font-size: 14px; font-weight: 900; cursor: pointer; box-shadow: var(--shadow-hard);
       display: inline-flex; align-items: center; gap: 6px;
     }
-    .ico { width: 13px; height: 13px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .btn-publish:active { transform: translate(2px, 2px); box-shadow: none; }
+
+    .ico { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
   </style>
 </head>
 <body>
@@ -235,37 +255,38 @@ export function renderFeedPage(user: any = null): string {
     <div class="log-feed" id="feedContainer"></div>
   </div>
 
-  <!-- MODAL BILIK WARKAH (RICH INLINE EDITOR) -->
+  <!-- FULLSCREEN MODAL: BILIK WARKAH -->
   <div class="studio-overlay" id="studioModal">
-    <div class="studio-card">
+    <div class="studio-card-full">
       <div class="studio-header">
-        <div class="studio-title-badge">
-          <svg class="ico" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
-          <span id="studioModalHeading">BILIK WARKAH</span>
+        <div class="studio-title-handwriting">
+          <svg class="ico" style="width:20px;height:20px;color:var(--blue-primary);" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
+          <span id="studioModalHeading">Bilik Warkah</span>
         </div>
         <button class="btn-studio-close" onclick="closeStudioModal()">✕ Batal</button>
       </div>
       <div class="studio-body">
         <input type="text" class="input-title" id="studioTitle" placeholder="Beri judul warkah (opsional)...">
         
+        <!-- Rich Formatting Toolbar with Active States -->
         <div class="rich-toolbar">
           <div class="toolbar-group">
-            <button type="button" class="tool-btn" onclick="formatCmd('bold')"><b>B</b></button>
-            <button type="button" class="tool-btn" onclick="formatCmd('italic')"><i>I</i></button>
-            <button type="button" class="tool-btn" onclick="formatCmd('underline')"><u>U</u></button>
+            <button type="button" class="tool-btn" id="btnBold" onclick="formatCmd('bold')"><b>B</b></button>
+            <button type="button" class="tool-btn" id="btnItalic" onclick="formatCmd('italic')"><i>I</i></button>
+            <button type="button" class="tool-btn" id="btnUnderline" onclick="formatCmd('underline')"><u>U</u></button>
           </div>
           <div class="toolbar-group">
-            <button type="button" class="tool-btn tool-btn-pill" onclick="applyInlineFont('font-serif')">📜 Serif</button>
-            <button type="button" class="tool-btn tool-btn-pill" onclick="applyInlineFont('font-sans')">⚡ Sans</button>
-            <button type="button" class="tool-btn tool-btn-pill" onclick="applyInlineFont('font-mono')">📟 Mono</button>
+            <button type="button" class="tool-btn tool-btn-pill" id="fontSerifBtn" onclick="selectFont('font-serif', this)">📜 Serif</button>
+            <button type="button" class="tool-btn tool-btn-pill active" id="fontSansBtn" onclick="selectFont('font-sans', this)">⚡ Sans</button>
+            <button type="button" class="tool-btn tool-btn-pill" id="fontMonoBtn" onclick="selectFont('font-mono', this)">📟 Mono</button>
           </div>
-          <button type="button" class="tool-btn" onclick="formatCmd('formatBlock', 'blockquote')">” Kutipan</button>
+          <button type="button" class="tool-btn" id="btnQuote" onclick="formatCmd('formatBlock', 'blockquote')">” Kutipan</button>
         </div>
 
         <div class="rich-editor-canvas" id="editorCanvas" contenteditable="true" placeholder="Tuliskan bait puisi, cerita absurd, atau resensimu di sini..."></div>
       </div>
       <div class="studio-footer">
-        <span style="font-size:11px;font-weight:700;color:#64748B;">💡 Sorot teks untuk ubah gaya</span>
+        <span style="font-size:11px;font-weight:700;color:#64748B;">💡 Format aktif otomatis menyesuaikan</span>
         <button class="btn-publish" onclick="submitStudioWarkah()">
           <svg class="ico" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           <span>Terbitkan Warkah</span>
@@ -278,6 +299,7 @@ export function renderFeedPage(user: any = null): string {
     let currentMode = 'viral';
     let searchQuery = '';
     let currentChainParentId = null;
+    let currentActiveFontClass = 'font-sans';
     const isUserLoggedIn = ${Boolean(user)};
 
     function formatTimestamp(isoStr) {
@@ -379,35 +401,59 @@ export function renderFeedPage(user: any = null): string {
         return;
       }
       currentChainParentId = parentId;
-      document.getElementById('studioModalHeading').textContent = parentId ? 'SAMBUNG BAIT (@' + parentName + ')' : 'BILIK WARKAH';
+      document.getElementById('studioModalHeading').textContent = parentId ? 'Sambung Bait (@' + parentName + ')' : 'Bilik Warkah';
       document.getElementById('studioModal').style.display = 'flex';
+      document.body.style.overflow = 'hidden';
       document.getElementById('editorCanvas').focus();
+      updateToolbarState();
     }
 
     function closeStudioModal() {
       document.getElementById('studioModal').style.display = 'none';
+      document.body.style.overflow = 'auto';
       document.getElementById('studioTitle').value = '';
       document.getElementById('editorCanvas').innerHTML = '';
+    }
+
+    function updateToolbarState() {
+      document.getElementById('btnBold').classList.toggle('active', document.queryCommandState('bold'));
+      document.getElementById('btnItalic').classList.toggle('active', document.queryCommandState('italic'));
+      document.getElementById('btnUnderline').classList.toggle('active', document.queryCommandState('underline'));
     }
 
     function formatCmd(cmd, val = null) {
       document.execCommand(cmd, false, val);
       document.getElementById('editorCanvas').focus();
+      updateToolbarState();
     }
 
-    function applyInlineFont(className) {
+    function selectFont(className, btn) {
+      document.querySelectorAll('.tool-btn-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentActiveFontClass = className;
+
       const selection = window.getSelection();
-      if (!selection.rangeCount || selection.isCollapsed) {
-        alert('Blok/sorot kalimat yang ingin diubah gaya fontnya terlebih dahulu!');
-        return;
+      const canvas = document.getElementById('editorCanvas');
+
+      if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
+        const range = selection.getRangeAt(0);
+        const span = document.createElement('span');
+        span.className = className;
+        span.appendChild(range.extractContents());
+        range.insertNode(span);
+        selection.removeAllRanges();
+      } else {
+        // Terapkan font langsung ke canvas/typing stream tanpa alert
+        canvas.className = 'rich-editor-canvas ' + className;
       }
-      const range = selection.getRangeAt(0);
-      const span = document.createElement('span');
-      span.className = className;
-      span.appendChild(range.extractContents());
-      range.insertNode(span);
-      selection.removeAllRanges();
-      document.getElementById('editorCanvas').focus();
+      canvas.focus();
+    }
+
+    const editorEl = document.getElementById('editorCanvas');
+    if (editorEl) {
+      editorEl.addEventListener('keyup', updateToolbarState);
+      editorEl.addEventListener('mouseup', updateToolbarState);
+      editorEl.addEventListener('click', updateToolbarState);
     }
 
     async function submitStudioWarkah() {
@@ -462,6 +508,18 @@ export function renderFeedPage(user: any = null): string {
         const data = await res.json();
         btn.classList.toggle('saved', data.bookmarked);
         btn.querySelector('span').textContent = (data.saves_count || 0) + ' Simpan';
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function followUser(penName) {
+      if (!isUserLoggedIn) return window.location.href = '/login';
+      try {
+        const res = await fetch('/api/users/' + encodeURIComponent(penName) + '/follow', { method: 'POST' });
+        const data = await res.json();
+        if (data.error) return alert(data.error);
+        alert(data.following ? 'Berhasil mengikuti @' + penName : 'Batal mengikuti @' + penName);
       } catch (err) {
         console.error(err);
       }
