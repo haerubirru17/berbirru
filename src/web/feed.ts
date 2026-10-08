@@ -7,7 +7,7 @@ export function renderFeedPage(user: any = null): string {
   <title>Beranda Warkah — BERBIRRU.COM</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Alex+Brush&family=Allura&family=Plus+Jakarta+Sans:wght@500;700;800;900&family=Space+Grotesk:wght@600;700;800&family=JetBrains+Mono:wght@600;800&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800;900&family=Space+Grotesk:wght@600;700;800&family=JetBrains+Mono:wght@600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -95,11 +95,11 @@ export function renderFeedPage(user: any = null): string {
     .thread-body { padding: 16px 14px 12px; }
     .thread-title { font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 800; color: var(--ink); margin-bottom: 8px; line-height: 1.3; }
     .thread-text { font-size: 14.5px; font-weight: 600; line-height: 1.65; color: #0F172A; }
-    .thread-text blockquote { background: var(--bg-blue-subtle); border-left: 3px solid var(--blue-primary); padding: 4px 8px; margin: 6px 0; font-style: italic; border-radius: 4px; }
+    .thread-text blockquote { background: var(--bg-blue-subtle); border-left: 3.5px solid var(--blue-primary); padding: 8px 12px; margin: 8px 0; font-style: italic; border-radius: 6px; }
     
-    .font-serif { font-family: 'Merriweather', serif !important; }
+    .font-serif { font-family: 'Newsreader', serif !important; font-size: 16px; }
     .font-sans { font-family: 'Plus Jakarta Sans', sans-serif !important; }
-    .font-mono { font-family: 'JetBrains Mono', monospace !important; background: #E0EEFD; padding: 1px 4px; border-radius: 4px; }
+    .font-mono { font-family: 'JetBrains Mono', monospace !important; background: #E0EEFD; padding: 1px 5px; border-radius: 4px; font-size: 13.5px; }
 
     .thread-footer { padding: 8px 12px; background: #FFFFFF; display: flex; justify-content: space-between; align-items: center; border-top: var(--border-thin); }
     .actions-left { display: flex; gap: 6px; }
@@ -116,102 +116,76 @@ export function renderFeedPage(user: any = null): string {
       cursor: pointer; display: inline-flex; align-items: center; gap: 5px; box-shadow: 1.5px 1.5px 0 var(--shadow-ink);
     }
 
-    /* FULLSCREEN BILIK WARKAH MODAL */
+    /* FULLSCREEN BILIK WARKAH COMPOSER (MODERN SEAMLESS CANVAS) */
     .studio-overlay {
       display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: var(--bg-main); z-index: 10000; overflow-y: auto;
-      flex-direction: column;
+      background: #FFFFFF; z-index: 10000; overflow-y: auto; flex-direction: column;
     }
     .studio-card-full {
-      width: 100%; max-width: 640px; min-height: 100vh; margin: 0 auto;
+      width: 100%; max-width: 520px; min-height: 100vh; margin: 0 auto;
       background: #FFFFFF; border-left: var(--border-thick); border-right: var(--border-thick);
-      display: flex; flex-direction: column;
+      display: flex; flex-direction: column; position: relative;
     }
-    @media (max-width: 640px) {
+    @media (max-width: 520px) {
       .studio-card-full { border-left: none; border-right: none; }
     }
-    .studio-header {
-      background: var(--bg-blue-subtle); padding: 12px 18px; display: flex; justify-content: space-between;
-      align-items: center; border-bottom: var(--border-thick); position: sticky; top: 0; z-index: 10;
+    .composer-header {
+      padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;
+      border-bottom: var(--border-thick); background: #FFFFFF; position: sticky; top: 0; z-index: 20;
     }
-    .studio-title-handwriting {
-      font-family: 'Great Vibes', 'Alex Brush', cursive; font-size: 30px; font-weight: 700;
-      color: var(--blue-primary); display: flex; align-items: center; gap: 8px; line-height: 1;
+    .btn-cancel {
+      font-size: 13px; font-weight: 800; color: #64748B; background: none; border: none; cursor: pointer; padding: 6px 4px;
     }
-    .btn-studio-close {
-      background: #FFF; border: var(--border-med); border-radius: var(--radius-sm);
-      padding: 6px 12px; font-size: 12px; font-weight: 900; cursor: pointer; box-shadow: var(--shadow-hard-sm);
+    .header-title-clean {
+      font-family: 'Space Grotesk', sans-serif; font-size: 15.5px; font-weight: 800; color: var(--ink); letter-spacing: -0.3px;
     }
-    .btn-studio-close:active { transform: translate(1px, 1px); box-shadow: none; }
-    .studio-body {
-      padding: 16px; display: flex; flex-direction: column; gap: 12px; flex: 1;
+    .btn-publish-pill {
+      background: var(--blue-primary); color: #FFFFFF; border: var(--border-med); border-radius: 999px;
+      padding: 6px 16px; font-size: 12.5px; font-weight: 900; cursor: pointer; box-shadow: 2px 2px 0 var(--shadow-ink);
+      display: inline-flex; align-items: center; gap: 5px; transition: transform 0.05s ease;
     }
+    .btn-publish-pill:active { transform: translate(1.5px, 1.5px); box-shadow: none; }
 
-    /* Judul Warkah */
-    .input-title {
-      width: 100%; border: none; border-bottom: 2.5px dashed #CBD5E1; padding: 6px 0;
-      font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 800; color: var(--ink);
-      outline: none; background: transparent;
+    .composer-body {
+      padding: 20px 18px 90px; flex: 1; display: flex; flex-direction: column; gap: 14px;
     }
-    .input-title::placeholder { color: #94A3B8; font-weight: 700; }
+    .title-input {
+      font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 800; color: var(--ink);
+      border: none; outline: none; width: 100%; line-height: 1.25; letter-spacing: -0.4px;
+    }
+    .title-input::placeholder { color: #CBD5E1; font-weight: 700; }
 
-    /* Single-Row Clean Formatting Toolbar */
-    .rich-toolbar {
-      display: flex; gap: 6px; align-items: center; justify-content: space-between;
-      background: var(--bg-blue-subtle); padding: 6px 8px; border: var(--border-med);
-      border-radius: var(--radius-sm); box-shadow: var(--shadow-hard-sm);
-    }
-    .toolbar-left-group { display: flex; gap: 4px; align-items: center; }
-    .tool-btn {
-      background: #FFFFFF; border: 1.5px solid var(--ink); border-radius: 6px;
-      padding: 5px 10px; font-size: 12px; font-weight: 900; cursor: pointer;
-      box-shadow: 1px 1px 0 var(--shadow-ink); display: inline-flex; align-items: center; gap: 3px;
-      transition: all 0.05s ease;
-    }
-    .tool-btn:active { transform: translate(1px, 1px); box-shadow: none; }
-    .tool-btn.active {
-      background: var(--blue-primary); color: #FFFFFF; border-color: var(--ink);
-      box-shadow: inset 1px 1px 0 rgba(0,0,0,0.3); transform: translate(1px, 1px);
-    }
-    
-    /* Sleek Font Dropdown */
-    .font-select-picker {
-      background: #FFFFFF; border: 1.5px solid var(--ink); border-radius: 6px;
-      padding: 5px 8px; font-size: 11.5px; font-weight: 800; color: var(--ink);
-      box-shadow: 1px 1px 0 var(--shadow-ink); outline: none; cursor: pointer;
-    }
-
-    /* Canvas Kanvas Tulis ContentEditable Native Full Screen */
     .rich-editor-canvas {
-      width: 100%; flex: 1; min-height: 280px; border: var(--border-med); border-radius: var(--radius-sm);
-      padding: 16px; font-size: 15.5px; line-height: 1.7; color: var(--ink); background: #FAFAFA;
-      outline: none; box-shadow: inset 1px 1px 0 rgba(0,0,0,0.05); overflow-y: auto;
+      width: 100%; flex: 1; min-height: 320px; font-size: 16px; line-height: 1.75;
+      color: #1E293B; outline: none; word-break: break-word;
     }
-    .rich-editor-canvas:focus { background: #FFFFFF; border-color: var(--blue-primary); }
-    .rich-editor-canvas:empty:before { content: attr(placeholder); color: #94A3B8; font-weight: 600; }
-
-    /* Live Visual Rendering of Blockquote in Editor */
+    .rich-editor-canvas:empty:before { content: attr(placeholder); color: #94A3B8; font-weight: 500; }
     .rich-editor-canvas blockquote {
-      background: var(--bg-blue-subtle);
-      border-left: 4px solid var(--blue-primary);
-      padding: 8px 12px;
-      margin: 8px 0;
-      font-style: italic;
-      border-radius: 6px;
-      color: #1E293B;
+      background: var(--bg-blue-subtle); border-left: 3.5px solid var(--blue-primary);
+      padding: 8px 14px; margin: 12px 0; font-style: italic; border-radius: 6px; color: #0B192C;
     }
 
-    .studio-footer {
-      padding: 12px 18px; background: #F8FAFC; border-top: var(--border-thick);
-      display: flex; justify-content: space-between; align-items: center; position: sticky; bottom: 0; z-index: 10;
+    /* Floating Docked Bottom Toolbar */
+    .docked-footer {
+      position: sticky; bottom: 0; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(8px);
+      border-top: var(--border-thick); padding: 10px 16px; display: flex; justify-content: space-between;
+      align-items: center; z-index: 20;
     }
-    .studio-counter { font-size: 12px; font-weight: 800; color: #64748B; font-family: 'JetBrains Mono', monospace; }
-    .btn-publish {
-      background: var(--blue-primary); color: #FFF; border: var(--border-thick); border-radius: var(--radius-sm);
-      padding: 9px 20px; font-size: 13.5px; font-weight: 900; cursor: pointer; box-shadow: var(--shadow-hard);
-      display: inline-flex; align-items: center; gap: 6px;
+    .tools-segment { display: flex; align-items: center; gap: 6px; }
+    .t-btn {
+      width: 32px; height: 32px; border: 1.5px solid var(--ink); border-radius: 8px;
+      background: #FFFFFF; color: var(--ink); font-weight: 900; font-size: 13px; cursor: pointer;
+      display: grid; place-items: center; box-shadow: 1.5px 1.5px 0 var(--shadow-ink); transition: all 0.05s ease;
     }
-    .btn-publish:active { transform: translate(2px, 2px); box-shadow: none; }
+    .t-btn:active { transform: translate(1px, 1px); box-shadow: none; }
+    .t-btn.active { background: var(--blue-primary); color: #FFFFFF; box-shadow: inset 1px 1px 0 rgba(0,0,0,0.3); }
+    
+    .font-select-picker {
+      height: 32px; padding: 0 8px; border: 1.5px solid var(--ink); border-radius: 8px;
+      background: #FFFFFF; font-size: 12px; font-weight: 800; color: var(--ink);
+      box-shadow: 1.5px 1.5px 0 var(--shadow-ink); outline: none; cursor: pointer;
+    }
+    .stats-label { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 700; color: #64748B; }
 
     .ico { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
   </style>
@@ -271,45 +245,41 @@ export function renderFeedPage(user: any = null): string {
     <div class="log-feed" id="feedContainer"></div>
   </div>
 
-  <!-- FULLSCREEN MODAL: BILIK WARKAH -->
+  <!-- FULLSCREEN MODAL: BILIK WARKAH (SEAMLESS CLEAN CANVAS) -->
   <div class="studio-overlay" id="studioModal">
     <div class="studio-card-full">
-      <div class="studio-header">
-        <div class="studio-title-handwriting">
-          <svg class="ico" style="width:20px;height:20px;color:var(--blue-primary);" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
-          <span id="studioModalHeading">Bilik Warkah</span>
-        </div>
-        <button class="btn-studio-close" onclick="closeStudioModal()">✕ Batal</button>
-      </div>
-      <div class="studio-body">
-        <input type="text" class="input-title" id="studioTitle" placeholder="Beri judul warkah (opsional)...">
-        
-        <!-- Single-Row Sleek Formatting Toolbar -->
-        <div class="rich-toolbar">
-          <div class="toolbar-left-group">
-            <button type="button" class="tool-btn" id="btnBold" onclick="formatCmd('bold')" title="Tebal"><b>B</b></button>
-            <button type="button" class="tool-btn" id="btnItalic" onclick="formatCmd('italic')" title="Miring"><i>I</i></button>
-            <button type="button" class="tool-btn" id="btnUnderline" onclick="formatCmd('underline')" title="Garis Bawah"><u>U</u></button>
-            <button type="button" class="tool-btn" id="btnQuote" onclick="applyQuote()" title="Kutipan">” Kutipan</button>
-          </div>
+      <header class="composer-header">
+        <button class="btn-cancel" onclick="closeStudioModal()">Batal</button>
+        <h2 class="header-title-clean" id="studioModalHeading">Bilik Warkah</h2>
+        <button class="btn-publish-pill" onclick="submitStudioWarkah()">
+          <span>Terbitkan</span>
+          <svg class="ico" style="width:11px;height:11px;" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </header>
 
-          <!-- Font Dropdown Selector (Zero Clutter) -->
+      <main class="composer-body">
+        <input type="text" class="title-input" id="studioTitle" placeholder="Beri Judul (opsional)...">
+        <div class="rich-editor-canvas font-sans" id="editorCanvas" contenteditable="true" placeholder="Mulai tuliskan bait puisi, kutipan, atau cerita absurdmu di sini..."></div>
+      </main>
+
+      <footer class="docked-footer">
+        <div class="tools-segment">
+          <button type="button" class="t-btn" id="btnBold" onclick="formatCmd('bold')"><b>B</b></button>
+          <button type="button" class="t-btn" id="btnItalic" onclick="formatCmd('italic')"><i>I</i></button>
+          <button type="button" class="t-btn" id="btnUnderline" onclick="formatCmd('underline')"><u>U</u></button>
+          <button type="button" class="t-btn" id="btnQuote" onclick="applyQuote()">”</button>
+          
           <select class="font-select-picker" id="fontDropdown" onchange="handleFontDropdown(this.value)">
-            <option value="font-sans">Font: Sans (Modern)</option>
-            <option value="font-serif">Font: Serif (Sastra)</option>
-            <option value="font-mono">Font: Mono (Mesin Tik)</option>
+            <option value="font-sans">Font: Sans</option>
+            <option value="font-serif">Font: Serif</option>
+            <option value="font-mono">Font: Mono</option>
           </select>
         </div>
 
-        <div class="rich-editor-canvas font-sans" id="editorCanvas" contenteditable="true" placeholder="Tuliskan bait puisi, cerita absurd, atau resensimu di sini..."></div>
-      </div>
-      <div class="studio-footer">
-        <span class="studio-counter" id="studioWordCount">0 kata · 0 karakter</span>
-        <button class="btn-publish" onclick="submitStudioWarkah()">
-          <svg class="ico" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          <span>Terbitkan Warkah</span>
-        </button>
-      </div>
+        <div class="stats-label" id="studioWordCount">
+          0 kata · 0 huruf
+        </div>
+      </footer>
     </div>
   </div>
 
@@ -444,7 +414,14 @@ export function renderFeedPage(user: any = null): string {
       const text = document.getElementById('editorCanvas').innerText || '';
       const chars = text.length;
       const words = text.trim() ? text.trim().split(/\\s+/).length : 0;
-      document.getElementById('studioWordCount').textContent = words + ' kata · ' + chars + ' karakter';
+      document.getElementById('studioWordCount').textContent = words + ' kata · ' + chars + ' huruf';
+    }
+
+    function formatCmd(cmd, val = null) {
+      document.execCommand(cmd, false, val);
+      document.getElementById('editorCanvas').focus();
+      updateToolbarState();
+      updateWordCounter();
     }
 
     function applyQuote() {
@@ -457,17 +434,9 @@ export function renderFeedPage(user: any = null): string {
         range.insertNode(bq);
         selection.removeAllRanges();
       } else {
-        // Sisipkan box kutipan kosong siap ketik (tanpa placeholder teks membingungkan)
         document.execCommand('formatBlock', false, '<blockquote>');
       }
       canvas.focus();
-      updateToolbarState();
-      updateWordCounter();
-    }
-
-    function formatCmd(cmd, val = null) {
-      document.execCommand(cmd, false, val);
-      document.getElementById('editorCanvas').focus();
       updateToolbarState();
       updateWordCounter();
     }
@@ -478,7 +447,6 @@ export function renderFeedPage(user: any = null): string {
       const canvas = document.getElementById('editorCanvas');
 
       if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
-        // Terapkan ke teks yang disorot saja (Inline formatting)
         const range = selection.getRangeAt(0);
         const span = document.createElement('span');
         span.className = fontClass;
@@ -486,7 +454,6 @@ export function renderFeedPage(user: any = null): string {
         range.insertNode(span);
         selection.removeAllRanges();
       } else {
-        // Ganti gaya font kalimat yang sedang diketik selanjutnya
         document.execCommand('insertHTML', false, '<span class="' + fontClass + '">&#8203;</span>');
       }
       canvas.focus();
