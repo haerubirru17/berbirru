@@ -22,9 +22,10 @@ export function renderLandingPage(user: any = null): string {
       font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
       background-color: var(--bg-main); color: var(--ink); min-height: 100vh;
       background-image: radial-gradient(#CBD5E1 1.5px, transparent 1.5px);
-      background-size: 22px 22px; padding: 18px 14px 60px;
+      background-size: 22px 22px; padding: 18px 0 0;
+      display: flex; flex-direction: column;
     }
-    .container { max-width: 1080px; margin: 0 auto; width: 100%; }
+    .container { max-width: 1080px; margin: 0 auto; width: 100%; padding: 0 16px; flex: 1; }
     
     /* Top Navigation */
     .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
@@ -299,13 +300,24 @@ export function renderLandingPage(user: any = null): string {
     }
     .mod-layer-text { font-size: 12.5px; color: #94A3B8; line-height: 1.55; }
 
-    /* Comprehensive Footer */
+    /* Full-Bleed Edge-to-Edge Footer (Tanpa Jeda Kanan Kiri & Bawah) */
     .main-footer {
-      background: #0F172A; color: #FFFFFF; border: var(--border-thick); border-radius: var(--radius);
-      box-shadow: var(--shadow-hard-lg); padding: 36px 24px 28px;
+      width: 100%;
+      background: #0F172A;
+      color: #FFFFFF;
+      border-top: var(--border-thick);
+      border-radius: 0;
+      box-shadow: none;
+      padding: 36px 20px 32px;
+      margin-top: 40px;
+    }
+    .footer-inner-container {
+      max-width: 1080px;
+      margin: 0 auto;
+      width: 100%;
     }
     @media (min-width: 768px) {
-      .main-footer { padding: 48px 36px 32px; }
+      .main-footer { padding: 48px 24px 36px; }
     }
     .footer-top-grid {
       display: grid; grid-template-columns: 1fr; gap: 28px; border-bottom: 1.5px dashed rgba(255,255,255,0.2);
@@ -761,54 +773,56 @@ export function renderLandingPage(user: any = null): string {
       </div>
     </div>
 
-    <!-- SECTION 4: COMPREHENSIVE ENTERPRISE FOOTER -->
+    </div> <!-- End .container -->
+
+    <!-- Full-Bleed Edge-to-Edge Footer -->
     <footer class="main-footer">
-      <div class="footer-top-grid">
-        <div>
-          <div class="footer-brand-title">BERBIRRU.COM</div>
-          <p class="footer-brand-desc">
-            Pustaka warkah dan ruang kolaborasi rasa di edge network. Merawat setiap bait kata, perenungan hidup, dan cerita lintas kota tanpa distraksi algoritma bising.
-          </p>
-        </div>
+      <div class="footer-inner-container">
+        <div class="footer-top-grid">
+          <div>
+            <div class="footer-brand-title">BERBIRRU.COM</div>
+            <p class="footer-brand-desc">
+              Pustaka warkah dan ruang kolaborasi rasa. Merawat setiap bait kata, perenungan hidup, dan cerita lintas kota tanpa distraksi algoritma bising.
+            </p>
+          </div>
 
-        <div>
-          <div class="footer-col-title">Navigasi Pustaka</div>
-          <div class="footer-links">
-            <a href="/feed" class="footer-link">
-              <svg class="ico" style="width:12px;height:12px;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-              <span>Beranda Warkah</span>
-            </a>
-            <a href="/feed?tab=search" class="footer-link">
-              <svg class="ico" style="width:12px;height:12px;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-              <span>Telusuri Penulis &amp; Bait</span>
-            </a>
-            <a href="/login" class="footer-link">
-              <svg class="ico" style="width:12px;height:12px;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-              <span>Masuk / Buka Bilik Warkah</span>
-            </a>
+          <div>
+            <div class="footer-col-title">Navigasi Pustaka</div>
+            <div class="footer-links">
+              <a href="/feed" class="footer-link">
+                <svg class="ico" style="width:12px;height:12px;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                <span>Beranda Warkah</span>
+              </a>
+              <a href="/feed?tab=search" class="footer-link">
+                <svg class="ico" style="width:12px;height:12px;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                <span>Telusuri Penulis &amp; Bait</span>
+              </a>
+              <a href="/login" class="footer-link">
+                <svg class="ico" style="width:12px;height:12px;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                <span>Masuk / Buka Bilik Warkah</span>
+              </a>
+            </div>
+          </div>
+
+          <div>
+            <div class="footer-col-title">Pusat Hubungan</div>
+            <div class="contact-card-box">
+              <span style="display:block;color:#94A3B8;margin-bottom:2px;">Kolaborasi &amp; Kerjasama:</span>
+              <a href="mailto:admin@berbirru.com">admin@berbirru.com</a>
+            </div>
+            <div class="contact-card-box">
+              <span style="display:block;color:#94A3B8;margin-bottom:2px;">Laporan Bug &amp; Teknis:</span>
+              <a href="mailto:depelover@berbirru.com">depelover@berbirru.com</a>
+            </div>
           </div>
         </div>
 
-        <div>
-          <div class="footer-col-title">Pusat Hubungan</div>
-          <div class="contact-card-box">
-            <span style="display:block;color:#94A3B8;margin-bottom:2px;">Kolaborasi &amp; Kerjasama:</span>
-            <a href="mailto:admin@berbirru.com">admin@berbirru.com</a>
-          </div>
-          <div class="contact-card-box">
-            <span style="display:block;color:#94A3B8;margin-bottom:2px;">Laporan Bug &amp; Teknis:</span>
-            <a href="mailto:depelover@berbirru.com">depelover@berbirru.com</a>
-          </div>
+        <div class="footer-bottom-row">
+          <span>© 2026 BERBIRRU.COM · Dirawat dengan rasa dan integritas karya.</span>
+          <span>Bebas Iklan · Bebas Pelacak Pihak Ketiga</span>
         </div>
-      </div>
-
-      <div class="footer-bottom-row">
-        <span>© 2026 BERBIRRU.COM · Dirawat dengan rasa dan integritas karya.</span>
-        <span>Bebas Iklan · Bebas Pelacak Pihak Ketiga</span>
       </div>
     </footer>
-
-  </div>
 </body>
 </html>`;
 }
