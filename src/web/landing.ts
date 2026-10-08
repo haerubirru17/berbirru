@@ -144,27 +144,27 @@ export function renderLandingPage(user: any = null): string {
       display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; font-weight: 800;
     }
 
-    /* Section Header */
+    /* Compact Spacing Across All Sections */
     .section-label {
-      font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 800; text-transform: uppercase;
-      letter-spacing: 0.5px; margin: 24px 0 12px; display: flex; align-items: center; gap: 8px;
+      font-family: 'Space Grotesk', sans-serif; font-size: 13.5px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.5px; margin: 16px 0 10px; display: flex; align-items: center; gap: 8px;
     }
     @media (min-width: 860px) {
-      .section-label { font-size: 15px; margin: 36px 0 18px; gap: 10px; }
+      .section-label { font-size: 15px; margin: 24px 0 14px; gap: 10px; }
     }
-    .section-label::after { content: ''; flex: 1; height: 2.5px; background: var(--ink); }
+    .section-label::after { content: ''; flex: 1; height: 2px; background: var(--ink); }
 
-    /* Capabilities Section: Mobile = Compact 2x2 Static Grid | Desktop = Smooth Infinite Marquee Track */
+    /* Capabilities Section */
     .mobile-features-grid {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 12px;
-      margin-bottom: 24px;
+      gap: 10px;
+      margin-bottom: 16px;
     }
     @media (min-width: 520px) {
       .mobile-features-grid {
         grid-template-columns: 1fr 1fr;
-        gap: 14px;
+        gap: 12px;
       }
     }
     @media (min-width: 860px) {
@@ -177,130 +177,54 @@ export function renderLandingPage(user: any = null): string {
     @media (min-width: 860px) {
       .desktop-marquee-viewport {
         display: block; width: 100%; overflow: hidden; position: relative;
-        margin-bottom: 36px; padding: 6px 0 14px;
+        margin-bottom: 24px; padding: 4px 0 10px;
       }
       .marquee-track {
-        display: flex; gap: 18px; width: max-content;
+        display: flex; gap: 16px; width: max-content;
         animation: marqueeScroll 26s linear infinite;
       }
       .marquee-track:hover { animation-play-state: paused; }
     }
-    @keyframes marqueeScroll {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
-    }
 
-    .feature-box {
-      background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
-      padding: 16px 14px; box-shadow: var(--shadow-hard); display: flex; flex-direction: column;
-      gap: 8px;
-    }
-    @media (min-width: 860px) {
-      .feature-box { width: 280px; flex-shrink: 0; padding: 20px 18px; gap: 10px; }
-    }
-    .feature-icon-box {
-      width: 36px; height: 36px; background: var(--blue-primary); color: #FFFFFF;
-      border: 2px solid var(--ink); border-radius: 10px; display: grid; place-items: center;
-      box-shadow: 1.5px 1.5px 0 var(--shadow-ink);
-    }
-    @media (min-width: 860px) {
-      .feature-icon-box { width: 42px; height: 42px; border-radius: 12px; box-shadow: 2px 2px 0 var(--shadow-ink); }
-    }
-    .feature-title { font-family: 'Space Grotesk', sans-serif; font-size: 14.5px; font-weight: 800; color: var(--ink); }
-    .feature-desc { font-size: 12px; font-weight: 600; color: #475569; line-height: 1.5; }
-
-    /* Quotes Section: Native Feed Styling */
+    /* Quotes Section */
     .quotes-feed-grid {
-      display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 24px;
+      display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 16px;
     }
     @media (min-width: 768px) {
-      .quotes-feed-grid { grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 38px; }
+      .quotes-feed-grid { grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
     }
 
-    .thread-card {
-      background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
-      box-shadow: var(--shadow-hard); overflow: visible; position: relative; margin-top: 8px;
-    }
-    .thread-header-soft {
-      background: var(--bg-blue-subtle); padding: 8px 12px 8px 68px; display: flex; justify-content: space-between;
-      align-items: center; border-bottom: var(--border-thin); border-top-left-radius: 13px; border-top-right-radius: 13px;
-      min-height: 44px; position: relative;
-    }
-    .thread-avatar-clip {
-      position: absolute; left: 10px; top: -14px; width: 48px; height: 50px;
-      background: var(--blue-primary); color: #FFFFFF; border: var(--border-thick);
-      border-radius: 12px; display: grid; place-items: center; font-family: 'Space Grotesk', sans-serif;
-      font-size: 23px; font-weight: 900; box-shadow: none; transform: rotate(-2deg); z-index: 5;
-    }
-    .paperclip-svg {
-      position: absolute; top: -10px; right: -7px; width: 18px; height: 28px;
-      z-index: 6; transform: rotate(18deg); filter: drop-shadow(1px 1px 0 rgba(0,0,0,0.25));
-    }
-    .thread-author-info { display: flex; flex-direction: column; line-height: 1.25; }
-    .thread-pen-name { font-size: 13px; font-weight: 800; color: var(--ink); }
-    .thread-city { font-size: 10px; font-weight: 700; color: #64748B; }
-    .thread-timestamp-stack {
-      display: flex; flex-direction: column; align-items: flex-end; line-height: 1.25;
-      font-family: 'JetBrains Mono', monospace;
-    }
-    .time-main { font-size: 11px; font-weight: 800; color: var(--ink); }
-    .date-sub { font-size: 9.5px; font-weight: 700; color: #64748B; }
-
-    .thread-body { padding: 14px 14px 12px; }
-    .thread-title { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 800; color: var(--ink); margin-bottom: 6px; }
-    .thread-text { font-size: 14px; font-weight: 600; line-height: 1.6; color: #0F172A; }
-    .thread-text blockquote {
-      background: #F8FAFC; border-left: 3.5px solid var(--ink); padding: 10px 14px;
-      margin: 8px 0; font-style: italic; border-radius: 4px; color: #334155;
-    }
-    .thread-footer { padding: 8px 12px; background: #FFFFFF; border-top: var(--border-thin); display: flex; justify-content: space-between; align-items: center; border-bottom-left-radius: 13px; border-bottom-right-radius: 13px; }
-    .actions-left { display: flex; gap: 6px; }
-    .act-btn-mock {
-      background: var(--bg-main); border: var(--border-thin); border-radius: var(--radius-sm);
-      padding: 5px 10px; font-size: 11.5px; font-weight: 800; display: inline-flex; align-items: center; gap: 5px;
-    }
-    .chain-btn-mock {
-      background: var(--accent-yellow); color: var(--ink); border: var(--border-thin);
-      border-radius: var(--radius-sm); padding: 5px 12px; font-size: 11.5px; font-weight: 900;
-      display: inline-flex; align-items: center; gap: 5px;
-    }
-
-    /* AI & Human 2-Layer Moderation Card (Dark Shield Theme) */
+    /* Moderation Card */
     .moderation-card {
       background: #0F172A; color: #FFFFFF; border: var(--border-thick); border-radius: var(--radius);
-      box-shadow: var(--shadow-hard-lg); padding: 28px 22px; margin-bottom: 40px; position: relative;
+      box-shadow: var(--shadow-hard-lg); padding: 20px 16px; margin-bottom: 20px; position: relative;
     }
     @media (min-width: 860px) {
-      .moderation-card { padding: 36px 32px; }
+      .moderation-card { padding: 28px 24px; margin-bottom: 24px; }
     }
     .mod-pill {
       display: inline-flex; align-items: center; gap: 6px; background: #10B981; color: #FFFFFF;
-      padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 900;
-      letter-spacing: 0.3px; margin-bottom: 14px; border: 1.5px solid #000;
+      padding: 3px 10px; border-radius: 999px; font-size: 10.5px; font-weight: 900;
+      letter-spacing: 0.3px; margin-bottom: 10px; border: 1.5px solid #000;
     }
-    .mod-title { font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 800; margin-bottom: 10px; line-height: 1.3; }
+    .mod-title { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 800; margin-bottom: 8px; line-height: 1.25; }
     @media (min-width: 860px) {
-      .mod-title { font-size: 28px; }
+      .mod-title { font-size: 24px; }
     }
-    .mod-desc { font-size: 14px; color: #CBD5E1; line-height: 1.6; margin-bottom: 24px; max-width: 800px; }
+    .mod-desc { font-size: 13px; color: #CBD5E1; line-height: 1.5; margin-bottom: 16px; max-width: 800px; }
     
     .mod-layers-grid {
-      display: grid; grid-template-columns: 1fr; gap: 16px;
+      display: grid; grid-template-columns: 1fr; gap: 10px;
     }
     @media (min-width: 768px) {
-      .mod-layers-grid { grid-template-columns: 1fr 1fr; gap: 20px; }
+      .mod-layers-grid { grid-template-columns: 1fr 1fr; gap: 16px; }
     }
     .mod-layer-box {
-      background: rgba(255, 255, 255, 0.06); border: 2px solid rgba(255, 255, 255, 0.2);
-      border-radius: 12px; padding: 18px 16px; display: flex; flex-direction: column; gap: 8px;
+      background: rgba(255, 255, 255, 0.06); border: 1.5px solid rgba(255, 255, 255, 0.2);
+      border-radius: 10px; padding: 14px 12px; display: flex; flex-direction: column; gap: 6px;
     }
-    .mod-layer-badge {
-      display: inline-flex; align-items: center; gap: 6px; font-family: 'Space Grotesk', sans-serif;
-      font-size: 13.5px; font-weight: 800; color: var(--accent-yellow);
-    }
-    .mod-layer-text { font-size: 12.5px; color: #94A3B8; line-height: 1.55; }
 
-    /* Full-Bleed Edge-to-Edge Footer (Tanpa Jeda Kanan Kiri & Bawah) */
+    /* Edge-to-Edge Footer: Langsung Menempel Rapat */
     .main-footer {
       width: 100%;
       background: #0F172A;
@@ -308,8 +232,8 @@ export function renderLandingPage(user: any = null): string {
       border-top: var(--border-thick);
       border-radius: 0;
       box-shadow: none;
-      padding: 36px 20px 32px;
-      margin-top: 40px;
+      padding: 24px 16px 20px;
+      margin-top: 10px;
     }
     .footer-inner-container {
       max-width: 1080px;
@@ -317,14 +241,14 @@ export function renderLandingPage(user: any = null): string {
       width: 100%;
     }
     @media (min-width: 768px) {
-      .main-footer { padding: 48px 24px 36px; }
+      .main-footer { padding: 36px 24px 28px; margin-top: 20px; }
     }
     .footer-top-grid {
-      display: grid; grid-template-columns: 1fr; gap: 28px; border-bottom: 1.5px dashed rgba(255,255,255,0.2);
-      padding-bottom: 28px; margin-bottom: 24px;
+      display: grid; grid-template-columns: 1fr; gap: 18px; border-bottom: 1.5px dashed rgba(255,255,255,0.2);
+      padding-bottom: 18px; margin-bottom: 16px;
     }
     @media (min-width: 768px) {
-      .footer-top-grid { grid-template-columns: 1.2fr 1fr 1fr; gap: 32px; }
+      .footer-top-grid { grid-template-columns: 1.2fr 1fr 1fr; gap: 24px; }
     }
     .footer-brand-title { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 800; color: #FFFFFF; margin-bottom: 8px; }
     .footer-brand-desc { font-size: 13px; color: #94A3B8; line-height: 1.6; }
