@@ -279,7 +279,7 @@ export function renderFeedPage(user: any = null): string {
             <button type="button" class="tool-btn" id="btnBold" onclick="formatCmd('bold')" title="Tebal"><b>B</b></button>
             <button type="button" class="tool-btn" id="btnItalic" onclick="formatCmd('italic')" title="Miring"><i>I</i></button>
             <button type="button" class="tool-btn" id="btnUnderline" onclick="formatCmd('underline')" title="Garis Bawah"><u>U</u></button>
-            <button type="button" class="tool-btn" id="btnQuote" onclick="formatCmd('formatBlock', 'blockquote')" title="Kutipan">” Kutipan</button>
+            <button type="button" class="tool-btn" id="btnQuote" onclick="applyQuote()" title="Kutipan">” Kutipan</button>
           </div>
 
           <!-- Font Dropdown Selector (Zero Clutter) -->
@@ -434,6 +434,23 @@ export function renderFeedPage(user: any = null): string {
       const chars = text.length;
       const words = text.trim() ? text.trim().split(/\\s+/).length : 0;
       document.getElementById('studioWordCount').textContent = words + ' kata · ' + chars + ' karakter';
+    }
+
+    function applyQuote() {
+      const selection = window.getSelection();
+      const canvas = document.getElementById('editorCanvas');
+      if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
+        const range = selection.getRangeAt(0);
+        const bq = document.createElement('blockquote');
+        bq.appendChild(range.extractContents());
+        range.insertNode(bq);
+        selection.removeAllRanges();
+      } else {
+        document.execCommand('insertHTML', false, '<blockquote>Kutipan warkah...</blockquote><br>');
+      }
+      canvas.focus();
+      updateToolbarState();
+      updateWordCounter();
     }
 
     function formatCmd(cmd, val = null) {

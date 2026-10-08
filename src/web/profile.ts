@@ -7,7 +7,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
   <title>@${penName} — Pustaka Penulis BERBIRRU.COM</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800;900&family=Space+Grotesk:wght@600;700;800&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800;900&family=Space+Grotesk:wght@600;700;800&family=JetBrains+Mono:wght@600;800&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -77,19 +77,31 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     }
     .tab-btn.active { background: var(--blue-primary); color: #FFFFFF; box-shadow: 2px 2px 0 var(--shadow-ink); }
     .feed-list { display: flex; flex-direction: column; gap: 16px; }
-    .ticket-card {
+
+    /* Unified Threads Card Style in Profile */
+    .thread-card {
       background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
       box-shadow: var(--shadow-hard); overflow: hidden;
     }
-    .ticket-header {
-      background: #0F172A; color: #FFFFFF; padding: 8px 12px; display: flex; justify-content: space-between;
-      align-items: center; border-bottom: var(--border-med);
+    .thread-header-soft {
+      background: var(--bg-blue-subtle); padding: 10px 14px; display: flex; justify-content: space-between;
+      align-items: center; border-bottom: var(--border-thin);
     }
-    .ticket-id { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 800; color: var(--accent-yellow); background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; }
-    .ticket-meta { font-size: 10px; font-weight: 800; color: #94A3B8; }
-    .ticket-body { padding: 14px 14px 12px; background: #FFFFFF; }
-    .poem-text { font-size: 14px; font-weight: 700; line-height: 1.55; color: #0F172A; white-space: pre-line; margin-bottom: 10px; }
-    .ticket-footer { padding: 8px 12px; background: var(--bg-main); border-top: var(--border-thin); display: flex; justify-content: space-between; align-items: center; }
+    .thread-author-wrap { display: flex; align-items: center; gap: 8px; }
+    .thread-avatar { width: 26px; height: 26px; background: var(--blue-primary); color: #FFF; border: 1.5px solid var(--ink); border-radius: 6px; display: grid; place-items: center; font-size: 12px; font-weight: 900; }
+    .thread-author-info { display: flex; flex-direction: column; }
+    .thread-pen-name { font-size: 12px; font-weight: 800; color: var(--ink); text-decoration: none; }
+    .thread-timestamp { font-size: 10px; font-weight: 800; color: #475569; font-family: 'JetBrains Mono', monospace; }
+    .thread-body { padding: 14px 14px 12px; }
+    .thread-title { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 800; color: var(--ink); margin-bottom: 6px; }
+    .thread-text { font-size: 14px; font-weight: 600; line-height: 1.6; color: #0F172A; }
+    .thread-text blockquote { background: var(--bg-blue-subtle); border-left: 3px solid var(--blue-primary); padding: 4px 8px; margin: 6px 0; font-style: italic; border-radius: 4px; }
+    
+    .font-serif { font-family: 'Merriweather', serif !important; }
+    .font-sans { font-family: 'Plus Jakarta Sans', sans-serif !important; }
+    .font-mono { font-family: 'JetBrains Mono', monospace !important; background: #E0EEFD; padding: 1px 4px; border-radius: 4px; }
+
+    .thread-footer { padding: 8px 12px; background: #FFFFFF; border-top: var(--border-thin); display: flex; justify-content: space-between; align-items: center; }
     
     /* Popover Menu Aksi Profil */
     .avatar-popover {
@@ -315,26 +327,28 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
           return;
         }
         container.innerHTML = data.posts.map(p => \`
-          <div class="ticket-card">
-            <div class="ticket-header">
-              <span class="ticket-id">#WARKAH-\${p.id.slice(0,6)}</span>
-              <span class="ticket-meta">\${formatTimestamp(p.created_at)}</span>
+          <div class="thread-card">
+            <div class="thread-header-soft">
+              <div class="thread-author-wrap">
+                <div class="thread-avatar">\${(p.pen_name[0] || 'D').toUpperCase()}</div>
+                <div class="thread-author-info">
+                  <span class="thread-pen-name">@\${p.pen_name}</span>
+                </div>
+              </div>
+              <span class="thread-timestamp">\${formatTimestamp(p.created_at)}</span>
             </div>
-            <div class="ticket-body">
-              <div class="poem-text">\${escapeHtml(p.content)}</div>
+            <div class="thread-body">
+              \${p.title ? \`<h3 class="thread-title">\${p.title}</h3>\` : ''}
+              <div class="thread-text">\${p.content}</div>
             </div>
-            <div class="ticket-footer">
-              <span style="font-size:11px;font-weight:800;color:#1D61E7;">\${p.likes_count || 0} Terpaut · \${p.saves_count || 0} Simpan</span>
+            <div class="thread-footer">
+              <span style="font-size:11.5px;font-weight:800;color:#1D61E7;">\${p.likes_count || 0} Terpaut · \${p.saves_count || 0} Simpan</span>
             </div>
           </div>
         \`).join('');
       } catch (err) {
         console.error(err);
       }
-    }
-
-    function escapeHtml(t) {
-      return String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
     function switchProfileTab(tab, el) {
