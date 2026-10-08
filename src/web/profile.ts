@@ -79,30 +79,58 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     .metric-cell:last-child { border-right: none; }
     .metric-val { font-family: 'JetBrains Mono', monospace; font-size: 17px; font-weight: 800; color: var(--accent-yellow); line-height: 1.1; }
     .metric-lbl { font-size: 9.5px; font-weight: 800; color: #94A3B8; text-transform: uppercase; margin-top: 2px; }
-    .tiktok-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 18px; }
+    /* Soft Pastel Colors for Profile Tabs (Zero Harsh Dark Blue) */
+    .tiktok-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 20px; }
     .tab-btn {
       background: var(--bg-card); border: var(--border-med); border-radius: var(--radius-sm);
-      padding: 8px 4px; font-size: 11px; font-weight: 900; cursor: pointer; box-shadow: var(--shadow-hard-sm);
+      padding: 9px 4px; font-size: 11px; font-weight: 900; cursor: pointer; box-shadow: var(--shadow-hard-sm);
       display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--ink);
+      transition: all 0.05s ease;
     }
-    .tab-btn.active { background: var(--blue-primary); color: #FFFFFF; box-shadow: 2px 2px 0 var(--shadow-ink); }
+    .tab-btn:active { transform: translate(1px, 1px); box-shadow: none; }
+    .tab-btn.active {
+      background: var(--bg-blue-subtle);
+      color: var(--blue-primary);
+      border-color: var(--blue-primary);
+      box-shadow: inset 0 -3px 0 var(--blue-primary), 2px 2px 0 var(--shadow-ink);
+    }
+    .tab-btn.active svg { stroke: var(--blue-primary); stroke-width: 2.8; }
     .feed-list { display: flex; flex-direction: column; gap: 16px; }
 
-    /* Unified Threads Card Style in Profile */
+    /* Unified Threads Card Style in Profile with Paperclip Badge */
+    .feed-list { display: flex; flex-direction: column; gap: 20px; }
     .thread-card {
       background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
-      box-shadow: var(--shadow-hard); overflow: hidden;
+      box-shadow: var(--shadow-hard); overflow: visible; position: relative; margin-top: 8px;
     }
     .thread-header-soft {
       background: var(--bg-blue-subtle); padding: 8px 12px 8px 68px; display: flex; justify-content: space-between;
-      align-items: center; border-bottom: var(--border-thin);
-      min-height: 44px;
+      align-items: center; border-bottom: var(--border-thin); border-top-left-radius: 13px; border-top-right-radius: 13px;
+      min-height: 44px; position: relative;
     }
     .thread-author-wrap { display: flex; align-items: center; gap: 8px; }
-    .thread-avatar { width: 26px; height: 26px; background: var(--blue-primary); color: #FFF; border: 1.5px solid var(--ink); border-radius: 6px; display: grid; place-items: center; font-size: 12px; font-weight: 900; }
-    .thread-author-info { display: flex; flex-direction: column; }
-    .thread-pen-name { font-size: 12px; font-weight: 800; color: var(--ink); text-decoration: none; }
-    .thread-timestamp { font-size: 10px; font-weight: 800; color: #475569; font-family: 'JetBrains Mono', monospace; }
+    
+    /* Paperclip Avatar */
+    .thread-avatar-clip {
+      position: absolute; left: 10px; top: -14px; width: 48px; height: 50px;
+      background: var(--blue-primary); color: #FFFFFF; border: var(--border-thick);
+      border-radius: 12px; display: grid; place-items: center; font-family: 'Space Grotesk', sans-serif;
+      font-size: 23px; font-weight: 900; box-shadow: none;
+      transform: rotate(-2deg); z-index: 5;
+    }
+    .paperclip-svg {
+      position: absolute; top: -10px; right: -7px; width: 18px; height: 28px;
+      z-index: 6; transform: rotate(18deg); filter: drop-shadow(1px 1px 0 rgba(0,0,0,0.25));
+    }
+
+    .thread-author-info { display: flex; flex-direction: column; line-height: 1.25; }
+    .thread-pen-name { font-size: 13px; font-weight: 800; color: var(--ink); text-decoration: none; }
+    .thread-timestamp-stack {
+      display: flex; flex-direction: column; align-items: flex-end; line-height: 1.25;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .time-main { font-size: 11px; font-weight: 800; color: var(--ink); }
+    .date-sub { font-size: 9.5px; font-weight: 700; color: #64748B; }
     .thread-body { padding: 14px 14px 12px; }
     .thread-title { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 800; color: var(--ink); margin-bottom: 6px; }
     .thread-text { font-size: 14px; font-weight: 600; line-height: 1.6; color: #0F172A; }
@@ -419,8 +447,11 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
         container.innerHTML = data.posts.map(p => \`
           <div class="thread-card">
             <div class="thread-header-soft">
+              <div class="thread-avatar-clip">
+                \${(p.pen_name[0] || 'D').toUpperCase()}
+                <svg class="paperclip-svg" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              </div>
               <div class="thread-author-wrap">
-                <div class="thread-avatar">\${(p.pen_name[0] || 'D').toUpperCase()}</div>
                 <div class="thread-author-info">
                   <span class="thread-pen-name">@\${p.pen_name}</span>
                 </div>
@@ -432,7 +463,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
               <div class="thread-text">\${p.content}</div>
             </div>
             <div class="thread-footer">
-              <span style="font-size:11.5px;font-weight:800;color:#1D61E7;">\${p.likes_count || 0} Terpaut · \${p.saves_count || 0} Simpan</span>
+              <span style="font-size:11.5px;font-weight:800;color:#1D61E7;">\${p.likes_count || 0} Terpaut · \${p.saves_count || 0} Simpan · \${p.chains_count || 0} Sambungan</span>
             </div>
           </div>
         \`).join('');
