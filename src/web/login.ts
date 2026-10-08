@@ -26,21 +26,21 @@ export function renderLoginPage(): string {
     }
     .container { width: 100%; max-width: 400px; margin: 0 auto; }
     .brand-header { text-align: center; margin-bottom: 18px; }
-    .brand-wrap { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+    .brand-wrap { display: inline-flex; align-items: center; text-decoration: none; position: relative; }
     .brand-badge {
       display: inline-flex; align-items: center; gap: 6px; background: var(--blue-primary);
       color: #FFFFFF; padding: 6px 14px; border: var(--border-thick); border-radius: var(--radius);
-      box-shadow: var(--shadow-hard); transform: rotate(-2deg);
+      box-shadow: var(--shadow-hard); transform: rotate(-1deg); position: relative; z-index: 2;
     }
     .brand-badge h1 { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 800; letter-spacing: 0.5px; }
     .brand-com-tag {
-      font-family: 'Space Grotesk', sans-serif; font-size: 23px; font-weight: 900;
+      font-family: 'Space Grotesk', sans-serif; font-size: 27px; font-weight: 900;
       color: var(--blue-primary); position: relative; display: inline-block;
-      transform: rotate(4deg); margin-top: 4px;
+      transform: rotate(2deg); margin-left: 4px; margin-top: 2px; z-index: 1;
     }
     .brand-com-tag::after {
-      content: ''; position: absolute; left: 0; bottom: 0px; width: 100%; height: 5px;
-      background: var(--accent-yellow); border-radius: 2px; z-index: -1;
+      content: ''; position: absolute; left: -24px; bottom: 0px; width: calc(100% + 28px); height: 6px;
+      background: var(--accent-yellow); border-radius: 3px; z-index: 0;
     }
     .auth-card {
       background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
