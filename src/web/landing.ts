@@ -22,12 +22,15 @@ export function renderLandingPage(user: any = null): string {
       font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
       background-color: var(--bg-main); color: var(--ink); min-height: 100vh;
       background-image: radial-gradient(#CBD5E1 1.5px, transparent 1.5px);
-      background-size: 22px 22px; padding: 24px 16px 60px;
+      background-size: 22px 22px; padding: 18px 14px 60px;
     }
     .container { max-width: 1080px; margin: 0 auto; width: 100%; }
     
     /* Top Navigation */
-    .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+    .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    @media (min-width: 860px) {
+      .top-nav { margin-bottom: 32px; }
+    }
     .brand-wrap { display: inline-flex; align-items: center; text-decoration: none; position: relative; }
     .brand-badge {
       display: inline-flex; align-items: center; gap: 6px; background: var(--blue-primary);
@@ -56,14 +59,15 @@ export function renderLandingPage(user: any = null): string {
     .hero-split-grid {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 24px;
-      margin-bottom: 40px;
+      gap: 16px;
+      margin-bottom: 24px;
     }
     @media (min-width: 860px) {
       .hero-split-grid {
         grid-template-columns: 1.1fr 0.9fr;
         align-items: stretch;
         gap: 32px;
+        margin-bottom: 40px;
       }
     }
 
@@ -141,43 +145,75 @@ export function renderLandingPage(user: any = null): string {
 
     /* Section Header */
     .section-label {
-      font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 800; text-transform: uppercase;
-      letter-spacing: 0.5px; margin: 36px 0 18px; display: flex; align-items: center; gap: 10px;
+      font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.5px; margin: 24px 0 12px; display: flex; align-items: center; gap: 8px;
+    }
+    @media (min-width: 860px) {
+      .section-label { font-size: 15px; margin: 36px 0 18px; gap: 10px; }
     }
     .section-label::after { content: ''; flex: 1; height: 2.5px; background: var(--ink); }
 
-    /* Desktop Infinite Marquee Scrolling for Features */
-    .marquee-viewport {
-      width: 100%; overflow: hidden; position: relative; margin-bottom: 36px; padding: 6px 0 14px;
+    /* Capabilities Section: Mobile = Compact 2x2 Static Grid | Desktop = Smooth Infinite Marquee Track */
+    .mobile-features-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
     }
-    .marquee-track {
-      display: flex; gap: 18px; width: max-content;
-      animation: marqueeScroll 28s linear infinite;
+    @media (min-width: 520px) {
+      .mobile-features-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
     }
-    .marquee-track:hover { animation-play-state: paused; }
+    @media (min-width: 860px) {
+      .mobile-features-grid { display: none; }
+    }
+
+    .desktop-marquee-viewport {
+      display: none;
+    }
+    @media (min-width: 860px) {
+      .desktop-marquee-viewport {
+        display: block; width: 100%; overflow: hidden; position: relative;
+        margin-bottom: 36px; padding: 6px 0 14px;
+      }
+      .marquee-track {
+        display: flex; gap: 18px; width: max-content;
+        animation: marqueeScroll 26s linear infinite;
+      }
+      .marquee-track:hover { animation-play-state: paused; }
+    }
     @keyframes marqueeScroll {
       0% { transform: translateX(0); }
       100% { transform: translateX(-50%); }
     }
+
     .feature-box {
       background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
-      padding: 20px 18px; box-shadow: var(--shadow-hard); display: flex; flex-direction: column;
-      gap: 10px; width: 280px; flex-shrink: 0;
+      padding: 16px 14px; box-shadow: var(--shadow-hard); display: flex; flex-direction: column;
+      gap: 8px;
+    }
+    @media (min-width: 860px) {
+      .feature-box { width: 280px; flex-shrink: 0; padding: 20px 18px; gap: 10px; }
     }
     .feature-icon-box {
-      width: 42px; height: 42px; background: var(--blue-primary); color: #FFFFFF;
-      border: 2px solid var(--ink); border-radius: 12px; display: grid; place-items: center;
-      box-shadow: 2px 2px 0 var(--shadow-ink);
+      width: 36px; height: 36px; background: var(--blue-primary); color: #FFFFFF;
+      border: 2px solid var(--ink); border-radius: 10px; display: grid; place-items: center;
+      box-shadow: 1.5px 1.5px 0 var(--shadow-ink);
     }
-    .feature-title { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 800; color: var(--ink); }
-    .feature-desc { font-size: 12.5px; font-weight: 600; color: #475569; line-height: 1.5; }
+    @media (min-width: 860px) {
+      .feature-icon-box { width: 42px; height: 42px; border-radius: 12px; box-shadow: 2px 2px 0 var(--shadow-ink); }
+    }
+    .feature-title { font-family: 'Space Grotesk', sans-serif; font-size: 14.5px; font-weight: 800; color: var(--ink); }
+    .feature-desc { font-size: 12px; font-weight: 600; color: #475569; line-height: 1.5; }
 
-    /* Quotes Section: 100% Same Design as Home Feed Cards */
+    /* Quotes Section: Native Feed Styling */
     .quotes-feed-grid {
-      display: grid; grid-template-columns: 1fr; gap: 24px; margin-bottom: 38px;
+      display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 24px;
     }
     @media (min-width: 768px) {
-      .quotes-feed-grid { grid-template-columns: 1fr 1fr; gap: 24px; }
+      .quotes-feed-grid { grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 38px; }
     }
 
     .thread-card {
@@ -405,12 +441,48 @@ export function renderLandingPage(user: any = null): string {
 
     </div>
 
-    <!-- SECTION 1: ANIMATED INFINITE MARQUEE CARDS (APA YANG BISA DILAKUKAN) -->
+    <!-- SECTION 1: EKSPLORASI FITUR -->
     <div class="section-label">
       <span>Eksplorasi Tanpa Batas — Apa yang Bisa Kamu Lakukan?</span>
     </div>
 
-    <div class="marquee-viewport">
+    <!-- Mobile View: Clean Compact Grid -->
+    <div class="mobile-features-grid">
+      <div class="feature-box">
+        <div class="feature-icon-box">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
+        </div>
+        <h3 class="feature-title">Goreskan Segala Bentuk Tulisan</h3>
+        <p class="feature-desc">Mulai dari puisi, kutipan bermakna, micro-fiction, resensi buku, hingga cerita absurd dengan tipografi Serif, Sans, dan Mono.</p>
+      </div>
+
+      <div class="feature-box">
+        <div class="feature-icon-box" style="background:#0F3E99;">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        </div>
+        <h3 class="feature-title">Sambung Estafet Lintas Kota</h3>
+        <p class="feature-desc">Lanjutkan bait warkah penulis lain dari kota berbeda dalam satu klik. Jadilah bagian dari rantai untaian karya kolaboratif.</p>
+      </div>
+
+      <div class="feature-box">
+        <div class="feature-icon-box" style="background:#059669;">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        </div>
+        <h3 class="feature-title">Pustaka Antologi Paspor</h3>
+        <p class="feature-desc">Setiap bait karyamu, riwayat warkah yang disukai, dan simpanan favorit tersusun rapi dalam paspor antologi pribadimu.</p>
+      </div>
+
+      <div class="feature-box">
+        <div class="feature-icon-box" style="background:#D97706;">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </div>
+        <h3 class="feature-title">Apresiasi Murni Bebas Toxic</h3>
+        <p class="feature-desc">Sistem feed berbasis gravitasi makna dan kesegaran rasa. Tanpa tekanan angka followers dan tanpa DM bising.</p>
+      </div>
+    </div>
+
+    <!-- Desktop View: Infinite Marquee Track -->
+    <div class="desktop-marquee-viewport">
       <div class="marquee-track">
         <!-- Set 1 -->
         <div class="feature-box">
@@ -445,7 +517,7 @@ export function renderLandingPage(user: any = null): string {
           <p class="feature-desc">Sistem feed berbasis gravitasi makna dan kesegaran rasa. Tanpa tekanan angka followers dan tanpa DM bising.</p>
         </div>
 
-        <!-- Duplicated for Seamless Infinite Loop -->
+        <!-- Duplicated for Seamless Loop on Desktop -->
         <div class="feature-box">
           <div class="feature-icon-box">
             <svg class="ico" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
@@ -665,14 +737,14 @@ export function renderLandingPage(user: any = null): string {
       </p>
 
       <div class="mod-layers-grid">
-        <!-- Layer 1: Edge-Native AI -->
+        <!-- Layer 1: Intelligent AI -->
         <div class="mod-layer-box">
           <div class="mod-layer-badge">
             <svg class="ico" style="width:16px;height:16px;" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            <span>Lapis 1: AI Guardian di Edge Network</span>
+            <span>Lapis 1: AI Guardian Pelindung Ruang</span>
           </div>
           <p class="mod-layer-text">
-            Kecerdasan buatan (NLP &amp; Sentiment Analyzer) memindai setiap input warkah dalam hitungan milidetik secara senyap di level Cloudflare Edge. Konten toxic, bot spam, dan pelecehan otomatis dicegat sebelum sempat tampil di linimasa publik.
+            Sistem kecerdasan buatan memindai setiap naskah warkah dalam hitungan milidetik secara otomatis. Konten toxic, ujaran kebencian, dan pelecehan otomatis dicegat sebelum sempat tampil di linimasa publik.
           </p>
         </div>
 
@@ -731,7 +803,7 @@ export function renderLandingPage(user: any = null): string {
       </div>
 
       <div class="footer-bottom-row">
-        <span>© 2026 BERBIRRU.COM · Dirawat dengan rasa &amp; 100% Serverless di Cloudflare Edge.</span>
+        <span>© 2026 BERBIRRU.COM · Dirawat dengan rasa dan integritas karya.</span>
         <span>Bebas Iklan · Bebas Pelacak Pihak Ketiga</span>
       </div>
     </footer>
