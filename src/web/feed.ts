@@ -231,6 +231,14 @@ export function renderFeedPage(user: any = null): string {
       }
     }
 
+    function formatTimestamp(isoStr) {
+      if (!isoStr) return '';
+      const d = new Date(isoStr.endsWith('Z') ? isoStr : isoStr + 'Z');
+      const datePart = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', timeZone: 'Asia/Jakarta' });
+      const timePart = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' }).replace(':', '.');
+      return datePart + ' · ' + timePart + ' WIB';
+    }
+
     function renderPostCard(p) {
       const isLikedClass = p.is_liked ? 'active' : '';
       const isSavedClass = p.is_saved ? 'saved' : '';
@@ -242,7 +250,7 @@ export function renderFeedPage(user: any = null): string {
               <span class="ticket-id">#WARKAH-\${p.id.slice(0,6)}</span>
               \${(p.likes_count >= 3 || p.chains_count >= 1) ? '<span class="viral-badge"><svg class="ico" style="width:10px;height:10px;" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> BERGEMA</span>' : ''}
             </div>
-            <span class="ticket-meta">\${new Date(p.created_at).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})} WIB</span>
+            <span class="ticket-meta">\${formatTimestamp(p.created_at)}</span>
           </div>
           <div class="ticket-body">
             \${p.parent_content ? \`<div class="parent-quote-box"><b>Menyambung bait @\${p.parent_author}:</b><br>"\${escapeHtml(p.parent_content)}"</div>\` : ''}

@@ -288,11 +288,13 @@ app.get('/api/posts', async (c) => {
   } else if (mode === 'latest') {
     query += ` ORDER BY p.created_at DESC LIMIT 40`;
   } else {
-    // Mode 'viral' (Decay Ranking via standard (julianday('now') - julianday(created_at)))
+    // Mode 'viral' (Freshness Discovery Boost + Gravity Decay)
+    // Postingan baru (< 1 jam) dapat initial boost agar muncul di atas untuk mendapat pembaca awal
     query += `
       ORDER BY (
-        ((p.likes_count * 1.0) + (p.saves_count * 3.0) + (p.chains_count * 4.0) + 1.0) /
-        (((julianday('now') - julianday(p.created_at)) * 24.0) + 2.0)
+        ((p.likes_count * 2.0) + (p.saves_count * 4.0) + (p.chains_count * 5.0) + 
+         (CASE WHEN (julianday('now') - julianday(p.created_at)) * 24.0 < 1.0 THEN 6.0 ELSE 1.0 END)) /
+        (((julianday('now') - julianday(p.created_at)) * 24.0) + 1.5)
       ) DESC LIMIT 40
     `;
   }

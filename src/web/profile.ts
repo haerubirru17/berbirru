@@ -301,6 +301,14 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       }
     }
 
+    function formatTimestamp(isoStr) {
+      if (!isoStr) return '';
+      const d = new Date(isoStr.endsWith('Z') ? isoStr : isoStr + 'Z');
+      const datePart = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', timeZone: 'Asia/Jakarta' });
+      const timePart = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' }).replace(':', '.');
+      return datePart + ' · ' + timePart + ' WIB';
+    }
+
     async function loadProfilePosts(tab = 'original') {
       try {
         const res = await fetch('/api/users/' + encodeURIComponent(currentPenName) + '/posts?tab=' + tab);
@@ -314,7 +322,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
           <div class="ticket-card">
             <div class="ticket-header">
               <span class="ticket-id">#WARKAH-\${p.id.slice(0,6)}</span>
-              <span class="ticket-meta">\${new Date(p.created_at).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})} WIB</span>
+              <span class="ticket-meta">\${formatTimestamp(p.created_at)}</span>
             </div>
             <div class="ticket-body">
               <div class="poem-text">\${escapeHtml(p.content)}</div>
