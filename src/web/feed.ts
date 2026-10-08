@@ -80,15 +80,15 @@ export function renderFeedPage(user: any = null): string {
       box-shadow: var(--shadow-hard-lg); overflow: visible; position: relative; margin-top: 10px;
     }
     .thread-header-soft {
-      background: var(--bg-blue-subtle); padding: 14px 14px 12px 70px; display: flex; justify-content: space-between;
+      background: var(--bg-blue-subtle); padding: 8px 12px 8px 68px; display: flex; justify-content: space-between;
       align-items: center; border-bottom: var(--border-thin); border-top-left-radius: 13px; border-top-right-radius: 13px;
-      position: relative;
+      position: relative; min-height: 44px;
     }
     .thread-author-wrap { display: flex; align-items: center; gap: 8px; }
     
     /* Avatar Menonjol Melewati Frame (Logika Dijepit Tanpa Bayangan) */
     .thread-avatar-clip {
-      position: absolute; left: 12px; top: -14px; width: 48px; height: 50px;
+      position: absolute; left: 10px; top: -14px; width: 48px; height: 50px;
       background: var(--blue-primary); color: #FFFFFF; border: var(--border-thick);
       border-radius: 12px; display: grid; place-items: center; font-family: 'Space Grotesk', sans-serif;
       font-size: 23px; font-weight: 900; box-shadow: none;
@@ -100,10 +100,17 @@ export function renderFeedPage(user: any = null): string {
       z-index: 6; transform: rotate(18deg); filter: drop-shadow(1px 1px 0 rgba(0,0,0,0.25));
     }
 
-    .thread-author-info { display: flex; flex-direction: column; }
+    .thread-author-info { display: flex; flex-direction: column; line-height: 1.25; }
     .thread-pen-name { font-size: 13px; font-weight: 800; color: var(--ink); text-decoration: none; }
-    .thread-city { font-size: 10.5px; font-weight: 700; color: #64748B; }
-    .thread-timestamp { font-size: 10.5px; font-weight: 800; color: #475569; font-family: 'JetBrains Mono', monospace; }
+    .thread-city { font-size: 10px; font-weight: 700; color: #64748B; }
+    
+    /* Timestamp 2 Baris Sejajar: Jam di atas, Tanggal di bawah */
+    .thread-timestamp-stack {
+      display: flex; flex-direction: column; align-items: flex-end; line-height: 1.25;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .time-main { font-size: 11px; font-weight: 800; color: var(--ink); }
+    .date-sub { font-size: 9.5px; font-weight: 700; color: #64748B; }
 
     /* Sambung Bait Connector Line */
     .thread-parent-connector {
@@ -347,9 +354,9 @@ export function renderFeedPage(user: any = null): string {
     function formatTimestamp(isoStr) {
       if (!isoStr) return '';
       const d = new Date(isoStr.endsWith('Z') ? isoStr : isoStr + 'Z');
-      const datePart = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', timeZone: 'Asia/Jakarta' });
+      const datePart = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' });
       const timePart = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' }).replace(':', '.');
-      return datePart + ' · ' + timePart + ' WIB';
+      return '<div class="thread-timestamp-stack"><span class="time-main">' + timePart + ' WIB</span><span class="date-sub">' + datePart + '</span></div>';
     }
 
     async function loadFeed() {
@@ -399,7 +406,7 @@ export function renderFeedPage(user: any = null): string {
                 <span class="thread-city">\${p.city || 'Nusantara'}</span>
               </div>
             </div>
-            <span class="thread-timestamp">\${formatTimestamp(p.created_at)}</span>
+            \${formatTimestamp(p.created_at)}
           </div>
 
           \${p.parent_id ? \`

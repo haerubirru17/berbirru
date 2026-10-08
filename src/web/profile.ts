@@ -84,8 +84,9 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       box-shadow: var(--shadow-hard); overflow: hidden;
     }
     .thread-header-soft {
-      background: var(--bg-blue-subtle); padding: 10px 14px; display: flex; justify-content: space-between;
+      background: var(--bg-blue-subtle); padding: 8px 12px 8px 68px; display: flex; justify-content: space-between;
       align-items: center; border-bottom: var(--border-thin);
+      min-height: 44px;
     }
     .thread-author-wrap { display: flex; align-items: center; gap: 8px; }
     .thread-avatar { width: 26px; height: 26px; background: var(--blue-primary); color: #FFF; border: 1.5px solid var(--ink); border-radius: 6px; display: grid; place-items: center; font-size: 12px; font-weight: 900; }
@@ -320,9 +321,9 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     function formatTimestamp(isoStr) {
       if (!isoStr) return '';
       const d = new Date(isoStr.endsWith('Z') ? isoStr : isoStr + 'Z');
-      const datePart = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', timeZone: 'Asia/Jakarta' });
+      const datePart = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' });
       const timePart = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' }).replace(':', '.');
-      return datePart + ' · ' + timePart + ' WIB';
+      return '<div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.25;font-family:JetBrains Mono,monospace;"><span style="font-size:11px;font-weight:800;color:#0B192C;">' + timePart + ' WIB</span><span style="font-size:9.5px;font-weight:700;color:#64748B;">' + datePart + '</span></div>';
     }
 
     async function loadProfilePosts(tab = 'original') {
@@ -343,7 +344,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
                   <span class="thread-pen-name">@\${p.pen_name}</span>
                 </div>
               </div>
-              <span class="thread-timestamp">\${formatTimestamp(p.created_at)}</span>
+              \${formatTimestamp(p.created_at)}
             </div>
             <div class="thread-body">
               \${p.title ? \`<h3 class="thread-title">\${p.title}</h3>\` : ''}
