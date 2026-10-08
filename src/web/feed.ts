@@ -95,7 +95,15 @@ export function renderFeedPage(user: any = null): string {
     .thread-body { padding: 16px 14px 12px; }
     .thread-title { font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 800; color: var(--ink); margin-bottom: 8px; line-height: 1.3; }
     .thread-text { font-size: 14.5px; font-weight: 600; line-height: 1.65; color: #0F172A; }
-    .thread-text blockquote { background: var(--bg-blue-subtle); border-left: 3.5px solid var(--blue-primary); padding: 8px 12px; margin: 8px 0; font-style: italic; border-radius: 6px; }
+    .thread-text blockquote {
+      background: #F8FAFC;
+      border-left: 3.5px solid var(--ink);
+      padding: 10px 14px;
+      margin: 10px 0;
+      font-style: italic;
+      border-radius: 4px;
+      color: #334155;
+    }
     
     .font-serif { font-family: 'Newsreader', serif !important; font-size: 16px; }
     .font-sans { font-family: 'Plus Jakarta Sans', sans-serif !important; }
@@ -322,6 +330,12 @@ export function renderFeedPage(user: any = null): string {
       }
     }
 
+    function stripHtml(html) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html || '';
+      return tmp.textContent || tmp.innerText || '';
+    }
+
     function renderPostCard(p) {
       const isLikedClass = p.is_liked ? 'active' : '';
       const isSavedClass = p.is_saved ? 'saved' : '';
@@ -342,7 +356,7 @@ export function renderFeedPage(user: any = null): string {
           \${p.parent_id ? \`
             <div class="thread-parent-connector" onclick="scrollToPost('\${p.parent_id}')">
               <svg class="ico" style="color:#1D61E7;" viewBox="0 0 24 24"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>
-              <span>Menyambung warkah <b>@\${p.parent_author}</b>: <i>"\${escapeHtml(p.parent_content ? p.parent_content.slice(0, 40) + '...' : 'Warkah')}"</i></span>
+              <span>Menyambung warkah <b>@\${p.parent_author}</b>: <i>"\${escapeHtml(stripHtml(p.parent_content).slice(0, 45) + '...')}"</i></span>
             </div>
           \` : ''}
 

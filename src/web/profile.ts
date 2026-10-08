@@ -95,7 +95,15 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     .thread-body { padding: 14px 14px 12px; }
     .thread-title { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 800; color: var(--ink); margin-bottom: 6px; }
     .thread-text { font-size: 14px; font-weight: 600; line-height: 1.6; color: #0F172A; }
-    .thread-text blockquote { background: var(--bg-blue-subtle); border-left: 3px solid var(--blue-primary); padding: 4px 8px; margin: 6px 0; font-style: italic; border-radius: 4px; }
+    .thread-text blockquote {
+      background: #F8FAFC;
+      border-left: 3.5px solid var(--ink);
+      padding: 10px 14px;
+      margin: 10px 0;
+      font-style: italic;
+      border-radius: 4px;
+      color: #334155;
+    }
     
     .font-serif { font-family: 'Merriweather', serif !important; }
     .font-sans { font-family: 'Plus Jakarta Sans', sans-serif !important; }
