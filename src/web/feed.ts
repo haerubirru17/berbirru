@@ -190,6 +190,17 @@ export function renderFeedPage(user: any = null): string {
     .rich-editor-canvas:focus { background: #FFFFFF; border-color: var(--blue-primary); }
     .rich-editor-canvas:empty:before { content: attr(placeholder); color: #94A3B8; font-weight: 600; }
 
+    /* Live Visual Rendering of Blockquote in Editor */
+    .rich-editor-canvas blockquote {
+      background: var(--bg-blue-subtle);
+      border-left: 4px solid var(--blue-primary);
+      padding: 8px 12px;
+      margin: 8px 0;
+      font-style: italic;
+      border-radius: 6px;
+      color: #1E293B;
+    }
+
     .studio-footer {
       padding: 12px 18px; background: #F8FAFC; border-top: var(--border-thick);
       display: flex; justify-content: space-between; align-items: center; position: sticky; bottom: 0; z-index: 10;
@@ -446,7 +457,8 @@ export function renderFeedPage(user: any = null): string {
         range.insertNode(bq);
         selection.removeAllRanges();
       } else {
-        document.execCommand('insertHTML', false, '<blockquote>Kutipan warkah...</blockquote><br>');
+        // Sisipkan box kutipan kosong siap ketik (tanpa placeholder teks membingungkan)
+        document.execCommand('formatBlock', false, '<blockquote>');
       }
       canvas.focus();
       updateToolbarState();
