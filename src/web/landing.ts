@@ -26,19 +26,20 @@ export function renderLandingPage(user: any = null): string {
     }
     .container { max-width: 480px; margin: 0 auto; }
     .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-    .brand-wrap { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+    .brand-wrap { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
     .brand-badge {
       display: inline-flex; align-items: center; gap: 6px; background: var(--blue-primary);
       color: #FFFFFF; padding: 6px 14px; border: var(--border-thick); border-radius: var(--radius);
-      box-shadow: var(--shadow-hard); transform: rotate(-1deg);
+      box-shadow: var(--shadow-hard); transform: rotate(-2deg);
     }
     .brand-badge h1 { font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 800; letter-spacing: 0.5px; }
     .brand-com-tag {
-      font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 800;
+      font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 900;
       color: var(--blue-primary); position: relative; display: inline-block;
+      transform: rotate(4deg); margin-top: 4px;
     }
     .brand-com-tag::after {
-      content: ''; position: absolute; left: 0; bottom: 1px; width: 100%; height: 4px;
+      content: ''; position: absolute; left: 0; bottom: 0px; width: 100%; height: 5px;
       background: var(--accent-yellow); border-radius: 2px; z-index: -1;
     }
     .nav-btn {

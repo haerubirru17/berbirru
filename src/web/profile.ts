@@ -31,19 +31,20 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       padding: 6px 14px; font-size: 12px; font-weight: 800; box-shadow: var(--shadow-hard-sm);
       display: inline-flex; align-items: center; gap: 6px; text-decoration: none; color: var(--ink);
     }
-    .brand-wrap { display: inline-flex; align-items: center; gap: 5px; text-decoration: none; }
+    .brand-wrap { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
     .brand-badge {
       display: inline-flex; align-items: center; gap: 4px; background: var(--blue-primary);
       color: #FFFFFF; padding: 4px 10px; border: var(--border-med); border-radius: var(--radius-sm);
-      box-shadow: var(--shadow-hard-sm);
+      box-shadow: var(--shadow-hard-sm); transform: rotate(-2deg);
     }
     .brand-badge span { font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 800; }
     .brand-com-tag {
-      font-family: 'Space Grotesk', sans-serif; font-size: 13.5px; font-weight: 800;
+      font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 900;
       color: var(--blue-primary); position: relative; display: inline-block;
+      transform: rotate(4deg); margin-top: 2px;
     }
     .brand-com-tag::after {
-      content: ''; position: absolute; left: 0; bottom: 1px; width: 100%; height: 3px;
+      content: ''; position: absolute; left: 0; bottom: 0px; width: 100%; height: 3.5px;
       background: var(--accent-yellow); border-radius: 2px; z-index: -1;
     }
     .profile-card {
