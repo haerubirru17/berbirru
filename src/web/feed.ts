@@ -59,45 +59,45 @@ export function renderFeedPage(user: any = null): string {
     /* Trigger Box Tulis di Beranda dengan Badge Efek */
     .trigger-create-card {
       background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
-      box-shadow: var(--shadow-hard); padding: 14px 14px 14px 60px; margin-bottom: 22px; cursor: pointer;
+      box-shadow: var(--shadow-hard); padding: 14px 14px 14px 70px; margin-bottom: 24px; cursor: pointer;
       display: flex; align-items: center; gap: 10px; transition: transform 0.05s ease; position: relative;
     }
     .trigger-create-card:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--shadow-ink); }
     .trigger-avatar-clip {
-      position: absolute; left: 10px; top: -8px; width: 40px; height: 42px;
+      position: absolute; left: 12px; top: -14px; width: 48px; height: 50px;
       background: var(--blue-primary); color: #FFF; border: var(--border-thick);
       border-radius: 12px; display: grid; place-items: center; font-family: 'Space Grotesk', sans-serif;
-      font-weight: 900; font-size: 19px; box-shadow: 2.5px 2.5px 0 var(--shadow-ink);
-      transform: rotate(-3deg); z-index: 5;
+      font-weight: 900; font-size: 23px; box-shadow: none;
+      transform: rotate(-2deg); z-index: 5;
     }
     .trigger-placeholder { flex: 1; font-size: 13px; font-weight: 700; color: #64748B; }
     .trigger-pen-btn { background: var(--accent-yellow); border: var(--border-thin); border-radius: 8px; padding: 6px 10px; font-size: 11px; font-weight: 900; display: inline-flex; align-items: center; gap: 4px; box-shadow: 1.5px 1.5px 0 var(--shadow-ink); }
 
     /* Card Feed Threads-Style dengan Overlap Avatar & Paperclip Efek */
-    .log-feed { display: flex; flex-direction: column; gap: 20px; }
+    .log-feed { display: flex; flex-direction: column; gap: 22px; }
     .thread-card {
       background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
-      box-shadow: var(--shadow-hard-lg); overflow: visible; position: relative; margin-top: 6px;
+      box-shadow: var(--shadow-hard-lg); overflow: visible; position: relative; margin-top: 10px;
     }
     .thread-header-soft {
-      background: var(--bg-blue-subtle); padding: 12px 14px 10px 58px; display: flex; justify-content: space-between;
+      background: var(--bg-blue-subtle); padding: 14px 14px 12px 70px; display: flex; justify-content: space-between;
       align-items: center; border-bottom: var(--border-thin); border-top-left-radius: 13px; border-top-right-radius: 13px;
       position: relative;
     }
     .thread-author-wrap { display: flex; align-items: center; gap: 8px; }
     
-    /* Avatar Menonjol Melewati Frame (Paperclip Badge Efek) */
+    /* Avatar Menonjol Melewati Frame (Logika Dijepit Tanpa Bayangan) */
     .thread-avatar-clip {
-      position: absolute; left: 10px; top: -10px; width: 40px; height: 42px;
+      position: absolute; left: 12px; top: -14px; width: 48px; height: 50px;
       background: var(--blue-primary); color: #FFFFFF; border: var(--border-thick);
       border-radius: 12px; display: grid; place-items: center; font-family: 'Space Grotesk', sans-serif;
-      font-size: 19px; font-weight: 900; box-shadow: 2.5px 2.5px 0 var(--shadow-ink);
-      transform: rotate(-3deg); z-index: 5;
+      font-size: 23px; font-weight: 900; box-shadow: none;
+      transform: rotate(-2deg); z-index: 5;
     }
     /* SVG Paperclip / Jepitan Kertas Metalik */
     .paperclip-svg {
-      position: absolute; top: -7px; right: -5px; width: 14px; height: 22px;
-      z-index: 6; transform: rotate(15deg); filter: drop-shadow(1px 1px 0 rgba(0,0,0,0.3));
+      position: absolute; top: -10px; right: -7px; width: 18px; height: 28px;
+      z-index: 6; transform: rotate(18deg); filter: drop-shadow(1px 1px 0 rgba(0,0,0,0.25));
     }
 
     .thread-author-info { display: flex; flex-direction: column; }
