@@ -160,6 +160,12 @@ app.get('/api/users/:pen_name', async (c) => {
 });
 
 // ---- POSTS & FEED ----
+app.post('/api/auth/magic-link', async (c) => {
+  const { email } = await c.req.json().catch(() => ({}));
+  if (!email) return c.json({ error: 'Email wajib diisi' }, 400);
+  return c.json({ message: 'Tautan masuk instan telah dikirim ke ' + email });
+});
+
 app.get('/api/posts', async (c) => {
   const mode = c.req.query('mode') || 'viral';
   const q = (c.req.query('q') || '').trim();

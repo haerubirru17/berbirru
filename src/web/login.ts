@@ -107,7 +107,12 @@ export function renderLoginPage(): string {
 
           <div class="form-group">
             <label class="form-label">Kata Sandi</label>
-            <input type="password" id="passwordInput" class="form-input" placeholder="••••••••" required>
+            <div style="position:relative;display:flex;align-items:center;">
+              <input type="password" id="passwordInput" class="form-input" placeholder="••••••••" style="padding-right:42px;" required>
+              <button type="button" onclick="togglePasswordVisibility()" style="position:absolute;right:8px;background:none;border:none;cursor:pointer;color:#64748B;padding:4px;display:flex;align-items:center;">
+                <svg class="ico" id="eyeIcon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
           </div>
 
           <button type="submit" class="btn-submit-auth" id="btnSubmit">
@@ -117,7 +122,7 @@ export function renderLoginPage(): string {
         </form>
 
         <div class="auth-footer-help">
-          <p id="authHelperText">Lupa kata sandi? <a href="#">Kirim Tautan Masuk</a></p>
+          <p id="authHelperText">Lupa kata sandi? <a href="#" onclick="handleForgotPassword(event)">Kirim Tautan Masuk</a></p>
         </div>
       </div>
     </div>
@@ -132,6 +137,33 @@ export function renderLoginPage(): string {
       document.getElementById('penNameGroup').style.display = isLogin ? 'none' : 'block';
       document.getElementById('btnSubmitText').textContent = isLogin ? 'Masuk' : 'Daftar Pustaka';
       document.getElementById('authHelperText').style.display = isLogin ? 'block' : 'none';
+    }
+
+    function togglePasswordVisibility() {
+      const input = document.getElementById('passwordInput');
+      const isPass = input.type === 'password';
+      input.type = isPass ? 'text' : 'password';
+      document.getElementById('eyeIcon').innerHTML = isPass
+        ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+        : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+    }
+
+    async function handleForgotPassword(e) {
+      e.preventDefault();
+      const email = document.getElementById('emailInput').value.trim();
+      if (!email) return alert('Ketikkan alamat email Anda terlebih dahulu di kolom email.');
+      
+      try {
+        const res = await fetch('/api/auth/magic-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        alert(data.message || 'Tautan masuk telah dikirim ke email Anda. Silakan periksa kotak masuk!');
+      } catch (err) {
+        alert(err.message);
+      }
     }
 
     async function handleAuth(e) {
