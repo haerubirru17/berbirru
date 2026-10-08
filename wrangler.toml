@@ -2,20 +2,11 @@ name = "berbirru"
 main = "src/index.ts"
 compatibility_date = "2025-06-01"
 
-workers_dev = false
+workers_dev = true
 
-[[routes]]
-pattern = "berbirru.com"
-custom_domain = true
-
-[[routes]]
-pattern = "www.berbirru.com"
-custom_domain = true
-
-[[d1_databases]]
-binding = "DB"
-database_name = "berbirru-db"
-database_id = "berbirru-d1-placeholder"
+# [[routes]]
+# pattern = "berbirru.com"
+# custom_domain = true
 
 [vars]
 APP_NAME = "BERBIRRU"
