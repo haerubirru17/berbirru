@@ -56,31 +56,52 @@ export function renderFeedPage(user: any = null): string {
     }
     .mode-tab.active { background: var(--blue-primary); color: #FFFFFF; box-shadow: 2px 2px 0 var(--shadow-ink); }
 
-    /* Trigger Box Tulis di Beranda */
+    /* Trigger Box Tulis di Beranda dengan Badge Efek */
     .trigger-create-card {
       background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
-      box-shadow: var(--shadow-hard); padding: 12px 14px; margin-bottom: 20px; cursor: pointer;
-      display: flex; align-items: center; gap: 10px; transition: transform 0.05s ease;
+      box-shadow: var(--shadow-hard); padding: 14px 14px 14px 60px; margin-bottom: 22px; cursor: pointer;
+      display: flex; align-items: center; gap: 10px; transition: transform 0.05s ease; position: relative;
     }
     .trigger-create-card:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--shadow-ink); }
-    .trigger-avatar { width: 34px; height: 34px; background: var(--blue-primary); color: #FFF; border: 2px solid var(--ink); border-radius: 10px; display: grid; place-items: center; font-weight: 900; font-size: 15px; flex-shrink: 0; box-shadow: 1.5px 1.5px 0 var(--shadow-ink); }
+    .trigger-avatar-clip {
+      position: absolute; left: 10px; top: -8px; width: 40px; height: 42px;
+      background: var(--blue-primary); color: #FFF; border: var(--border-thick);
+      border-radius: 12px; display: grid; place-items: center; font-family: 'Space Grotesk', sans-serif;
+      font-weight: 900; font-size: 19px; box-shadow: 2.5px 2.5px 0 var(--shadow-ink);
+      transform: rotate(-3deg); z-index: 5;
+    }
     .trigger-placeholder { flex: 1; font-size: 13px; font-weight: 700; color: #64748B; }
     .trigger-pen-btn { background: var(--accent-yellow); border: var(--border-thin); border-radius: 8px; padding: 6px 10px; font-size: 11px; font-weight: 900; display: inline-flex; align-items: center; gap: 4px; box-shadow: 1.5px 1.5px 0 var(--shadow-ink); }
 
-    /* Card Feed Threads-Style */
-    .log-feed { display: flex; flex-direction: column; gap: 16px; }
+    /* Card Feed Threads-Style dengan Overlap Avatar & Paperclip Efek */
+    .log-feed { display: flex; flex-direction: column; gap: 20px; }
     .thread-card {
       background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
-      box-shadow: var(--shadow-hard-lg); overflow: hidden;
+      box-shadow: var(--shadow-hard-lg); overflow: visible; position: relative; margin-top: 6px;
     }
     .thread-header-soft {
-      background: var(--bg-blue-subtle); padding: 10px 14px; display: flex; justify-content: space-between;
-      align-items: center; border-bottom: var(--border-thin);
+      background: var(--bg-blue-subtle); padding: 12px 14px 10px 58px; display: flex; justify-content: space-between;
+      align-items: center; border-bottom: var(--border-thin); border-top-left-radius: 13px; border-top-right-radius: 13px;
+      position: relative;
     }
     .thread-author-wrap { display: flex; align-items: center; gap: 8px; }
-    .thread-avatar { width: 28px; height: 28px; background: var(--blue-primary); color: #FFF; border: 1.5px solid var(--ink); border-radius: 8px; display: grid; place-items: center; font-size: 13px; font-weight: 900; }
+    
+    /* Avatar Menonjol Melewati Frame (Paperclip Badge Efek) */
+    .thread-avatar-clip {
+      position: absolute; left: 10px; top: -10px; width: 40px; height: 42px;
+      background: var(--blue-primary); color: #FFFFFF; border: var(--border-thick);
+      border-radius: 12px; display: grid; place-items: center; font-family: 'Space Grotesk', sans-serif;
+      font-size: 19px; font-weight: 900; box-shadow: 2.5px 2.5px 0 var(--shadow-ink);
+      transform: rotate(-3deg); z-index: 5;
+    }
+    /* SVG Paperclip / Jepitan Kertas Metalik */
+    .paperclip-svg {
+      position: absolute; top: -7px; right: -5px; width: 14px; height: 22px;
+      z-index: 6; transform: rotate(15deg); filter: drop-shadow(1px 1px 0 rgba(0,0,0,0.3));
+    }
+
     .thread-author-info { display: flex; flex-direction: column; }
-    .thread-pen-name { font-size: 12.5px; font-weight: 800; color: var(--ink); text-decoration: none; }
+    .thread-pen-name { font-size: 13px; font-weight: 800; color: var(--ink); text-decoration: none; }
     .thread-city { font-size: 10.5px; font-weight: 700; color: #64748B; }
     .thread-timestamp { font-size: 10.5px; font-weight: 800; color: #475569; font-family: 'JetBrains Mono', monospace; }
 
@@ -264,7 +285,10 @@ export function renderFeedPage(user: any = null): string {
 
     <!-- Trigger Masuk ke Bilik Warkah -->
     <div class="trigger-create-card" onclick="openStudioModal()">
-      <div class="trigger-avatar">${user ? (user.pen_name[0] || 'D').toUpperCase() : 'B'}</div>
+      <div class="trigger-avatar-clip">
+        ${user ? (user.pen_name[0] || 'D').toUpperCase() : 'B'}
+        <svg class="paperclip-svg" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+      </div>
       <div class="trigger-placeholder">Goreskan bait, kutipan, atau perenungan...</div>
       <div class="trigger-pen-btn">
         <svg class="ico" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
@@ -365,8 +389,11 @@ export function renderFeedPage(user: any = null): string {
       return \`
         <div class="thread-card" id="post-\${p.id}">
           <div class="thread-header-soft">
+            <div class="thread-avatar-clip">
+              \${(p.pen_name[0] || 'D').toUpperCase()}
+              <svg class="paperclip-svg" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            </div>
             <div class="thread-author-wrap">
-              <div class="thread-avatar">\${(p.pen_name[0] || 'D').toUpperCase()}</div>
               <div class="thread-author-info">
                 <a href="/u/\${p.pen_name}" class="thread-pen-name">@\${p.pen_name}</a>
                 <span class="thread-city">\${p.city || 'Nusantara'}</span>
