@@ -5,6 +5,7 @@ import { renderLandingPage } from './web/landing';
 import { renderLoginPage } from './web/login';
 import { renderFeedPage } from './web/feed';
 import { renderProfilePage } from './web/profile';
+import { sendMagicEmail } from './mail';
 
 export interface Env {
   DB: D1Database;
@@ -138,11 +139,12 @@ app.post('/api/auth/magic-link', async (c) => {
     'INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, datetime("now", "+1 hour"))'
   ).bind(crypto.randomUUID(), user.id, magicToken).run();
 
-  const magicUrl = `/api/auth/magic-callback?token=${magicToken}`;
+  const magicUrl = `https://${c.env.APP_DOMAIN || 'berbirru.com'}/api/auth/magic-callback?token=${magicToken}`;
+  await sendMagicEmail(cleanEmail, magicUrl);
+
   return c.json({ 
-    message: 'Tautan masuk instan berhasil dibuat!', 
-    magic_url: magicUrl,
-    instruction: 'Klik tautan atau gunakan untuk login otomatis.'
+    message: 'Tautan masuk instan berhasil dikirim ke ' + cleanEmail + '!',
+    magic_url: magicUrl
   });
 });
 

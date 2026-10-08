@@ -39,19 +39,24 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     .brand-badge span { font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 700; }
     .profile-card {
       background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
-      box-shadow: var(--shadow-hard-lg); padding: 18px 16px; margin-bottom: 20px;
+      box-shadow: var(--shadow-hard-lg); padding: 18px 16px; margin-bottom: 20px; position: relative;
     }
-    .profile-top-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
-    .profile-avatar-wrap { display: flex; gap: 12px; align-items: center; }
+    .profile-top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .profile-avatar-wrap { display: flex; gap: 12px; align-items: center; position: relative; }
     .avatar-box {
       width: 54px; height: 54px; background: var(--blue-primary); color: #FFFFFF; border: var(--border-thick);
       border-radius: 14px; display: grid; place-items: center; font-family: 'Space Grotesk', sans-serif;
-      font-size: 24px; font-weight: 700; box-shadow: var(--shadow-hard-sm); flex-shrink: 0;
+      font-size: 24px; font-weight: 700; box-shadow: var(--shadow-hard-sm); flex-shrink: 0; cursor: pointer;
+      position: relative; user-select: none;
+    }
+    .avatar-box::after {
+      content: '⚙️'; position: absolute; bottom: -4px; right: -4px; font-size: 10px; background: var(--accent-yellow);
+      border: 1.5px solid var(--ink); border-radius: 50%; width: 16px; height: 16px; display: grid; place-items: center;
     }
     .pen-name-group { display: flex; flex-direction: column; }
     .pen-name { font-family: 'JetBrains Mono', monospace; font-size: 16.5px; font-weight: 800; color: var(--ink); }
     .city-badge { font-size: 11px; font-weight: 700; color: #64748B; display: flex; align-items: center; gap: 4px; margin-top: 2px; }
-    .btn-action-top {
+    .btn-follow {
       background: var(--accent-yellow); color: var(--ink); border: var(--border-med); border-radius: var(--radius-sm);
       padding: 7px 14px; font-size: 12px; font-weight: 900; box-shadow: var(--shadow-hard-sm); cursor: pointer;
       display: inline-flex; align-items: center; gap: 5px;
@@ -89,6 +94,19 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     .ticket-body { padding: 14px 14px 12px; background: #FFFFFF; }
     .poem-text { font-size: 14px; font-weight: 700; line-height: 1.55; color: #0F172A; white-space: pre-line; margin-bottom: 10px; }
     .ticket-footer { padding: 8px 12px; background: var(--bg-main); border-top: var(--border-thin); display: flex; justify-content: space-between; align-items: center; }
+    
+    /* Popover Menu Aksi Profil */
+    .avatar-popover {
+      display: none; position: absolute; top: 64px; left: 0; background: #FFFFFF; border: var(--border-thick);
+      border-radius: var(--radius-sm); box-shadow: var(--shadow-hard); z-index: 10; width: 170px; overflow: hidden;
+    }
+    .avatar-popover-item {
+      padding: 10px 14px; font-size: 12px; font-weight: 800; color: var(--ink); display: flex; align-items: center;
+      gap: 8px; cursor: pointer; border-bottom: var(--border-thin); text-decoration: none;
+    }
+    .avatar-popover-item:last-child { border-bottom: none; color: #EF4444; }
+    .avatar-popover-item:hover { background: var(--bg-blue-subtle); }
+
     .edit-modal {
       display: none; background: #FFF; border: var(--border-thick); border-radius: var(--radius);
       padding: 18px; margin-bottom: 20px; box-shadow: var(--shadow-hard);
@@ -132,7 +150,9 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     <div class="profile-card">
       <div class="profile-top-row">
         <div class="profile-avatar-wrap">
-          <div class="avatar-box" id="avatarLetter">${(penName[0] || 'D').toUpperCase()}</div>
+          <div class="avatar-box" id="avatarLetter" onclick="toggleAvatarPopover()">
+            ${(penName[0] || 'D').toUpperCase()}
+          </div>
           <div class="pen-name-group">
             <span class="pen-name" id="penNameDisplay">@${penName}</span>
             <div class="city-badge">
@@ -140,25 +160,28 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
               <span id="cityDisplay">Nusantara · Penulis Aktif</span>
             </div>
           </div>
+
+          <!-- Popover Menu Khusus Pemilik Akun -->
+          ${isMe ? `
+            <div class="avatar-popover" id="avatarPopover">
+              <div class="avatar-popover-item" onclick="toggleEditModal(true)">
+                <svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                <span>Edit Profil</span>
+              </div>
+              <div class="avatar-popover-item" onclick="handleLogout()">
+                <svg class="ico" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                <span>Keluar Akun</span>
+              </div>
+            </div>
+          ` : ''}
         </div>
 
-        ${isMe ? `
-          <div style="display:flex;gap:6px;">
-            <button class="btn-action-top" onclick="toggleEditModal(true)">
-              <svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-              <span>Edit</span>
-            </button>
-            <button class="btn-action-top" onclick="handleLogout()" style="background:#EF4444;color:#FFF;">
-              <svg class="ico" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-              <span>Keluar</span>
-            </button>
-          </div>
-        ` : `
-          <button class="btn-action-top" onclick="followUser('${penName}')">
+        ${!isMe ? `
+          <button class="btn-follow" onclick="followUser('${penName}')">
             <svg class="ico" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             <span>Ikuti</span>
           </button>
-        `}
+        ` : ''}
       </div>
 
       <div class="bio-box" id="bioDisplay">
@@ -207,8 +230,26 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     const currentPenName = '${penName}';
     let currentUserData = null;
 
+    function toggleAvatarPopover() {
+      const pop = document.getElementById('avatarPopover');
+      if (pop) {
+        pop.style.display = pop.style.display === 'block' ? 'none' : 'block';
+      }
+    }
+
+    document.addEventListener('click', (e) => {
+      const pop = document.getElementById('avatarPopover');
+      const avatar = document.getElementById('avatarLetter');
+      if (pop && avatar && !avatar.contains(e.target) && !pop.contains(e.target)) {
+        pop.style.display = 'none';
+      }
+    });
+
     function toggleEditModal(show) {
       document.getElementById('editModal').style.display = show ? 'block' : 'none';
+      const pop = document.getElementById('avatarPopover');
+      if (pop) pop.style.display = 'none';
+
       if (show && currentUserData) {
         document.getElementById('editPenName').value = currentUserData.pen_name;
         document.getElementById('editCity').value = currentUserData.city || 'Nusantara';

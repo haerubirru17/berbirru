@@ -68,7 +68,7 @@ export function renderLoginPage(): string {
     }
     .btn-submit-auth:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--shadow-ink); }
     .auth-footer-help { margin-top: 14px; text-align: center; font-size: 11.5px; font-weight: 700; color: #64748B; }
-    .auth-footer-help a { color: var(--blue-primary); text-decoration: underline; }
+    .auth-footer-help a { color: var(--blue-primary); text-decoration: underline; cursor: pointer; }
     .ico { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
   </style>
 </head>
@@ -81,7 +81,8 @@ export function renderLoginPage(): string {
       </a>
     </div>
 
-    <div class="auth-card">
+    <!-- 1. Form Login / Register Normal -->
+    <div class="auth-card" id="standardAuthCard">
       <div class="auth-tab-switch">
         <button class="auth-tab active" id="tabLogin" onclick="switchAuth(true)">
           <svg class="ico" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
@@ -122,7 +123,33 @@ export function renderLoginPage(): string {
         </form>
 
         <div class="auth-footer-help">
-          <p id="authHelperText">Lupa kata sandi? <a href="#" onclick="handleForgotPassword(event)">Kirim Tautan Masuk</a></p>
+          <p id="authHelperText">Lupa kata sandi? <a onclick="toggleMagicCard(true)">Kirim Tautan Masuk</a></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Form Khusus Magic Link (Lupa Sandi) -->
+    <div class="auth-card" id="magicAuthCard" style="display:none;">
+      <div style="padding:14px;background:#E0EEFD;border-bottom:var(--border-thick);font-family:'Space Grotesk';font-size:14px;font-weight:800;color:var(--blue-primary);display:flex;align-items:center;gap:6px;">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        <span>Masuk Cepat Tanpa Sandi</span>
+      </div>
+      <div class="auth-body">
+        <p style="font-size:12.5px;font-weight:600;color:#475569;line-height:1.45;margin-bottom:14px;">
+          Ketikkan alamat email akun Anda. Kami akan mengirimkan tautan masuk instan langsung ke kotak masuk surel Anda.
+        </p>
+        <form onsubmit="handleMagicLink(event)">
+          <div class="form-group">
+            <label class="form-label">Alamat Email Terdaftar</label>
+            <input type="email" id="magicEmailInput" class="form-input" placeholder="nama@email.com" required>
+          </div>
+          <button type="submit" class="btn-submit-auth" id="btnMagicSubmit">
+            <svg class="ico" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            <span>Kirim Tautan Masuk ke Surel</span>
+          </button>
+        </form>
+        <div class="auth-footer-help" style="margin-top:16px;">
+          <a onclick="toggleMagicCard(false)">← Kembali ke Halaman Masuk Biasa</a>
         </div>
       </div>
     </div>
@@ -130,6 +157,7 @@ export function renderLoginPage(): string {
 
   <script>
     let isLoginMode = true;
+
     function switchAuth(isLogin) {
       isLoginMode = isLogin;
       document.getElementById('tabLogin').classList.toggle('active', isLogin);
@@ -137,6 +165,14 @@ export function renderLoginPage(): string {
       document.getElementById('penNameGroup').style.display = isLogin ? 'none' : 'block';
       document.getElementById('btnSubmitText').textContent = isLogin ? 'Masuk' : 'Daftar Pustaka';
       document.getElementById('authHelperText').style.display = isLogin ? 'block' : 'none';
+    }
+
+    function toggleMagicCard(showMagic) {
+      document.getElementById('standardAuthCard').style.display = showMagic ? 'none' : 'block';
+      document.getElementById('magicAuthCard').style.display = showMagic ? 'block' : 'none';
+      if (showMagic) {
+        document.getElementById('magicEmailInput').value = document.getElementById('emailInput').value.trim();
+      }
     }
 
     function togglePasswordVisibility() {
@@ -148,11 +184,13 @@ export function renderLoginPage(): string {
         : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
     }
 
-    async function handleForgotPassword(e) {
+    async function handleMagicLink(e) {
       e.preventDefault();
-      const email = document.getElementById('emailInput').value.trim();
-      if (!email) return alert('Ketikkan alamat email Anda terlebih dahulu di kolom email.');
-      
+      const email = document.getElementById('magicEmailInput').value.trim();
+      const btn = document.getElementById('btnMagicSubmit');
+      btn.disabled = true;
+      btn.querySelector('span').textContent = 'Mengirim surel...';
+
       try {
         const res = await fetch('/api/auth/magic-link', {
           method: 'POST',
@@ -160,9 +198,14 @@ export function renderLoginPage(): string {
           body: JSON.stringify({ email })
         });
         const data = await res.json();
-        alert(data.message || 'Tautan masuk telah dikirim ke email Anda. Silakan periksa kotak masuk!');
+        if (!res.ok) throw new Error(data.error || 'Gagal mengirim tautan masuk');
+        alert(data.message || 'Tautan masuk berhasil dikirim! Silakan periksa kotak masuk surel Anda.');
+        toggleMagicCard(false);
       } catch (err) {
         alert(err.message);
+      } finally {
+        btn.disabled = false;
+        btn.querySelector('span').textContent = 'Kirim Tautan Masuk ke Surel';
       }
     }
 
