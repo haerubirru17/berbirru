@@ -134,7 +134,12 @@ export function renderFeedPage(user: any = null): string {
       border-color: var(--ink);
     }
     .act-btn.active svg { fill: #FFFFFF; stroke: #FFFFFF; }
-    .act-btn.saved { background: var(--accent-yellow); color: var(--ink); }
+    .act-btn.saved {
+      background: var(--blue-primary);
+      color: #FFFFFF;
+      border-color: var(--ink);
+    }
+    .act-btn.saved svg { fill: #FFFFFF; stroke: #FFFFFF; }
     .chain-btn {
       background: var(--accent-yellow); color: var(--ink); border: var(--border-thin);
       border-radius: var(--radius-sm); padding: 5px 12px; font-size: 11.5px; font-weight: 900;
