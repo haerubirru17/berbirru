@@ -27,11 +27,16 @@ export function renderLoginPage(): string {
     .container { width: 100%; max-width: 400px; margin: 0 auto; }
     .brand-header { text-align: center; margin-bottom: 18px; }
     .brand-badge {
-      display: inline-flex; align-items: center; gap: 8px; background: var(--blue-primary);
-      color: #FFFFFF; padding: 8px 18px; border: var(--border-thick); border-radius: var(--radius);
+      display: inline-flex; align-items: center; gap: 4px; background: var(--blue-primary);
+      color: #FFFFFF; padding: 6px 14px; border: var(--border-thick); border-radius: var(--radius);
       box-shadow: var(--shadow-hard); transform: rotate(-1deg); text-decoration: none;
     }
-    .brand-badge h1 { font-family: 'Space Grotesk', sans-serif; font-size: 21px; font-weight: 800; letter-spacing: 0.5px; }
+    .brand-badge h1 { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 800; letter-spacing: 0.5px; display: inline-flex; align-items: baseline; }
+    .brand-com {
+      font-size: 15px; font-weight: 800; color: #FFFFFF;
+      text-decoration: underline; text-decoration-color: var(--accent-yellow);
+      text-decoration-thickness: 3.5px; text-underline-offset: 3px; margin-left: 1px;
+    }
     .auth-card {
       background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
       box-shadow: var(--shadow-hard-lg); overflow: hidden;
@@ -77,7 +82,7 @@ export function renderLoginPage(): string {
     <div class="brand-header">
       <a href="/" class="brand-badge">
         <svg class="ico" style="width:18px;height:18px;" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-        <h1>BERBIRRU.COM</h1>
+        <h1>BERBIRRU<span class="brand-com">.COM</span></h1>
       </a>
     </div>
 

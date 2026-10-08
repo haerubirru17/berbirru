@@ -27,11 +27,16 @@ export function renderLandingPage(user: any = null): string {
     .container { max-width: 480px; margin: 0 auto; }
     .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
     .brand-badge {
-      display: inline-flex; align-items: center; gap: 8px; background: var(--blue-primary);
+      display: inline-flex; align-items: center; gap: 4px; background: var(--blue-primary);
       color: #FFFFFF; padding: 6px 14px; border: var(--border-thick); border-radius: var(--radius);
       box-shadow: var(--shadow-hard); transform: rotate(-1deg); text-decoration: none;
     }
-    .brand-badge h1 { font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 700; letter-spacing: 0.5px; }
+    .brand-badge h1 { font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 800; letter-spacing: 0.5px; display: inline-flex; align-items: baseline; }
+    .brand-com {
+      font-size: 14.5px; font-weight: 800; color: #FFFFFF;
+      text-decoration: underline; text-decoration-color: var(--accent-yellow);
+      text-decoration-thickness: 3.5px; text-underline-offset: 3px; margin-left: 1px;
+    }
     .nav-btn {
       background: var(--bg-card); border: var(--border-med); border-radius: var(--radius-sm);
       padding: 7px 14px; font-size: 12px; font-weight: 800; box-shadow: var(--shadow-hard-sm);
@@ -100,7 +105,7 @@ export function renderLandingPage(user: any = null): string {
     <div class="top-nav">
       <a href="/" class="brand-badge">
         <svg class="ico" style="width:16px;height:16px;" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-        <h1>BERBIRRU</h1>
+        <h1>BERBIRRU<span class="brand-com">.COM</span></h1>
       </a>
       ${user ? `
         <a href="/u/${user.pen_name}" class="nav-btn">

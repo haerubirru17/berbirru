@@ -32,11 +32,16 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       display: inline-flex; align-items: center; gap: 6px; text-decoration: none; color: var(--ink);
     }
     .brand-badge {
-      display: inline-flex; align-items: center; gap: 6px; background: var(--blue-primary);
+      display: inline-flex; align-items: center; gap: 4px; background: var(--blue-primary);
       color: #FFFFFF; padding: 4px 12px; border: var(--border-med); border-radius: var(--radius-sm);
       box-shadow: var(--shadow-hard-sm); text-decoration: none;
     }
-    .brand-badge span { font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 700; }
+    .brand-badge span { font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 800; display: inline-flex; align-items: baseline; }
+    .brand-com {
+      font-size: 11.5px; font-weight: 800; color: #FFFFFF;
+      text-decoration: underline; text-decoration-color: var(--accent-yellow);
+      text-decoration-thickness: 2.5px; text-underline-offset: 2.5px; margin-left: 1px;
+    }
     .profile-card {
       background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
       box-shadow: var(--shadow-hard-lg); padding: 18px 16px; margin-bottom: 20px; position: relative;
@@ -139,7 +144,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
         <span>Kembali ke Feed</span>
       </a>
       <a href="/" class="brand-badge">
-        <span>BERBIRRU</span>
+        <span>BERBIRRU<span class="brand-com">.COM</span></span>
       </a>
     </div>
 
