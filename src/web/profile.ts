@@ -1,4 +1,4 @@
-export function renderProfilePage(penName: string): string {
+export function renderProfilePage(penName: string, isMe = false): string {
   return `<!DOCTYPE html>
 <html lang="id">
 <head>
@@ -51,7 +51,7 @@ export function renderProfilePage(penName: string): string {
     .pen-name-group { display: flex; flex-direction: column; }
     .pen-name { font-family: 'JetBrains Mono', monospace; font-size: 16.5px; font-weight: 800; color: var(--ink); }
     .city-badge { font-size: 11px; font-weight: 700; color: #64748B; display: flex; align-items: center; gap: 4px; margin-top: 2px; }
-    .btn-follow {
+    .btn-action-top {
       background: var(--accent-yellow); color: var(--ink); border: var(--border-med); border-radius: var(--radius-sm);
       padding: 7px 14px; font-size: 12px; font-weight: 900; box-shadow: var(--shadow-hard-sm); cursor: pointer;
       display: inline-flex; align-items: center; gap: 5px;
@@ -76,6 +76,10 @@ export function renderProfilePage(penName: string): string {
     }
     .tab-btn.active { background: var(--blue-primary); color: #FFFFFF; box-shadow: 2px 2px 0 var(--shadow-ink); }
     .feed-list { display: flex; flex-direction: column; gap: 16px; }
+    .edit-modal {
+      display: none; background: #FFF; border: var(--border-thick); border-radius: var(--radius);
+      padding: 18px; margin-bottom: 20px; box-shadow: var(--shadow-hard);
+    }
     .ico { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
   </style>
 </head>
@@ -91,26 +95,54 @@ export function renderProfilePage(penName: string): string {
       </a>
     </div>
 
+    <!-- Edit Profile Modal -->
+    <div class="edit-modal" id="editModal">
+      <h3 style="font-family:'Space Grotesk';font-size:15px;font-weight:800;margin-bottom:10px;">✏️ Perbarui Profil Anda</h3>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Nama Pena</label>
+        <input type="text" id="editPenName" style="width:100%;padding:8px;border:2px solid #0B192C;border-radius:8px;font-weight:700;">
+      </div>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Kota / Asal</label>
+        <input type="text" id="editCity" style="width:100%;padding:8px;border:2px solid #0B192C;border-radius:8px;font-weight:700;">
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Bio / Catatan Pribadi</label>
+        <textarea id="editBio" style="width:100%;height:60px;padding:8px;border:2px solid #0B192C;border-radius:8px;font-weight:600;"></textarea>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;">
+        <button onclick="toggleEditModal(false)" style="padding:6px 12px;border:2px solid #0B192C;border-radius:6px;font-weight:800;background:#FFF;cursor:pointer;">Batal</button>
+        <button onclick="saveProfile()" style="padding:6px 14px;border:2px solid #0B192C;border-radius:6px;font-weight:900;background:#1D61E7;color:#FFF;cursor:pointer;">Simpan</button>
+      </div>
+    </div>
+
     <div class="profile-card">
       <div class="profile-top-row">
         <div class="profile-avatar-wrap">
-          <div class="avatar-box">${(penName[0] || 'D').toUpperCase()}</div>
+          <div class="avatar-box" id="avatarLetter">${(penName[0] || 'D').toUpperCase()}</div>
           <div class="pen-name-group">
-            <span class="pen-name">@${penName}</span>
+            <span class="pen-name" id="penNameDisplay">@${penName}</span>
             <div class="city-badge">
               <svg class="ico" style="width:11px;height:11px;" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              <span>Nusantara · Penulis Aktif</span>
+              <span id="cityDisplay">Nusantara · Penulis Aktif</span>
             </div>
           </div>
         </div>
 
-        <button class="btn-follow">
-          <svg class="ico" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          <span>Ikuti</span>
-        </button>
+        ${isMe ? `
+          <button class="btn-action-top" onclick="toggleEditModal(true)">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            <span>Edit Profil</span>
+          </button>
+        ` : `
+          <button class="btn-action-top" onclick="followUser('${penName}')">
+            <svg class="ico" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Ikuti</span>
+          </button>
+        `}
       </div>
 
-      <div class="bio-box">
+      <div class="bio-box" id="bioDisplay">
         "Goresan perenungan rasa dan bait kata di Berbirru."
       </div>
 
@@ -149,15 +181,62 @@ export function renderProfilePage(penName: string): string {
       </div>
     </div>
 
-    <div class="feed-list" id="profileFeed">
-      <!-- Dynamic list from /api/users/:penName/posts -->
-    </div>
+    <div class="feed-list" id="profileFeed"></div>
   </div>
 
   <script>
+    const currentPenName = '${penName}';
+    let currentUserData = null;
+
+    function toggleEditModal(show) {
+      document.getElementById('editModal').style.display = show ? 'block' : 'none';
+      if (show && currentUserData) {
+        document.getElementById('editPenName').value = currentUserData.pen_name;
+        document.getElementById('editCity').value = currentUserData.city || 'Nusantara';
+        document.getElementById('editBio').value = currentUserData.bio || '';
+      }
+    }
+
+    async function saveProfile() {
+      const pen_name = document.getElementById('editPenName').value.trim();
+      const city = document.getElementById('editCity').value.trim();
+      const bio = document.getElementById('editBio').value.trim();
+
+      try {
+        const res = await fetch('/api/users/me', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pen_name, city, bio })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal menyimpan profil');
+        window.location.href = '/u/' + data.user.pen_name;
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function loadUserData() {
+      try {
+        const res = await fetch('/api/users/' + encodeURIComponent(currentPenName));
+        const data = await res.json();
+        if (data.user) {
+          currentUserData = data.user;
+          document.getElementById('penNameDisplay').textContent = '@' + data.user.pen_name;
+          document.getElementById('cityDisplay').textContent = (data.user.city || 'Nusantara') + ' · Penulis Aktif';
+          document.getElementById('bioDisplay').textContent = '"' + (data.user.bio || 'Goresan perenungan rasa.') + '"';
+          document.getElementById('countPosts').textContent = data.user.posts_count || 0;
+          document.getElementById('countLikes').textContent = data.user.likes_count || 0;
+          document.getElementById('countSaved').textContent = data.user.saves_count || 0;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
     async function loadProfilePosts(tab = 'original') {
       try {
-        const res = await fetch(\`/api/users/${penName}/posts?tab=\${tab}\`);
+        const res = await fetch('/api/users/' + encodeURIComponent(currentPenName) + '/posts?tab=' + tab);
         const data = await res.json();
         const container = document.getElementById('profileFeed');
         if (!data.posts || !data.posts.length) {
@@ -175,6 +254,7 @@ export function renderProfilePage(penName: string): string {
       loadProfilePosts(tab);
     }
 
+    loadUserData();
     loadProfilePosts('original');
   </script>
 </body>

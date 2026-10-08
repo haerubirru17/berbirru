@@ -4,13 +4,15 @@ compatibility_date = "2025-06-01"
 
 workers_dev = true
 
-# [[routes]]
-# pattern = "berbirru.com"
-# custom_domain = true
+[[d1_databases]]
+binding = "DB"
+database_name = "berbirru-db"
+database_id = "03e44422-b75a-4a7d-8464-41640a5372c8"
 
 [vars]
 APP_NAME = "BERBIRRU"
 APP_DOMAIN = "berbirru.com"
+JWT_SECRET = "berbirru-jwt-secret-key-2026-prod"
 
 [observability]
 enabled = true

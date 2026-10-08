@@ -1,4 +1,4 @@
-# D1 Database Schema for BERBIRRU.COM
+-- D1 Database Schema for BERBIRRU.COM
 
 -- 1. Users & Authors Table
 CREATE TABLE IF NOT EXISTS users (
