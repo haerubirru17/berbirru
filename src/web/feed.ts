@@ -95,6 +95,18 @@ export function renderFeedPage(user: any = null): string {
     .thread-body { padding: 16px 14px 12px; }
     .thread-title { font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 800; color: var(--ink); margin-bottom: 8px; line-height: 1.3; }
     .thread-text { font-size: 14.5px; font-weight: 600; line-height: 1.65; color: #0F172A; }
+    .thread-text-wrap { position: relative; }
+    .thread-text-collapsed {
+      max-height: 110px;
+      overflow: hidden;
+      -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent);
+      mask-image: linear-gradient(180deg, #000 55%, transparent);
+    }
+    .btn-expand-text {
+      background: none; border: none; font-size: 12px; font-weight: 800;
+      color: var(--blue-primary); cursor: pointer; padding: 4px 0; margin-top: 4px;
+      display: inline-flex; align-items: center; gap: 3px; font-family: inherit;
+    }
     .thread-text blockquote {
       background: #F8FAFC;
       border-left: 3.5px solid var(--ink);
@@ -362,7 +374,14 @@ export function renderFeedPage(user: any = null): string {
 
           <div class="thread-body">
             \${p.title ? \`<h3 class="thread-title">\${escapeHtml(p.title)}</h3>\` : ''}
-            <div class="thread-text">\${p.content}</div>
+            <div class="thread-text-wrap" id="wrap-\${p.id}">
+              <div class="thread-text \${stripHtml(p.content).length > 220 ? 'thread-text-collapsed' : ''}" id="text-\${p.id}">\${p.content}</div>
+              \${stripHtml(p.content).length > 220 ? \`
+                <button class="btn-expand-text" onclick="toggleExpandPost('\${p.id}', this)">
+                  <span>Baca Selengkapnya ▾</span>
+                </button>
+              \` : ''}
+            </div>
           </div>
 
           <div class="thread-footer">
@@ -387,6 +406,18 @@ export function renderFeedPage(user: any = null): string {
 
     function escapeHtml(t) {
       return String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function toggleExpandPost(id, btn) {
+      const textEl = document.getElementById('text-' + id);
+      const isCollapsed = textEl.classList.contains('thread-text-collapsed');
+      if (isCollapsed) {
+        textEl.classList.remove('thread-text-collapsed');
+        btn.querySelector('span').textContent = 'Sembunyikan ▴';
+      } else {
+        textEl.classList.add('thread-text-collapsed');
+        btn.querySelector('span').textContent = 'Baca Selengkapnya ▾';
+      }
     }
 
     function scrollToPost(id) {
