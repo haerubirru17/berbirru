@@ -67,6 +67,44 @@ app.get('/u/:pen_name', async (c) => {
   return c.html(renderProfilePage(targetPenName, isMe, user));
 });
 
+// ---- SEO & CRAWLER ENDPOINTS ----
+app.get('/robots.txt', (c) => {
+  const robots = `User-agent: *
+Allow: /
+Allow: /feed
+Allow: /u/
+Disallow: /api/
+
+Sitemap: https://${c.env.APP_DOMAIN || 'berbirru.com'}/sitemap.xml`;
+  return c.text(robots, 200, { 'Content-Type': 'text/plain' });
+});
+
+app.get('/sitemap.xml', async (c) => {
+  const domain = c.env.APP_DOMAIN || 'berbirru.com';
+  const users = await c.env.DB.prepare('SELECT pen_name FROM users LIMIT 100').all();
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://${domain}/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://${domain}/feed</loc>
+    <changefreq>always</changefreq>
+    <priority>0.9</priority>
+  </url>
+  ${(users.results || []).map((u: any) => `
+  <url>
+    <loc>https://${domain}/u/${encodeURIComponent(u.pen_name)}</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>`).join('')}
+</urlset>`;
+  return c.text(xml, 200, { 'Content-Type': 'application/xml' });
+});
+
 // ---- AUTH API ----
 app.get('/api/auth/me', async (c) => {
   const user = await getAuthUser(c);
