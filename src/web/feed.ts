@@ -255,6 +255,41 @@ export function renderFeedPage(user: any = null): string {
     }
     .stats-label { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 700; color: #64748B; }
 
+    /* 5-TAB DOCKED BOTTOM NAVBAR */
+    .bottom-navbar {
+      position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(10px); border-top: var(--border-thick); padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+      display: flex; justify-content: space-between; z-index: 1000; box-shadow: 0 -4px 16px rgba(11,25,44,0.06);
+    }
+    .navbar-inner {
+      width: 100%; max-width: 480px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; align-items: center;
+    }
+    .nav-item {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 3px; text-decoration: none; color: #64748B; padding: 4px 0; cursor: pointer;
+    }
+    .nav-item span { font-size: 10px; font-weight: 800; }
+    .nav-item.active { color: var(--blue-primary); }
+    .nav-item.active span { color: var(--blue-primary); font-weight: 900; }
+    .nav-item.active svg { stroke: var(--blue-primary); stroke-width: 2.8; }
+
+    /* Middle Action Button (Pen Icon) */
+    .nav-item-center {
+      position: relative; top: -10px;
+    }
+    .btn-create-floating {
+      width: 46px; height: 46px; background: var(--accent-yellow); color: var(--ink);
+      border: var(--border-thick); border-radius: 14px; display: grid; place-items: center;
+      box-shadow: 2.5px 2.5px 0 var(--shadow-ink); transform: rotate(-2deg); transition: transform 0.05s ease;
+    }
+    .btn-create-floating:active { transform: translate(1.5px, 1.5px); box-shadow: none; }
+
+    .bell-wrap { position: relative; }
+    .notif-dot {
+      position: absolute; top: -2px; right: -3px; width: 8px; height: 8px;
+      background: var(--accent-red); border: 1.5px solid #FFF; border-radius: 50%;
+    }
+
     .ico { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
   </style>
 </head>
@@ -356,6 +391,40 @@ export function renderFeedPage(user: any = null): string {
       </footer>
     </div>
   </div>
+
+  <!-- 5-TAB DOCKED BOTTOM NAVBAR -->
+  <nav class="bottom-navbar">
+    <div class="navbar-inner">
+      <a href="/feed" class="nav-item active">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Beranda</span>
+      </a>
+
+      <div class="nav-item" onclick="focusSearchInput()">
+        <svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>Telusuri</span>
+      </div>
+
+      <div class="nav-item nav-item-center" onclick="openStudioModal()">
+        <div class="btn-create-floating">
+          <svg style="width:19px;height:19px;stroke:#0B192C;stroke-width:2.5;fill:none;" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
+        </div>
+      </div>
+
+      <a href="/notifications" class="nav-item">
+        <div class="bell-wrap">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <div class="notif-dot" id="notifDot" style="display:none;"></div>
+        </div>
+        <span>Aktivitas</span>
+      </a>
+
+      <a href="${user ? '/u/' + user.pen_name : '/login'}" class="nav-item">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Akun</span>
+      </a>
+    </div>
+  </nav>
 
   <script>
     let currentMode = 'viral';
@@ -637,7 +706,25 @@ export function renderFeedPage(user: any = null): string {
       }
     }
 
+    function focusSearchInput() {
+      const el = document.getElementById('searchInput');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.focus();
+      }
+    }
+
+    async function checkUnreadNotifs() {
+      try {
+        const res = await fetch('/api/notifications/unread-count');
+        const data = await res.json();
+        const dot = document.getElementById('notifDot');
+        if (dot && data.count > 0) dot.style.display = 'block';
+      } catch (err) {}
+    }
+
     loadFeed();
+    checkUnreadNotifs();
   </script>
 </body>
 </html>`;

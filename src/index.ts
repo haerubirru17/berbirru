@@ -5,6 +5,7 @@ import { renderLandingPage } from './web/landing';
 import { renderLoginPage } from './web/login';
 import { renderFeedPage } from './web/feed';
 import { renderProfilePage } from './web/profile';
+import { renderNotificationsPage } from './web/notifications';
 import { sendMagicEmail } from './mail';
 
 export interface Env {
@@ -264,6 +265,52 @@ app.get('/api/users/:pen_name/posts', async (c) => {
 });
 
 // ---- POSTS & FEED API ----
+app.get('/notifications', async (c) => {
+  const user = await getAuthUser(c);
+  if (!user) return c.redirect('/login');
+  return c.html(renderNotificationsPage(user));
+});
+
+app.get('/api/notifications', async (c) => {
+  const user = await getAuthUser(c);
+  if (!user) return c.json({ error: 'Unauthorized' }, 401);
+
+  const { results } = await c.env.DB.prepare(`
+    SELECT n.*, u.pen_name as actor_pen_name, p.title as post_title, p.content as post_content
+    FROM notifications n
+    JOIN users u ON n.actor_id = u.id
+    LEFT JOIN posts p ON n.post_id = p.id
+    WHERE n.user_id = ?
+    ORDER BY n.created_at DESC
+    LIMIT 50
+  `).bind(user.id).all();
+
+  return c.json({ notifications: results || [] });
+});
+
+app.get('/api/notifications/unread-count', async (c) => {
+  const user = await getAuthUser(c);
+  if (!user) return c.json({ count: 0 });
+
+  const row = await c.env.DB.prepare('SELECT count(*) as count FROM notifications WHERE user_id = ? AND is_read = 0').bind(user.id).first();
+  return c.json({ count: row ? (row as any).count : 0 });
+});
+
+app.post('/api/notifications/read-all', async (c) => {
+  const user = await getAuthUser(c);
+  if (!user) return c.json({ error: 'Unauthorized' }, 401);
+
+  await c.env.DB.prepare('UPDATE notifications SET is_read = 1 WHERE user_id = ?').bind(user.id).run();
+  return c.json({ ok: true });
+});
+
+app.post('/api/notifications/:id/read', async (c) => {
+  const user = await getAuthUser(c);
+  if (!user) return c.json({ error: 'Unauthorized' }, 401);
+
+  await c.env.DB.prepare('UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?').bind(c.req.param('id'), user.id).run();
+  return c.json({ ok: true });
+});
 app.get('/api/posts', async (c) => {
   const mode = c.req.query('mode') || 'viral';
   const q = (c.req.query('q') || '').trim();
@@ -336,6 +383,13 @@ app.post('/api/posts', async (c) => {
 
   if (parent_id) {
     await c.env.DB.prepare('UPDATE posts SET chains_count = chains_count + 1 WHERE id = ?').bind(parent_id).run();
+    
+    // Auto-create Notif for Chain connection
+    const parentPost = await c.env.DB.prepare('SELECT author_id FROM posts WHERE id = ?').bind(parent_id).first();
+    if (parentPost && (parentPost as any).author_id !== user.id) {
+      const notifId = crypto.randomUUID();
+      await c.env.DB.prepare('INSERT INTO notifications (id, user_id, actor_id, type, post_id) VALUES (?, ?, ?, ?, ?)').bind(notifId, (parentPost as any).author_id, user.id, 'chain', postId).run();
+    }
   }
 
   return c.json({ ok: true, post: { id: postId, author_pen_name: user.pen_name } }, 201);
@@ -356,6 +410,14 @@ app.post('/api/posts/:id/like', async (c) => {
   } else {
     await c.env.DB.prepare('INSERT INTO likes (user_id, post_id) VALUES (?, ?)').bind(user.id, postId).run();
     await c.env.DB.prepare('UPDATE posts SET likes_count = likes_count + 1 WHERE id = ?').bind(postId).run();
+    
+    // Auto-create Notif to Post Author
+    const post = await c.env.DB.prepare('SELECT author_id FROM posts WHERE id = ?').bind(postId).first();
+    if (post && (post as any).author_id !== user.id) {
+      const notifId = crypto.randomUUID();
+      await c.env.DB.prepare('INSERT INTO notifications (id, user_id, actor_id, type, post_id) VALUES (?, ?, ?, ?, ?)').bind(notifId, (post as any).author_id, user.id, 'like', postId).run();
+    }
+
     const count = await c.env.DB.prepare('SELECT likes_count FROM posts WHERE id = ?').bind(postId).first('likes_count') || 0;
     return c.json({ liked: true, likes_count: count });
   }
@@ -375,6 +437,14 @@ app.post('/api/posts/:id/bookmark', async (c) => {
   } else {
     await c.env.DB.prepare('INSERT INTO bookmarks (user_id, post_id) VALUES (?, ?)').bind(user.id, postId).run();
     await c.env.DB.prepare('UPDATE posts SET saves_count = saves_count + 1 WHERE id = ?').bind(postId).run();
+    
+    // Auto-create Notif to Post Author
+    const post = await c.env.DB.prepare('SELECT author_id FROM posts WHERE id = ?').bind(postId).first();
+    if (post && (post as any).author_id !== user.id) {
+      const notifId = crypto.randomUUID();
+      await c.env.DB.prepare('INSERT INTO notifications (id, user_id, actor_id, type, post_id) VALUES (?, ?, ?, ?, ?)').bind(notifId, (post as any).author_id, user.id, 'save', postId).run();
+    }
+
     const count = await c.env.DB.prepare('SELECT saves_count FROM posts WHERE id = ?').bind(postId).first('saves_count') || 0;
     return c.json({ bookmarked: true, saves_count: count });
   }
