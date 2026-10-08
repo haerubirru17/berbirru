@@ -286,11 +286,11 @@ app.get('/api/posts', async (c) => {
   } else if (mode === 'latest') {
     query += ` ORDER BY p.created_at DESC LIMIT 40`;
   } else {
-    // Mode 'viral' (HackerNews Gravity Decay)
+    // Mode 'viral' (Decay Ranking via standard (julianday('now') - julianday(created_at)))
     query += `
       ORDER BY (
         ((p.likes_count * 1.0) + (p.saves_count * 3.0) + (p.chains_count * 4.0) + 1.0) /
-        POWER(((JULIANDAY('now') - JULIANDAY(p.created_at)) * 24.0) + 2.0, 1.5)
+        (((julianday('now') - julianday(p.created_at)) * 24.0) + 2.0)
       ) DESC LIMIT 40
     `;
   }
