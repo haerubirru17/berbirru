@@ -141,7 +141,7 @@ app.post('/api/auth/magic-link', async (c) => {
   ).bind(crypto.randomUUID(), user.id, magicToken).run();
 
   const magicUrl = `https://${c.env.APP_DOMAIN || 'berbirru.com'}/api/auth/magic-callback?token=${magicToken}`;
-  await sendMagicEmail(cleanEmail, magicUrl);
+  await sendMagicEmail(cleanEmail, magicUrl, c.env);
 
   return c.json({ 
     message: 'Tautan masuk instan berhasil dikirim ke ' + cleanEmail + '!',
