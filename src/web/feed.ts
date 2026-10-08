@@ -1,6 +1,4 @@
 export function renderFeedPage(user: any = null): string {
-  const currentPenName = user ? user.pen_name : '';
-
   return `<!DOCTYPE html>
 <html lang="id">
 <head>
@@ -9,7 +7,7 @@ export function renderFeedPage(user: any = null): string {
   <title>Beranda Warkah — BERBIRRU.COM</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800;900&family=Space+Grotesk:wght@600;700;800&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800;900&family=Space+Grotesk:wght@600;700;800&family=JetBrains+Mono:wght@600;800&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -57,54 +55,58 @@ export function renderFeedPage(user: any = null): string {
       box-shadow: var(--shadow-hard-sm); color: var(--ink); display: flex; justify-content: center; align-items: center; gap: 5px;
     }
     .mode-tab.active { background: var(--blue-primary); color: #FFFFFF; box-shadow: 2px 2px 0 var(--shadow-ink); }
-    .create-card {
+
+    /* Trigger Box Tulis di Beranda */
+    .trigger-create-card {
       background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
-      box-shadow: var(--shadow-hard); padding: 14px; margin-bottom: 20px;
+      box-shadow: var(--shadow-hard); padding: 12px 14px; margin-bottom: 20px; cursor: pointer;
+      display: flex; align-items: center; gap: 10px; transition: transform 0.05s ease;
     }
-    .create-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .create-title { font-size: 11.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; color: var(--blue-deep); display: inline-flex; align-items: center; gap: 5px; }
-    .author-handle-tag { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 800; background: var(--bg-blue-subtle); border: 1.5px solid var(--ink); border-radius: 6px; padding: 2px 8px; }
-    .textarea-box {
-      width: 100%; height: 76px; border: var(--border-med); border-radius: var(--radius-sm);
-      padding: 10px 12px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 600;
-      background: #FAFAFA; color: var(--ink); resize: none; outline: none; margin-bottom: 8px;
-    }
-    .btn-submit {
-      background: var(--blue-primary); color: #FFFFFF; border: var(--border-med); border-radius: var(--radius-sm);
-      padding: 7px 16px; font-size: 12px; font-weight: 900; box-shadow: var(--shadow-hard-sm); cursor: pointer;
-      display: inline-flex; align-items: center; gap: 6px;
-    }
-    .log-feed { display: flex; flex-direction: column; gap: 18px; }
-    .ticket-card {
+    .trigger-create-card:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--shadow-ink); }
+    .trigger-avatar { width: 34px; height: 34px; background: var(--blue-primary); color: #FFF; border: 2px solid var(--ink); border-radius: 10px; display: grid; place-items: center; font-weight: 900; font-size: 15px; flex-shrink: 0; box-shadow: 1.5px 1.5px 0 var(--shadow-ink); }
+    .trigger-placeholder { flex: 1; font-size: 13px; font-weight: 700; color: #64748B; }
+    .trigger-pen-btn { background: var(--accent-yellow); border: var(--border-thin); border-radius: 8px; padding: 6px 10px; font-size: 11px; font-weight: 900; display: inline-flex; align-items: center; gap: 4px; box-shadow: 1.5px 1.5px 0 var(--shadow-ink); }
+
+    /* Card Feed Threads-Style */
+    .log-feed { display: flex; flex-direction: column; gap: 16px; }
+    .thread-card {
       background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
       box-shadow: var(--shadow-hard-lg); overflow: hidden;
     }
-    .ticket-header {
-      background: #0F172A; color: #FFFFFF; padding: 9px 12px; display: flex; justify-content: space-between;
-      align-items: center; border-bottom: var(--border-thick);
+    .thread-header-soft {
+      background: var(--bg-blue-subtle); padding: 10px 14px; display: flex; justify-content: space-between;
+      align-items: center; border-bottom: var(--border-thin);
     }
-    .ticket-id-group { display: flex; align-items: center; gap: 6px; }
-    .ticket-id { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 800; color: var(--accent-yellow); background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; }
-    .viral-badge { background: #EF4444; color: #FFFFFF; padding: 2px 7px; border-radius: 4px; font-size: 9.5px; font-weight: 900; display: inline-flex; align-items: center; gap: 4px; }
-    .ticket-meta { font-size: 10.5px; font-weight: 700; color: #94A3B8; }
-    .ticket-body { padding: 16px 14px 12px; background: #FFFFFF; }
-    .poem-text { font-size: 14.5px; font-weight: 700; line-height: 1.6; color: #0F172A; white-space: pre-line; margin-bottom: 12px; }
-    .parent-quote-box {
-      background: var(--bg-blue-subtle); border-left: 4px solid var(--blue-primary);
-      border-radius: 6px; padding: 8px 10px; margin-bottom: 10px; font-size: 12px; font-weight: 600; color: #334155;
+    .thread-author-wrap { display: flex; align-items: center; gap: 8px; }
+    .thread-avatar { width: 28px; height: 28px; background: var(--blue-primary); color: #FFF; border: 1.5px solid var(--ink); border-radius: 8px; display: grid; place-items: center; font-size: 13px; font-weight: 900; }
+    .thread-author-info { display: flex; flex-direction: column; }
+    .thread-pen-name { font-size: 12.5px; font-weight: 800; color: var(--ink); text-decoration: none; }
+    .thread-city { font-size: 10.5px; font-weight: 700; color: #64748B; }
+    .thread-timestamp { font-size: 10.5px; font-weight: 800; color: #475569; font-family: 'JetBrains Mono', monospace; }
+
+    /* Sambung Bait Connector Line */
+    .thread-parent-connector {
+      background: #F8FAFC; border-left: 4px solid var(--blue-primary); border-bottom: 1.5px dashed #CBD5E1;
+      padding: 8px 12px; margin: 0; font-size: 12px; font-weight: 600; color: #475569; cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
     }
-    .author-row { display: flex; justify-content: space-between; align-items: center; }
-    .author-info { display: flex; align-items: center; gap: 7px; text-decoration: none; color: inherit; }
-    .author-avatar { width: 22px; height: 22px; background: var(--blue-light); border: 1.5px solid var(--ink); border-radius: 6px; display: grid; place-items: center; font-size: 11px; font-weight: 900; color: var(--ink); }
-    .author-name { font-size: 12px; font-weight: 800; color: #334155; }
-    .author-name b { color: var(--ink); }
-    .follow-chip { background: var(--bg-main); border: 1.5px solid var(--ink); border-radius: 6px; padding: 3px 8px; font-size: 10.5px; font-weight: 900; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; }
-    .ticket-footer { padding: 8px 12px; background: #FFFFFF; display: flex; justify-content: space-between; align-items: center; border-top: var(--border-thin); }
+    .thread-parent-connector:hover { background: var(--bg-blue-subtle); }
+
+    .thread-body { padding: 16px 14px 12px; }
+    .thread-title { font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 800; color: var(--ink); margin-bottom: 8px; line-height: 1.3; }
+    .thread-text { font-size: 14.5px; font-weight: 600; line-height: 1.65; color: #0F172A; }
+    .thread-text blockquote { background: var(--bg-blue-subtle); border-left: 3px solid var(--blue-primary); padding: 4px 8px; margin: 6px 0; font-style: italic; border-radius: 4px; }
+    
+    .font-serif { font-family: 'Merriweather', serif !important; }
+    .font-sans { font-family: 'Plus Jakarta Sans', sans-serif !important; }
+    .font-mono { font-family: 'JetBrains Mono', monospace !important; background: #E0EEFD; padding: 1px 4px; border-radius: 4px; }
+
+    .thread-footer { padding: 8px 12px; background: #FFFFFF; display: flex; justify-content: space-between; align-items: center; border-top: var(--border-thin); }
     .actions-left { display: flex; gap: 6px; }
     .act-btn {
       background: var(--bg-main); border: var(--border-thin); border-radius: var(--radius-sm);
       padding: 5px 10px; font-size: 11.5px; font-weight: 800; cursor: pointer; display: inline-flex;
-      align-items: center; gap: 5px; box-shadow: 1.5px 1.5px 0 var(--shadow-ink); transition: transform 0.05s ease;
+      align-items: center; gap: 5px; box-shadow: 1.5px 1.5px 0 var(--shadow-ink);
     }
     .act-btn.active { background: var(--blue-primary); color: #FFFFFF; }
     .act-btn.saved { background: var(--accent-yellow); color: var(--ink); }
@@ -113,13 +115,67 @@ export function renderFeedPage(user: any = null): string {
       border-radius: var(--radius-sm); padding: 5px 12px; font-size: 11.5px; font-weight: 900;
       cursor: pointer; display: inline-flex; align-items: center; gap: 5px; box-shadow: 1.5px 1.5px 0 var(--shadow-ink);
     }
-    .chain-modal {
+
+    /* Modal Bilik Warkah (Rich Inline Editor) */
+    .studio-overlay {
       display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(11, 25, 44, 0.6); z-index: 99; justify-content: center; align-items: center; padding: 16px;
+      background: rgba(11, 25, 44, 0.75); z-index: 1000; justify-content: center; align-items: flex-start;
+      padding: 16px; overflow-y: auto;
     }
-    .chain-modal-box {
-      background: #FFF; border: var(--border-thick); border-radius: var(--radius);
-      padding: 18px; width: 100%; max-width: 440px; box-shadow: var(--shadow-hard-lg);
+    .studio-card {
+      background: #FFFFFF; border: var(--border-thick); border-radius: var(--radius);
+      box-shadow: var(--shadow-hard-lg); width: 100%; max-width: 480px; margin: 10px auto;
+      overflow: hidden; display: flex; flex-direction: column;
+    }
+    .studio-header {
+      background: var(--bg-blue-subtle); padding: 12px 16px; display: flex; justify-content: space-between;
+      align-items: center; border-bottom: var(--border-thick);
+    }
+    .studio-title-badge { font-family: 'Space Grotesk', sans-serif; font-size: 13.5px; font-weight: 800; color: var(--blue-deep); display: flex; align-items: center; gap: 6px; }
+    .btn-studio-close { background: #FFF; border: var(--border-thin); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: 900; cursor: pointer; }
+    .studio-body { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+
+    /* Judul Warkah */
+    .input-title {
+      width: 100%; border: none; border-bottom: 2px dashed #CBD5E1; padding: 6px 0;
+      font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 800; color: var(--ink);
+      outline: none;
+    }
+    .input-title::placeholder { color: #94A3B8; font-weight: 700; }
+
+    /* Rich Toolbar */
+    .rich-toolbar {
+      display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+      background: var(--bg-blue-subtle); padding: 6px 8px; border: var(--border-thin);
+      border-radius: var(--radius-sm); box-shadow: var(--shadow-hard-sm);
+    }
+    .toolbar-group { display: flex; gap: 4px; align-items: center; border-right: 2px solid #CBD5E1; padding-right: 6px; margin-right: 2px; }
+    .toolbar-group:last-child { border-right: none; padding-right: 0; margin-right: 0; }
+    .tool-btn {
+      background: #FFFFFF; border: 1.5px solid var(--ink); border-radius: 6px;
+      padding: 4px 8px; font-size: 11px; font-weight: 900; cursor: pointer;
+      box-shadow: 1px 1px 0 var(--shadow-ink); display: inline-flex; align-items: center; gap: 3px;
+    }
+    .tool-btn:active { transform: translate(1px, 1px); box-shadow: none; }
+    .tool-btn-pill { background: #F1F5F9; font-size: 10.5px; }
+
+    /* Canvas Kanvas Tulis ContentEditable Native */
+    .rich-editor-canvas {
+      width: 100%; min-height: 180px; border: var(--border-med); border-radius: var(--radius-sm);
+      padding: 14px; font-size: 14.5px; line-height: 1.65; color: var(--ink); background: #FAFAFA;
+      outline: none; box-shadow: inset 1px 1px 0 rgba(0,0,0,0.05); overflow-y: auto;
+    }
+    .rich-editor-canvas:focus { background: #FFFFFF; border-color: var(--blue-primary); }
+    .rich-editor-canvas:empty:before { content: attr(placeholder); color: #94A3B8; font-weight: 600; }
+
+    .studio-footer {
+      padding: 12px 16px; background: #F8FAFC; border-top: var(--border-thin);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .btn-publish {
+      background: var(--blue-primary); color: #FFF; border: var(--border-thick); border-radius: var(--radius-sm);
+      padding: 8px 18px; font-size: 13px; font-weight: 900; cursor: pointer; box-shadow: var(--shadow-hard-sm);
+      display: inline-flex; align-items: center; gap: 6px;
     }
     .ico { width: 13px; height: 13px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
   </style>
@@ -166,37 +222,54 @@ export function renderFeedPage(user: any = null): string {
       </div>
     </div>
 
-    <div class="create-card">
-      <div class="create-head">
-        <span class="create-title">
-          <svg class="ico" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
-          Goreskan Bait Baru
-        </span>
-        <span class="author-handle-tag">${user ? '@' + user.pen_name : 'Tamu'}</span>
-      </div>
-      <textarea id="postInput" class="textarea-box" placeholder="${user ? 'Tuliskan 2–4 baris bait puisi, kutipan, atau perenungan jiwamu...' : 'Silakan masuk untuk menggoreskan warkah...'}" ${user ? '' : 'onclick="window.location.href=\'/login\'"'}></textarea>
-      <div style="display:flex;justify-content:flex-end;">
-        <button class="btn-submit" onclick="submitPost()">
-          <svg class="ico" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          Terbitkan Warkah
-        </button>
+    <!-- Trigger Masuk ke Bilik Warkah -->
+    <div class="trigger-create-card" onclick="openStudioModal()">
+      <div class="trigger-avatar">${user ? (user.pen_name[0] || 'D').toUpperCase() : 'B'}</div>
+      <div class="trigger-placeholder">Goreskan bait, kutipan, atau perenungan...</div>
+      <div class="trigger-pen-btn">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
+        <span>Tulis</span>
       </div>
     </div>
 
-    <div class="log-feed" id="feedContainer">
-      <!-- Dynamic Live Posts -->
-    </div>
+    <div class="log-feed" id="feedContainer"></div>
   </div>
 
-  <!-- Estafet Modal -->
-  <div class="chain-modal" id="chainModal">
-    <div class="chain-modal-box">
-      <h3 style="font-family:'Space Grotesk';font-size:15px;font-weight:800;margin-bottom:8px;">🔗 Sambung Bait Estafet</h3>
-      <div id="chainParentQuote" style="background:#E0EEFD;padding:8px 10px;border-left:4px solid #1D61E7;border-radius:6px;font-size:12px;font-weight:600;margin-bottom:10px;"></div>
-      <textarea id="chainInput" style="width:100%;height:70px;border:2.5px solid #0B192C;border-radius:10px;padding:8px;font-weight:600;margin-bottom:10px;outline:none;" placeholder="Tuliskan bait lanjutan Anda..."></textarea>
-      <div style="display:flex;justify-content:flex-end;gap:8px;">
-        <button onclick="closeChainModal()" style="padding:6px 12px;border:2px solid #0B192C;border-radius:6px;font-weight:800;background:#FFF;cursor:pointer;">Batal</button>
-        <button onclick="submitChain()" style="padding:6px 14px;border:2px solid #0B192C;border-radius:6px;font-weight:900;background:#1D61E7;color:#FFF;cursor:pointer;">Kirim Sambungan</button>
+  <!-- MODAL BILIK WARKAH (RICH INLINE EDITOR) -->
+  <div class="studio-overlay" id="studioModal">
+    <div class="studio-card">
+      <div class="studio-header">
+        <div class="studio-title-badge">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
+          <span id="studioModalHeading">BILIK WARKAH</span>
+        </div>
+        <button class="btn-studio-close" onclick="closeStudioModal()">✕ Batal</button>
+      </div>
+      <div class="studio-body">
+        <input type="text" class="input-title" id="studioTitle" placeholder="Beri judul warkah (opsional)...">
+        
+        <div class="rich-toolbar">
+          <div class="toolbar-group">
+            <button type="button" class="tool-btn" onclick="formatCmd('bold')"><b>B</b></button>
+            <button type="button" class="tool-btn" onclick="formatCmd('italic')"><i>I</i></button>
+            <button type="button" class="tool-btn" onclick="formatCmd('underline')"><u>U</u></button>
+          </div>
+          <div class="toolbar-group">
+            <button type="button" class="tool-btn tool-btn-pill" onclick="applyInlineFont('font-serif')">📜 Serif</button>
+            <button type="button" class="tool-btn tool-btn-pill" onclick="applyInlineFont('font-sans')">⚡ Sans</button>
+            <button type="button" class="tool-btn tool-btn-pill" onclick="applyInlineFont('font-mono')">📟 Mono</button>
+          </div>
+          <button type="button" class="tool-btn" onclick="formatCmd('formatBlock', 'blockquote')">” Kutipan</button>
+        </div>
+
+        <div class="rich-editor-canvas" id="editorCanvas" contenteditable="true" placeholder="Tuliskan bait puisi, cerita absurd, atau resensimu di sini..."></div>
+      </div>
+      <div class="studio-footer">
+        <span style="font-size:11px;font-weight:700;color:#64748B;">💡 Sorot teks untuk ubah gaya</span>
+        <button class="btn-publish" onclick="submitStudioWarkah()">
+          <svg class="ico" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          <span>Terbitkan Warkah</span>
+        </button>
       </div>
     </div>
   </div>
@@ -206,6 +279,14 @@ export function renderFeedPage(user: any = null): string {
     let searchQuery = '';
     let currentChainParentId = null;
     const isUserLoggedIn = ${Boolean(user)};
+
+    function formatTimestamp(isoStr) {
+      if (!isoStr) return '';
+      const d = new Date(isoStr.endsWith('Z') ? isoStr : isoStr + 'Z');
+      const datePart = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', timeZone: 'Asia/Jakarta' });
+      const timePart = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' }).replace(':', '.');
+      return datePart + ' · ' + timePart + ' WIB';
+    }
 
     async function loadFeed() {
       try {
@@ -231,39 +312,36 @@ export function renderFeedPage(user: any = null): string {
       }
     }
 
-    function formatTimestamp(isoStr) {
-      if (!isoStr) return '';
-      const d = new Date(isoStr.endsWith('Z') ? isoStr : isoStr + 'Z');
-      const datePart = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', timeZone: 'Asia/Jakarta' });
-      const timePart = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' }).replace(':', '.');
-      return datePart + ' · ' + timePart + ' WIB';
-    }
-
     function renderPostCard(p) {
       const isLikedClass = p.is_liked ? 'active' : '';
       const isSavedClass = p.is_saved ? 'saved' : '';
 
       return \`
-        <div class="ticket-card">
-          <div class="ticket-header">
-            <div class="ticket-id-group">
-              <span class="ticket-id">#WARKAH-\${p.id.slice(0,6)}</span>
-              \${(p.likes_count >= 3 || p.chains_count >= 1) ? '<span class="viral-badge"><svg class="ico" style="width:10px;height:10px;" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> BERGEMA</span>' : ''}
+        <div class="thread-card" id="post-\${p.id}">
+          <div class="thread-header-soft">
+            <div class="thread-author-wrap">
+              <div class="thread-avatar">\${(p.pen_name[0] || 'D').toUpperCase()}</div>
+              <div class="thread-author-info">
+                <a href="/u/\${p.pen_name}" class="thread-pen-name">@\${p.pen_name}</a>
+                <span class="thread-city">\${p.city || 'Nusantara'}</span>
+              </div>
             </div>
-            <span class="ticket-meta">\${formatTimestamp(p.created_at)}</span>
+            <span class="thread-timestamp">\${formatTimestamp(p.created_at)}</span>
           </div>
-          <div class="ticket-body">
-            \${p.parent_content ? \`<div class="parent-quote-box"><b>Menyambung bait @\${p.parent_author}:</b><br>"\${escapeHtml(p.parent_content)}"</div>\` : ''}
-            <div class="poem-text">\${escapeHtml(p.content)}</div>
-            <div class="author-row">
-              <a href="/u/\${p.pen_name}" class="author-info">
-                <div class="author-avatar">\${(p.pen_name[0] || 'A').toUpperCase()}</div>
-                <span class="author-name">Karya <b>@\${p.pen_name}</b> · \${p.city || 'Nusantara'}</span>
-              </a>
-              <button class="follow-chip" onclick="followUser('\${p.pen_name}')">+ Ikuti</button>
+
+          \${p.parent_id ? \`
+            <div class="thread-parent-connector" onclick="scrollToPost('\${p.parent_id}')">
+              <svg class="ico" style="color:#1D61E7;" viewBox="0 0 24 24"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>
+              <span>Menyambung warkah <b>@\${p.parent_author}</b>: <i>"\${escapeHtml(p.parent_content ? p.parent_content.slice(0, 40) + '...' : 'Warkah')}"</i></span>
             </div>
+          \` : ''}
+
+          <div class="thread-body">
+            \${p.title ? \`<h3 class="thread-title">\${escapeHtml(p.title)}</h3>\` : ''}
+            <div class="thread-text">\${p.content}</div>
           </div>
-          <div class="ticket-footer">
+
+          <div class="thread-footer">
             <div class="actions-left">
               <button class="act-btn \${isLikedClass}" onclick="likePost('\${p.id}', this)">
                 <svg class="ico" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
@@ -274,7 +352,7 @@ export function renderFeedPage(user: any = null): string {
                 <span>\${p.saves_count || 0} Simpan</span>
               </button>
             </div>
-            <button class="chain-btn" onclick="openChainModal('\${p.id}', '\${escapeHtml(p.content)}')">
+            <button class="chain-btn" onclick="openStudioModal('\${p.id}', '\${escapeHtml(p.title || p.pen_name)}')">
               <svg class="ico" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
               <span>\${p.chains_count ? p.chains_count + ' Sambungan' : 'Sambung Bait'}</span>
             </button>
@@ -285,6 +363,71 @@ export function renderFeedPage(user: any = null): string {
 
     function escapeHtml(t) {
       return String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function scrollToPost(id) {
+      const el = document.getElementById('post-' + id);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      else alert('Warkah induk dimuat di bagian sebelumnya.');
+    }
+
+    function openStudioModal(parentId = null, parentName = '') {
+      if (!isUserLoggedIn) {
+        if (confirm('Anda perlu masuk terlebih dahulu untuk menggoreskan warkah. Buka halaman masuk?')) {
+          window.location.href = '/login';
+        }
+        return;
+      }
+      currentChainParentId = parentId;
+      document.getElementById('studioModalHeading').textContent = parentId ? 'SAMBUNG BAIT (@' + parentName + ')' : 'BILIK WARKAH';
+      document.getElementById('studioModal').style.display = 'flex';
+      document.getElementById('editorCanvas').focus();
+    }
+
+    function closeStudioModal() {
+      document.getElementById('studioModal').style.display = 'none';
+      document.getElementById('studioTitle').value = '';
+      document.getElementById('editorCanvas').innerHTML = '';
+    }
+
+    function formatCmd(cmd, val = null) {
+      document.execCommand(cmd, false, val);
+      document.getElementById('editorCanvas').focus();
+    }
+
+    function applyInlineFont(className) {
+      const selection = window.getSelection();
+      if (!selection.rangeCount || selection.isCollapsed) {
+        alert('Blok/sorot kalimat yang ingin diubah gaya fontnya terlebih dahulu!');
+        return;
+      }
+      const range = selection.getRangeAt(0);
+      const span = document.createElement('span');
+      span.className = className;
+      span.appendChild(range.extractContents());
+      range.insertNode(span);
+      selection.removeAllRanges();
+      document.getElementById('editorCanvas').focus();
+    }
+
+    async function submitStudioWarkah() {
+      const title = document.getElementById('studioTitle').value.trim();
+      const content = document.getElementById('editorCanvas').innerHTML.trim();
+      if (!content || content === '<br>') return alert('Tuliskan isi warkah terlebih dahulu.');
+
+      try {
+        const res = await fetch('/api/posts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, content, parent_id: currentChainParentId })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal menerbitkan warkah');
+        closeStudioModal();
+        loadFeed();
+      } catch (err) {
+        alert(err.message);
+      }
     }
 
     function switchFeed(mode, el) {
@@ -298,29 +441,6 @@ export function renderFeedPage(user: any = null): string {
     function handleSearch() {
       searchQuery = document.getElementById('searchInput').value.trim();
       loadFeed();
-    }
-
-    async function submitPost() {
-      if (!isUserLoggedIn) {
-        if (confirm('Anda perlu masuk terlebih dahulu untuk menerbitkan warkah. Buka halaman masuk?')) {
-          window.location.href = '/login';
-        }
-        return;
-      }
-      const content = document.getElementById('postInput').value.trim();
-      if (!content) return alert('Tuliskan bait puisi terlebih dahulu.');
-      try {
-        const res = await fetch('/api/posts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content })
-        });
-        if (!res.ok) throw new Error('Gagal menerbitkan warkah');
-        document.getElementById('postInput').value = '';
-        loadFeed();
-      } catch (err) {
-        alert(err.message);
-      }
     }
 
     async function likePost(id, btn) {
@@ -344,47 +464,6 @@ export function renderFeedPage(user: any = null): string {
         btn.querySelector('span').textContent = (data.saves_count || 0) + ' Simpan';
       } catch (err) {
         console.error(err);
-      }
-    }
-
-    async function followUser(penName) {
-      if (!isUserLoggedIn) return window.location.href = '/login';
-      try {
-        const res = await fetch('/api/users/' + encodeURIComponent(penName) + '/follow', { method: 'POST' });
-        const data = await res.json();
-        if (data.error) return alert(data.error);
-        alert(data.following ? 'Berhasil mengikuti @' + penName : 'Batal mengikuti @' + penName);
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    function openChainModal(parentId, quote) {
-      if (!isUserLoggedIn) return window.location.href = '/login';
-      currentChainParentId = parentId;
-      document.getElementById('chainParentQuote').textContent = '"' + quote + '"';
-      document.getElementById('chainModal').style.display = 'flex';
-    }
-
-    function closeChainModal() {
-      document.getElementById('chainModal').style.display = 'none';
-      document.getElementById('chainInput').value = '';
-    }
-
-    async function submitChain() {
-      const content = document.getElementById('chainInput').value.trim();
-      if (!content) return alert('Ketikkan bait lanjutan terlebih dahulu.');
-      try {
-        const res = await fetch('/api/posts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content, parent_id: currentChainParentId })
-        });
-        if (!res.ok) throw new Error('Gagal mengirim sambungan bait');
-        closeChainModal();
-        loadFeed();
-      } catch (err) {
-        alert(err.message);
       }
     }
 

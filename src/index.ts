@@ -326,13 +326,13 @@ app.post('/api/posts', async (c) => {
   const user = await getAuthUser(c);
   if (!user) return c.json({ error: 'Silakan masuk untuk menerbitkan warkah.' }, 401);
 
-  const { content, parent_id } = await c.req.json().catch(() => ({}));
-  if (!content || !content.trim()) return c.json({ error: 'Bait warkah tidak boleh kosong.' }, 400);
+  const { title, content, parent_id } = await c.req.json().catch(() => ({}));
+  if (!content || !content.trim()) return c.json({ error: 'Isi warkah tidak boleh kosong.' }, 400);
 
   const postId = crypto.randomUUID();
   await c.env.DB.prepare(
-    'INSERT INTO posts (id, author_id, content, parent_id) VALUES (?, ?, ?, ?)'
-  ).bind(postId, user.id, content.trim(), parent_id ? String(parent_id) : null).run();
+    'INSERT INTO posts (id, author_id, title, content, parent_id) VALUES (?, ?, ?, ?, ?)'
+  ).bind(postId, user.id, title ? String(title).trim() : null, content.trim(), parent_id ? String(parent_id) : null).run();
 
   if (parent_id) {
     await c.env.DB.prepare('UPDATE posts SET chains_count = chains_count + 1 WHERE id = ?').bind(parent_id).run();
