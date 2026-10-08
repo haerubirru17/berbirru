@@ -31,16 +31,20 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       padding: 6px 14px; font-size: 12px; font-weight: 800; box-shadow: var(--shadow-hard-sm);
       display: inline-flex; align-items: center; gap: 6px; text-decoration: none; color: var(--ink);
     }
+    .brand-wrap { display: inline-flex; align-items: center; gap: 5px; text-decoration: none; }
     .brand-badge {
       display: inline-flex; align-items: center; gap: 4px; background: var(--blue-primary);
-      color: #FFFFFF; padding: 4px 12px; border: var(--border-med); border-radius: var(--radius-sm);
-      box-shadow: var(--shadow-hard-sm); text-decoration: none;
+      color: #FFFFFF; padding: 4px 10px; border: var(--border-med); border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-hard-sm);
     }
-    .brand-badge span { font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 800; display: inline-flex; align-items: baseline; }
-    .brand-com {
-      font-size: 11.5px; font-weight: 800; color: #FFFFFF;
-      text-decoration: underline; text-decoration-color: var(--accent-yellow);
-      text-decoration-thickness: 2.5px; text-underline-offset: 2.5px; margin-left: 1px;
+    .brand-badge span { font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 800; }
+    .brand-com-tag {
+      font-family: 'Space Grotesk', sans-serif; font-size: 13.5px; font-weight: 800;
+      color: var(--blue-primary); position: relative; display: inline-block;
+    }
+    .brand-com-tag::after {
+      content: ''; position: absolute; left: 0; bottom: 1px; width: 100%; height: 3px;
+      background: var(--accent-yellow); border-radius: 2px; z-index: -1;
     }
     .profile-card {
       background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
@@ -143,8 +147,11 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
         <svg class="ico" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
         <span>Kembali ke Feed</span>
       </a>
-      <a href="/" class="brand-badge">
-        <span>BERBIRRU<span class="brand-com">.COM</span></span>
+      <a href="/" class="brand-wrap">
+        <div class="brand-badge">
+          <span>BERBIRRU</span>
+        </div>
+        <span class="brand-com-tag">.com</span>
       </a>
     </div>
 
