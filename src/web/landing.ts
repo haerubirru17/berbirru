@@ -1,4 +1,4 @@
-export function renderLandingPage(): string {
+export function renderLandingPage(user: any = null): string {
   return `<!DOCTYPE html>
 <html lang="id">
 <head>
@@ -102,10 +102,17 @@ export function renderLandingPage(): string {
         <svg class="ico" style="width:16px;height:16px;" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
         <h1>BERBIRRU</h1>
       </a>
-      <a href="/login" class="nav-btn">
-        <svg class="ico" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-        <span>Masuk</span>
-      </a>
+      ${user ? `
+        <a href="/u/${user.pen_name}" class="nav-btn">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>@${user.pen_name}</span>
+        </a>
+      ` : `
+        <a href="/login" class="nav-btn">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+          <span>Masuk</span>
+        </a>
+      `}
     </div>
 
     <div class="hero-card">
@@ -116,7 +123,7 @@ export function renderLandingPage(): string {
       <h2 class="hero-title">Merawat Rasa,<br><span>Menguntai Kata.</span></h2>
       <p class="hero-desc">Bukan media sosial yang bising. Tempat segala bentuk tulisan—dari puisi, kutipan, cerita kilat, resensi buku, hingga perenungan absurd—dicatat abadi dan disambung bersama.</p>
       <div class="hero-cta-group">
-        <a href="/login" class="btn-primary-cta">
+        <a href="${user ? '/feed' : '/login'}" class="btn-primary-cta">
           <svg class="ico" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
           <span>Goreskan Tulisan Pertama</span>
         </a>
@@ -189,7 +196,7 @@ export function renderLandingPage(): string {
     <div class="footer-cta-card">
       <h3 class="footer-title">Mulai Goresan Pertamamu</h3>
       <p class="footer-sub">Masuk tanpa kata sandi rumit. Cukup gunakan email dan kode masuk instan.</p>
-      <a href="/login" class="btn-footer">
+      <a href="${user ? '/feed' : '/login'}" class="btn-footer">
         <svg class="ico" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         <span>Mulai Sekarang</span>
       </a>

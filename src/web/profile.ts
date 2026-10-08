@@ -1,4 +1,4 @@
-export function renderProfilePage(penName: string, isMe = false): string {
+export function renderProfilePage(penName: string, isMe = false, currentUser: any = null): string {
   return `<!DOCTYPE html>
 <html lang="id">
 <head>
@@ -76,6 +76,19 @@ export function renderProfilePage(penName: string, isMe = false): string {
     }
     .tab-btn.active { background: var(--blue-primary); color: #FFFFFF; box-shadow: 2px 2px 0 var(--shadow-ink); }
     .feed-list { display: flex; flex-direction: column; gap: 16px; }
+    .ticket-card {
+      background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
+      box-shadow: var(--shadow-hard); overflow: hidden;
+    }
+    .ticket-header {
+      background: #0F172A; color: #FFFFFF; padding: 8px 12px; display: flex; justify-content: space-between;
+      align-items: center; border-bottom: var(--border-med);
+    }
+    .ticket-id { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 800; color: var(--accent-yellow); background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; }
+    .ticket-meta { font-size: 10px; font-weight: 800; color: #94A3B8; }
+    .ticket-body { padding: 14px 14px 12px; background: #FFFFFF; }
+    .poem-text { font-size: 14px; font-weight: 700; line-height: 1.55; color: #0F172A; white-space: pre-line; margin-bottom: 10px; }
+    .ticket-footer { padding: 8px 12px; background: var(--bg-main); border-top: var(--border-thin); display: flex; justify-content: space-between; align-items: center; }
     .edit-modal {
       display: none; background: #FFF; border: var(--border-thick); border-radius: var(--radius);
       padding: 18px; margin-bottom: 20px; box-shadow: var(--shadow-hard);
@@ -130,10 +143,16 @@ export function renderProfilePage(penName: string, isMe = false): string {
         </div>
 
         ${isMe ? `
-          <button class="btn-action-top" onclick="toggleEditModal(true)">
-            <svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-            <span>Edit Profil</span>
-          </button>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-action-top" onclick="toggleEditModal(true)">
+              <svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              <span>Edit</span>
+            </button>
+            <button class="btn-action-top" onclick="handleLogout()" style="background:#EF4444;color:#FFF;">
+              <svg class="ico" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              <span>Keluar</span>
+            </button>
+          </div>
         ` : `
           <button class="btn-action-top" onclick="followUser('${penName}')">
             <svg class="ico" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -216,6 +235,12 @@ export function renderProfilePage(penName: string, isMe = false): string {
       }
     }
 
+    async function handleLogout() {
+      if (!confirm('Apakah Anda yakin ingin keluar dari akun?')) return;
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/login';
+    }
+
     async function loadUserData() {
       try {
         const res = await fetch('/api/users/' + encodeURIComponent(currentPenName));
@@ -223,6 +248,7 @@ export function renderProfilePage(penName: string, isMe = false): string {
         if (data.user) {
           currentUserData = data.user;
           document.getElementById('penNameDisplay').textContent = '@' + data.user.pen_name;
+          document.getElementById('avatarLetter').textContent = (data.user.pen_name[0] || 'D').toUpperCase();
           document.getElementById('cityDisplay').textContent = (data.user.city || 'Nusantara') + ' · Penulis Aktif';
           document.getElementById('bioDisplay').textContent = '"' + (data.user.bio || 'Goresan perenungan rasa.') + '"';
           document.getElementById('countPosts').textContent = data.user.posts_count || 0;
@@ -243,9 +269,27 @@ export function renderProfilePage(penName: string, isMe = false): string {
           container.innerHTML = '<div style="background:#FFF;padding:24px;border:3px solid #0B192C;border-radius:16px;text-align:center;font-weight:700;box-shadow:4px 4px 0 #1E293B;">Belum ada warkah di kategori ini.</div>';
           return;
         }
+        container.innerHTML = data.posts.map(p => \`
+          <div class="ticket-card">
+            <div class="ticket-header">
+              <span class="ticket-id">#WARKAH-\${p.id.slice(0,6)}</span>
+              <span class="ticket-meta">\${new Date(p.created_at).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})} WIB</span>
+            </div>
+            <div class="ticket-body">
+              <div class="poem-text">\${escapeHtml(p.content)}</div>
+            </div>
+            <div class="ticket-footer">
+              <span style="font-size:11px;font-weight:800;color:#1D61E7;">\${p.likes_count || 0} Terpaut · \${p.saves_count || 0} Simpan</span>
+            </div>
+          </div>
+        \`).join('');
       } catch (err) {
         console.error(err);
       }
+    }
+
+    function escapeHtml(t) {
+      return String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
     function switchProfileTab(tab, el) {
