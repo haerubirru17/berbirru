@@ -276,17 +276,17 @@ export function renderFeedPage(user: any = null): string {
             <button type="button" class="tool-btn" id="btnUnderline" onclick="formatCmd('underline')"><u>U</u></button>
           </div>
           <div class="toolbar-group">
-            <button type="button" class="tool-btn tool-btn-pill" id="fontSerifBtn" onclick="selectFont('font-serif', this)">📜 Serif</button>
-            <button type="button" class="tool-btn tool-btn-pill active" id="fontSansBtn" onclick="selectFont('font-sans', this)">⚡ Sans</button>
-            <button type="button" class="tool-btn tool-btn-pill" id="fontMonoBtn" onclick="selectFont('font-mono', this)">📟 Mono</button>
+            <button type="button" class="tool-btn tool-btn-pill" id="fontSerifBtn" onclick="selectFont('font-serif', this)">Serif</button>
+            <button type="button" class="tool-btn tool-btn-pill active" id="fontSansBtn" onclick="selectFont('font-sans', this)">Sans</button>
+            <button type="button" class="tool-btn tool-btn-pill" id="fontMonoBtn" onclick="selectFont('font-mono', this)">Mono</button>
           </div>
-          <button type="button" class="tool-btn" id="btnQuote" onclick="formatCmd('formatBlock', 'blockquote')">” Kutipan</button>
+          <button type="button" class="tool-btn" id="btnQuote" onclick="formatCmd('formatBlock', 'blockquote')">Kutipan</button>
         </div>
 
         <div class="rich-editor-canvas" id="editorCanvas" contenteditable="true" placeholder="Tuliskan bait puisi, cerita absurd, atau resensimu di sini..."></div>
       </div>
       <div class="studio-footer">
-        <span style="font-size:11px;font-weight:700;color:#64748B;">💡 Format aktif otomatis menyesuaikan</span>
+        <span style="font-size:11px;font-weight:700;color:#64748B;">Format aktif otomatis menyesuaikan</span>
         <button class="btn-publish" onclick="submitStudioWarkah()">
           <svg class="ico" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           <span>Terbitkan Warkah</span>

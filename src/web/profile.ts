@@ -49,10 +49,6 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       font-size: 24px; font-weight: 700; box-shadow: var(--shadow-hard-sm); flex-shrink: 0; cursor: pointer;
       position: relative; user-select: none;
     }
-    .avatar-box::after {
-      content: '⚙️'; position: absolute; bottom: -4px; right: -4px; font-size: 10px; background: var(--accent-yellow);
-      border: 1.5px solid var(--ink); border-radius: 50%; width: 16px; height: 16px; display: grid; place-items: center;
-    }
     .pen-name-group { display: flex; flex-direction: column; }
     .pen-name { font-family: 'JetBrains Mono', monospace; font-size: 16.5px; font-weight: 800; color: var(--ink); }
     .city-badge { font-size: 11px; font-weight: 700; color: #64748B; display: flex; align-items: center; gap: 4px; margin-top: 2px; }
@@ -128,7 +124,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
 
     <!-- Edit Profile Modal -->
     <div class="edit-modal" id="editModal">
-      <h3 style="font-family:'Space Grotesk';font-size:15px;font-weight:800;margin-bottom:10px;">✏️ Perbarui Profil Anda</h3>
+      <h3 style="font-family:'Space Grotesk';font-size:15px;font-weight:800;margin-bottom:10px;">Perbarui Profil Anda</h3>
       <div style="margin-bottom:10px;">
         <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Nama Pena</label>
         <input type="text" id="editPenName" style="width:100%;padding:8px;border:2px solid #0B192C;border-radius:8px;font-weight:700;">
