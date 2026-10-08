@@ -13,7 +13,7 @@ export function renderLandingPage(user: any = null): string {
     :root {
       --bg-main: #F0F6FE; --bg-card: #FFFFFF; --bg-blue-subtle: #E0EEFD;
       --ink: #0B192C; --shadow-ink: #1E293B; --blue-primary: #1D61E7;
-      --blue-deep: #0F3E99; --blue-light: #60A5FA; --accent-yellow: #FDE047;
+      --blue-deep: #0F3E99; --blue-light: #60A5FA; --accent-yellow: #FDE047; --accent-red: #EF4444;
       --border-thick: 3px solid var(--ink); --border-med: 2px solid var(--ink); --border-thin: 1.5px solid var(--ink);
       --shadow-hard: 4px 4px 0 var(--shadow-ink); --shadow-hard-lg: 6px 6px 0 var(--shadow-ink); --shadow-hard-sm: 2.5px 2.5px 0 var(--shadow-ink);
       --radius: 16px; --radius-sm: 10px;
@@ -22,7 +22,7 @@ export function renderLandingPage(user: any = null): string {
       font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
       background-color: var(--bg-main); color: var(--ink); min-height: 100vh;
       background-image: radial-gradient(#CBD5E1 1.5px, transparent 1.5px);
-      background-size: 22px 22px; padding: 24px 16px 80px;
+      background-size: 22px 22px; padding: 24px 16px 60px;
     }
     .container { max-width: 1080px; margin: 0 auto; width: 100%; }
     
@@ -142,63 +142,96 @@ export function renderLandingPage(user: any = null): string {
     /* Section Header */
     .section-label {
       font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 800; text-transform: uppercase;
-      letter-spacing: 0.5px; margin: 32px 0 16px; display: flex; align-items: center; gap: 10px;
+      letter-spacing: 0.5px; margin: 36px 0 18px; display: flex; align-items: center; gap: 10px;
     }
     .section-label::after { content: ''; flex: 1; height: 2.5px; background: var(--ink); }
 
-    /* 4 Feature Capabilities Grid */
-    .features-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 16px;
-      margin-bottom: 32px;
+    /* Desktop Infinite Marquee Scrolling for Features */
+    .marquee-viewport {
+      width: 100%; overflow: hidden; position: relative; margin-bottom: 36px; padding: 6px 0 14px;
     }
-    @media (min-width: 640px) {
-      .features-grid { grid-template-columns: repeat(2, 1fr); gap: 18px; }
+    .marquee-track {
+      display: flex; gap: 18px; width: max-content;
+      animation: marqueeScroll 28s linear infinite;
     }
-    @media (min-width: 960px) {
-      .features-grid { grid-template-columns: repeat(4, 1fr); gap: 18px; }
+    .marquee-track:hover { animation-play-state: paused; }
+    @keyframes marqueeScroll {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
     }
     .feature-box {
       background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
-      padding: 18px 16px; box-shadow: var(--shadow-hard); display: flex; flex-direction: column;
-      gap: 10px; height: 100%;
+      padding: 20px 18px; box-shadow: var(--shadow-hard); display: flex; flex-direction: column;
+      gap: 10px; width: 280px; flex-shrink: 0;
     }
     .feature-icon-box {
-      width: 40px; height: 40px; background: var(--blue-primary); color: #FFFFFF;
-      border: 2px solid var(--ink); border-radius: 10px; display: grid; place-items: center;
+      width: 42px; height: 42px; background: var(--blue-primary); color: #FFFFFF;
+      border: 2px solid var(--ink); border-radius: 12px; display: grid; place-items: center;
       box-shadow: 2px 2px 0 var(--shadow-ink);
     }
     .feature-title { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 800; color: var(--ink); }
     .feature-desc { font-size: 12.5px; font-weight: 600; color: #475569; line-height: 1.5; }
 
-    /* Famous Poems & Quotes Grid */
-    .quotes-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 16px;
-      margin-bottom: 36px;
+    /* Quotes Section: 100% Same Design as Home Feed Cards */
+    .quotes-feed-grid {
+      display: grid; grid-template-columns: 1fr; gap: 24px; margin-bottom: 38px;
     }
     @media (min-width: 768px) {
-      .quotes-grid { grid-template-columns: repeat(2, 1fr); gap: 20px; }
+      .quotes-feed-grid { grid-template-columns: 1fr 1fr; gap: 24px; }
     }
-    .quote-card {
+
+    .thread-card {
       background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
-      box-shadow: var(--shadow-hard); padding: 20px 18px; display: flex; flex-direction: column;
-      justify-content: space-between; gap: 14px; position: relative;
+      box-shadow: var(--shadow-hard); overflow: visible; position: relative; margin-top: 8px;
     }
-    .quote-author-row { display: flex; justify-content: space-between; align-items: center; }
-    .quote-author-badge {
-      font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 800; color: var(--ink);
-      background: var(--bg-blue-subtle); padding: 3px 10px; border-radius: 6px; border: 1.5px solid var(--ink);
+    .thread-header-soft {
+      background: var(--bg-blue-subtle); padding: 8px 12px 8px 68px; display: flex; justify-content: space-between;
+      align-items: center; border-bottom: var(--border-thin); border-top-left-radius: 13px; border-top-right-radius: 13px;
+      min-height: 44px; position: relative;
     }
-    .quote-body-text { font-family: 'Newsreader', serif; font-size: 16.5px; font-style: italic; line-height: 1.6; color: #0F172A; }
-    .quote-tag { font-size: 11px; font-weight: 700; color: #64748B; }
+    .thread-avatar-clip {
+      position: absolute; left: 10px; top: -14px; width: 48px; height: 50px;
+      background: var(--blue-primary); color: #FFFFFF; border: var(--border-thick);
+      border-radius: 12px; display: grid; place-items: center; font-family: 'Space Grotesk', sans-serif;
+      font-size: 23px; font-weight: 900; box-shadow: none; transform: rotate(-2deg); z-index: 5;
+    }
+    .paperclip-svg {
+      position: absolute; top: -10px; right: -7px; width: 18px; height: 28px;
+      z-index: 6; transform: rotate(18deg); filter: drop-shadow(1px 1px 0 rgba(0,0,0,0.25));
+    }
+    .thread-author-info { display: flex; flex-direction: column; line-height: 1.25; }
+    .thread-pen-name { font-size: 13px; font-weight: 800; color: var(--ink); }
+    .thread-city { font-size: 10px; font-weight: 700; color: #64748B; }
+    .thread-timestamp-stack {
+      display: flex; flex-direction: column; align-items: flex-end; line-height: 1.25;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .time-main { font-size: 11px; font-weight: 800; color: var(--ink); }
+    .date-sub { font-size: 9.5px; font-weight: 700; color: #64748B; }
+
+    .thread-body { padding: 14px 14px 12px; }
+    .thread-title { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 800; color: var(--ink); margin-bottom: 6px; }
+    .thread-text { font-size: 14px; font-weight: 600; line-height: 1.6; color: #0F172A; }
+    .thread-text blockquote {
+      background: #F8FAFC; border-left: 3.5px solid var(--ink); padding: 10px 14px;
+      margin: 8px 0; font-style: italic; border-radius: 4px; color: #334155;
+    }
+    .thread-footer { padding: 8px 12px; background: #FFFFFF; border-top: var(--border-thin); display: flex; justify-content: space-between; align-items: center; border-bottom-left-radius: 13px; border-bottom-right-radius: 13px; }
+    .actions-left { display: flex; gap: 6px; }
+    .act-btn-mock {
+      background: var(--bg-main); border: var(--border-thin); border-radius: var(--radius-sm);
+      padding: 5px 10px; font-size: 11.5px; font-weight: 800; display: inline-flex; align-items: center; gap: 5px;
+    }
+    .chain-btn-mock {
+      background: var(--accent-yellow); color: var(--ink); border: var(--border-thin);
+      border-radius: var(--radius-sm); padding: 5px 12px; font-size: 11.5px; font-weight: 900;
+      display: inline-flex; align-items: center; gap: 5px;
+    }
 
     /* AI & Human 2-Layer Moderation Card (Dark Shield Theme) */
     .moderation-card {
       background: #0F172A; color: #FFFFFF; border: var(--border-thick); border-radius: var(--radius);
-      box-shadow: var(--shadow-hard-lg); padding: 28px 22px; margin-bottom: 36px; position: relative;
+      box-shadow: var(--shadow-hard-lg); padding: 28px 22px; margin-bottom: 40px; position: relative;
     }
     @media (min-width: 860px) {
       .moderation-card { padding: 36px 32px; }
@@ -230,23 +263,44 @@ export function renderLandingPage(user: any = null): string {
     }
     .mod-layer-text { font-size: 12.5px; color: #94A3B8; line-height: 1.55; }
 
-    /* Footer Banner Card */
-    .footer-cta-card {
-      background: var(--blue-primary); color: #FFFFFF; border: var(--border-thick); border-radius: var(--radius);
-      padding: 32px 24px; text-align: center; box-shadow: var(--shadow-hard-lg);
+    /* Comprehensive Footer */
+    .main-footer {
+      background: #0F172A; color: #FFFFFF; border: var(--border-thick); border-radius: var(--radius);
+      box-shadow: var(--shadow-hard-lg); padding: 36px 24px 28px;
     }
     @media (min-width: 768px) {
-      .footer-cta-card { padding: 48px 32px; }
+      .main-footer { padding: 48px 36px 32px; }
     }
-    .footer-title { font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 800; margin-bottom: 8px; }
-    .footer-sub { font-size: 14px; color: #DBEAFE; margin-bottom: 22px; max-width: 520px; margin-left: auto; margin-right: auto; }
-    .btn-footer {
-      background: var(--accent-yellow); color: var(--ink); border: var(--border-thick); border-radius: var(--radius-sm);
-      padding: 12px 28px; font-size: 14px; font-weight: 900; text-decoration: none; display: inline-flex;
-      align-items: center; gap: 8px; box-shadow: 3px 3px 0 #000000; transition: transform 0.05s ease;
+    .footer-top-grid {
+      display: grid; grid-template-columns: 1fr; gap: 28px; border-bottom: 1.5px dashed rgba(255,255,255,0.2);
+      padding-bottom: 28px; margin-bottom: 24px;
     }
-    .btn-footer:active { transform: translate(1.5px, 1.5px); box-shadow: none; }
-    .ico { width: 15px; height: 15px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    @media (min-width: 768px) {
+      .footer-top-grid { grid-template-columns: 1.2fr 1fr 1fr; gap: 32px; }
+    }
+    .footer-brand-title { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 800; color: #FFFFFF; margin-bottom: 8px; }
+    .footer-brand-desc { font-size: 13px; color: #94A3B8; line-height: 1.6; }
+    
+    .footer-col-title { font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 800; color: var(--accent-yellow); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .footer-links { display: flex; flex-direction: column; gap: 8px; }
+    .footer-link { font-size: 13px; color: #CBD5E1; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+    .footer-link:hover { color: var(--accent-yellow); }
+    
+    .contact-card-box {
+      background: rgba(255, 255, 255, 0.05); border: 1.5px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px; padding: 8px 12px; margin-bottom: 8px; font-size: 12px; color: #E2E8F0;
+    }
+    .contact-card-box a { color: var(--accent-yellow); font-family: 'JetBrains Mono', monospace; font-weight: 700; text-decoration: none; }
+    
+    .footer-bottom-row {
+      display: flex; flex-direction: column; gap: 10px; align-items: center; text-align: center;
+      font-size: 12px; color: #64748B; font-weight: 600;
+    }
+    @media (min-width: 768px) {
+      .footer-bottom-row { flex-direction: row; justify-content: space-between; text-align: left; }
+    }
+
+    .ico { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
   </style>
 </head>
 <body>
@@ -351,98 +405,250 @@ export function renderLandingPage(user: any = null): string {
 
     </div>
 
-    <!-- SECTION 1: APA YANG BISA DILAKUKAN DI BERBIRRU -->
+    <!-- SECTION 1: ANIMATED INFINITE MARQUEE CARDS (APA YANG BISA DILAKUKAN) -->
     <div class="section-label">
       <span>Eksplorasi Tanpa Batas — Apa yang Bisa Kamu Lakukan?</span>
     </div>
 
-    <div class="features-grid">
-      <div class="feature-box">
-        <div class="feature-icon-box">
-          <svg class="ico" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
+    <div class="marquee-viewport">
+      <div class="marquee-track">
+        <!-- Set 1 -->
+        <div class="feature-box">
+          <div class="feature-icon-box">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
+          </div>
+          <h3 class="feature-title">Goreskan Segala Bentuk Tulisan</h3>
+          <p class="feature-desc">Mulai dari puisi, kutipan bermakna, micro-fiction, resensi buku, hingga cerita absurd dengan tipografi Serif, Sans, dan Mono.</p>
         </div>
-        <h3 class="feature-title">Goreskan Segala Bentuk Tulisan</h3>
-        <p class="feature-desc">Mulai dari puisi, kutipan bermakna, micro-fiction, resensi buku, hingga cerita absurd. Lengkap dengan pilihan tipografi sastra Serif, Sans, dan Mono.</p>
-      </div>
 
-      <div class="feature-box">
-        <div class="feature-icon-box" style="background:#0F3E99;">
-          <svg class="ico" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <div class="feature-box">
+          <div class="feature-icon-box" style="background:#0F3E99;">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          </div>
+          <h3 class="feature-title">Sambung Estafet Lintas Kota</h3>
+          <p class="feature-desc">Lanjutkan bait warkah penulis lain dari kota berbeda dalam satu klik. Jadilah bagian dari rantai untaian karya kolaboratif.</p>
         </div>
-        <h3 class="feature-title">Sambung Estafet Lintas Kota</h3>
-        <p class="feature-desc">Lanjutkan bait warkah penulis lain dari kota berbeda dalam satu klik. Jadilah bagian dari rantai untaian karya kolaboratif yang terus hidup.</p>
-      </div>
 
-      <div class="feature-box">
-        <div class="feature-icon-box" style="background:#059669;">
-          <svg class="ico" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <div class="feature-box">
+          <div class="feature-icon-box" style="background:#059669;">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          </div>
+          <h3 class="feature-title">Pustaka Antologi Paspor</h3>
+          <p class="feature-desc">Setiap bait karyamu, riwayat warkah yang disukai, dan simpanan favorit tersusun rapi dalam paspor antologi pribadimu.</p>
         </div>
-        <h3 class="feature-title">Pustaka Antologi Paspor</h3>
-        <p class="feature-desc">Setiap bait karyamu, riwayat warkah yang kamu sukai, dan simpanan tulisan favorit tersusun rapi dalam paspor antologi pribadimu selamanya.</p>
-      </div>
 
-      <div class="feature-box">
-        <div class="feature-icon-box" style="background:#D97706;">
-          <svg class="ico" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <div class="feature-box">
+          <div class="feature-icon-box" style="background:#D97706;">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </div>
+          <h3 class="feature-title">Apresiasi Murni Bebas Toxic</h3>
+          <p class="feature-desc">Sistem feed berbasis gravitasi makna dan kesegaran rasa. Tanpa tekanan angka followers dan tanpa DM bising.</p>
         </div>
-        <h3 class="feature-title">Apresiasi Murni Tanpa Toxic</h3>
-        <p class="feature-desc">Sistem feed berbasis gravitasi makna dan kesegaran rasa. Tanpa penghakiman jumlah followers, tanpa DM bising, dan tanpa tombol downvote.</p>
+
+        <!-- Duplicated for Seamless Infinite Loop -->
+        <div class="feature-box">
+          <div class="feature-icon-box">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
+          </div>
+          <h3 class="feature-title">Goreskan Segala Bentuk Tulisan</h3>
+          <p class="feature-desc">Mulai dari puisi, kutipan bermakna, micro-fiction, resensi buku, hingga cerita absurd dengan tipografi Serif, Sans, dan Mono.</p>
+        </div>
+
+        <div class="feature-box">
+          <div class="feature-icon-box" style="background:#0F3E99;">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          </div>
+          <h3 class="feature-title">Sambung Estafet Lintas Kota</h3>
+          <p class="feature-desc">Lanjutkan bait warkah penulis lain dari kota berbeda dalam satu klik. Jadilah bagian dari rantai untaian karya kolaboratif.</p>
+        </div>
+
+        <div class="feature-box">
+          <div class="feature-icon-box" style="background:#059669;">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          </div>
+          <h3 class="feature-title">Pustaka Antologi Paspor</h3>
+          <p class="feature-desc">Setiap bait karyamu, riwayat warkah yang disukai, dan simpanan favorit tersusun rapi dalam paspor antologi pribadimu.</p>
+        </div>
+
+        <div class="feature-box">
+          <div class="feature-icon-box" style="background:#D97706;">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </div>
+          <h3 class="feature-title">Apresiasi Murni Bebas Toxic</h3>
+          <p class="feature-desc">Sistem feed berbasis gravitasi makna dan kesegaran rasa. Tanpa tekanan angka followers dan tanpa DM bising.</p>
+        </div>
       </div>
     </div>
 
-    <!-- SECTION 2: PUISI & KUTIPAN TOKOH TERKENAL -->
+    <!-- SECTION 2: QUOTES FEED 100% UNIFIED HOME FEED DESIGN -->
     <div class="section-label">
       <span>Ruang Inspirasi — Jejak Kata &amp; Perenungan Abadi</span>
     </div>
 
-    <div class="quotes-grid">
+    <div class="quotes-feed-grid">
       
-      <!-- Sapardi Djoko Damono -->
-      <div class="quote-card">
-        <div class="quote-author-row">
-          <span class="quote-author-badge">Sapardi Djoko Damono</span>
-          <span class="quote-tag">Puisi Klasik</span>
+      <!-- 1. Sapardi Djoko Damono -->
+      <div class="thread-card">
+        <div class="thread-header-soft">
+          <div class="thread-avatar-clip">
+            S
+            <svg class="paperclip-svg" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          </div>
+          <div class="thread-author-info">
+            <span class="thread-pen-name">@sapardi_damono</span>
+            <span class="thread-city">Surakarta · Maestro Sastra</span>
+          </div>
+          <div class="thread-timestamp-stack">
+            <span class="time-main">Puisi Klasik</span>
+            <span class="date-sub">Tahun 1989</span>
+          </div>
         </div>
-        <p class="quote-body-text">
-          "Aku ingin mencintaimu dengan sederhana: dengan kata yang tak sempat diucapkan kayu kepada api yang menjadikannya abu."
-        </p>
-        <div style="font-size:11px;font-weight:700;color:#64748B;">Dari: Aku Ingin (1989)</div>
+        <div class="thread-body">
+          <h3 class="thread-title">Aku Ingin</h3>
+          <div class="thread-text" style="font-family:'Newsreader',serif;font-size:15.5px;line-height:1.7;">
+            "Aku ingin mencintaimu dengan sederhana: dengan kata yang tak sempat diucapkan kayu kepada api yang menjadikannya abu.<br><br>Aku ingin mencintaimu dengan sederhana: dengan isyarat yang tak sempat disampaikan awan kepada hujan yang menjadikannya tiada."
+          </div>
+        </div>
+        <div class="thread-footer">
+          <div class="actions-left">
+            <span class="act-btn-mock" style="background:#EF4444;color:#FFF;">
+              <svg style="width:11px;height:11px;fill:#FFF;stroke:#FFF;" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              <span>9.4k Terpaut</span>
+            </span>
+            <span class="act-btn-mock" style="background:#1D61E7;color:#FFF;">
+              <svg style="width:11px;height:11px;fill:#FFF;stroke:#FFF;" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+              <span>4.2k Simpan</span>
+            </span>
+          </div>
+          <span class="chain-btn-mock">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <span>890 Sambungan</span>
+          </span>
+        </div>
       </div>
 
-      <!-- Chairil Anwar -->
-      <div class="quote-card">
-        <div class="quote-author-row">
-          <span class="quote-author-badge">Chairil Anwar</span>
-          <span class="quote-tag">Pelopor Sastra</span>
+      <!-- 2. Chairil Anwar -->
+      <div class="thread-card">
+        <div class="thread-header-soft">
+          <div class="thread-avatar-clip" style="background:#0F3E99;">
+            C
+            <svg class="paperclip-svg" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          </div>
+          <div class="thread-author-info">
+            <span class="thread-pen-name">@chairil_anwar</span>
+            <span class="thread-city">Medan · Pelopor Angkatan '45</span>
+          </div>
+          <div class="thread-timestamp-stack">
+            <span class="time-main">Jiwa Merdeka</span>
+            <span class="date-sub">Tahun 1943</span>
+          </div>
         </div>
-        <p class="quote-body-text">
-          "Aku ini binatang jalang, dari kumpulannya terbuang. Biar peluru menembus kulitku, aku tetap meradang menerjang."
-        </p>
-        <div style="font-size:11px;font-weight:700;color:#64748B;">Dari: Aku (1943)</div>
+        <div class="thread-body">
+          <h3 class="thread-title">Aku</h3>
+          <div class="thread-text" style="font-family:'Space Grotesk',sans-serif;font-weight:700;">
+            "Aku ini binatang jalang, dari kumpulannya terbuang.<br>Biar peluru menembus kulitku, aku tetap meradang menerjang.<br><br>Luka dan bisa kubawa berlari, berlari hingga hilang pedih peri. Dan aku akan lebih tidak perduli. Aku mau hidup seribu tahun lagi."
+          </div>
+        </div>
+        <div class="thread-footer">
+          <div class="actions-left">
+            <span class="act-btn-mock" style="background:#EF4444;color:#FFF;">
+              <svg style="width:11px;height:11px;fill:#FFF;stroke:#FFF;" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              <span>14.8k Terpaut</span>
+            </span>
+            <span class="act-btn-mock" style="background:#1D61E7;color:#FFF;">
+              <svg style="width:11px;height:11px;fill:#FFF;stroke:#FFF;" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+              <span>6.1k Simpan</span>
+            </span>
+          </div>
+          <span class="chain-btn-mock">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <span>1.2k Sambungan</span>
+          </span>
+        </div>
       </div>
 
-      <!-- Pramoedya Ananta Toer -->
-      <div class="quote-card">
-        <div class="quote-author-row">
-          <span class="quote-author-badge">Pramoedya Ananta Toer</span>
-          <span class="quote-tag">Kutipan Sastra</span>
+      <!-- 3. Pramoedya Ananta Toer -->
+      <div class="thread-card">
+        <div class="thread-header-soft">
+          <div class="thread-avatar-clip" style="background:#059669;">
+            P
+            <svg class="paperclip-svg" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          </div>
+          <div class="thread-author-info">
+            <span class="thread-pen-name">@pramoedya_toer</span>
+            <span class="thread-city">Blora · Suara Abadi</span>
+          </div>
+          <div class="thread-timestamp-stack">
+            <span class="time-main">Kutipan Sastra</span>
+            <span class="date-sub">Tetralogi Buru</span>
+          </div>
         </div>
-        <p class="quote-body-text" style="font-family:'JetBrains Mono',monospace;font-size:14.5px;font-style:normal;">
-          "Tahu kau mengapa aku sayangi kau lebih dari siapa pun? Karena kau menulis. Suaramu takkan padam ditelan angin, akan abadi sampai jauh di kemudian hari."
-        </p>
-        <div style="font-size:11px;font-weight:700;color:#64748B;">Dari: Anak Semua Bangsa</div>
+        <div class="thread-body">
+          <h3 class="thread-title">Suara yang Tak Padam</h3>
+          <div class="thread-text">
+            <blockquote>
+              "Tahu kau mengapa aku sayangi kau lebih dari siapa pun? Karena kau menulis. Suaramu takkan padam ditelan angin, akan abadi sampai jauh di kemudian hari."
+            </blockquote>
+          </div>
+        </div>
+        <div class="thread-footer">
+          <div class="actions-left">
+            <span class="act-btn-mock" style="background:#EF4444;color:#FFF;">
+              <svg style="width:11px;height:11px;fill:#FFF;stroke:#FFF;" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              <span>18.2k Terpaut</span>
+            </span>
+            <span class="act-btn-mock" style="background:#1D61E7;color:#FFF;">
+              <svg style="width:11px;height:11px;fill:#FFF;stroke:#FFF;" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+              <span>9.5k Simpan</span>
+            </span>
+          </div>
+          <span class="chain-btn-mock">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <span>2.4k Sambungan</span>
+          </span>
+        </div>
       </div>
 
-      <!-- Jalaluddin Rumi -->
-      <div class="quote-card">
-        <div class="quote-author-row">
-          <span class="quote-author-badge">Jalaluddin Rumi</span>
-          <span class="quote-tag">Perenungan Jiwa</span>
+      <!-- 4. Jalaluddin Rumi -->
+      <div class="thread-card">
+        <div class="thread-header-soft">
+          <div class="thread-avatar-clip" style="background:#D97706;">
+            R
+            <svg class="paperclip-svg" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          </div>
+          <div class="thread-author-info">
+            <span class="thread-pen-name">@jalaluddin_rumi</span>
+            <span class="thread-city">Balkh · Penyair Sufi</span>
+          </div>
+          <div class="thread-timestamp-stack">
+            <span class="time-main">Perenungan</span>
+            <span class="date-sub">Abad 13</span>
+          </div>
         </div>
-        <p class="quote-body-text">
-          "Jangan berduka. Apapun yang hilang darimu akan kembali dalam bentuk yang lain. Luka adalah tempat di mana cahaya memasuki jiwamu."
-        </p>
-        <div style="font-size:11px;font-weight:700;color:#64748B;">Kutipan Pencerahan</div>
+        <div class="thread-body">
+          <h3 class="thread-title">Luka &amp; Cahaya</h3>
+          <div class="thread-text">
+            <blockquote>
+              "Jangan berduka. Apapun yang hilang darimu akan kembali dalam bentuk yang lain. Luka adalah tempat di mana cahaya memasuki jiwamu."
+            </blockquote>
+          </div>
+        </div>
+        <div class="thread-footer">
+          <div class="actions-left">
+            <span class="act-btn-mock" style="background:#EF4444;color:#FFF;">
+              <svg style="width:11px;height:11px;fill:#FFF;stroke:#FFF;" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              <span>22.5k Terpaut</span>
+            </span>
+            <span class="act-btn-mock" style="background:#1D61E7;color:#FFF;">
+              <svg style="width:11px;height:11px;fill:#FFF;stroke:#FFF;" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+              <span>11.3k Simpan</span>
+            </span>
+          </div>
+          <span class="chain-btn-mock">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <span>3.1k Sambungan</span>
+          </span>
+        </div>
       </div>
 
     </div>
@@ -483,15 +689,52 @@ export function renderLandingPage(user: any = null): string {
       </div>
     </div>
 
-    <!-- SECTION 4: BOTTOM CTA BANNER CARD -->
-    <div class="footer-cta-card">
-      <h3 class="footer-title">Siap Menggoreskan Kata Pertamamu?</h3>
-      <p class="footer-sub">Bergabunglah dengan ratusan penulis lainnya di seluruh Nusantara. Cukup daftarkan nama pena dan mulailah merawat rasa.</p>
-      <a href="/login" class="btn-footer">
-        <span>Buka Bilik Warkah</span>
-        <svg class="ico" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </a>
-    </div>
+    <!-- SECTION 4: COMPREHENSIVE ENTERPRISE FOOTER -->
+    <footer class="main-footer">
+      <div class="footer-top-grid">
+        <div>
+          <div class="footer-brand-title">BERBIRRU.COM</div>
+          <p class="footer-brand-desc">
+            Pustaka warkah dan ruang kolaborasi rasa di edge network. Merawat setiap bait kata, perenungan hidup, dan cerita lintas kota tanpa distraksi algoritma bising.
+          </p>
+        </div>
+
+        <div>
+          <div class="footer-col-title">Navigasi Pustaka</div>
+          <div class="footer-links">
+            <a href="/feed" class="footer-link">
+              <svg class="ico" style="width:12px;height:12px;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+              <span>Beranda Warkah</span>
+            </a>
+            <a href="/feed?tab=search" class="footer-link">
+              <svg class="ico" style="width:12px;height:12px;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+              <span>Telusuri Penulis &amp; Bait</span>
+            </a>
+            <a href="/login" class="footer-link">
+              <svg class="ico" style="width:12px;height:12px;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+              <span>Masuk / Buka Bilik Warkah</span>
+            </a>
+          </div>
+        </div>
+
+        <div>
+          <div class="footer-col-title">Pusat Hubungan</div>
+          <div class="contact-card-box">
+            <span style="display:block;color:#94A3B8;margin-bottom:2px;">Kolaborasi &amp; Kerjasama:</span>
+            <a href="mailto:admin@berbirru.com">admin@berbirru.com</a>
+          </div>
+          <div class="contact-card-box">
+            <span style="display:block;color:#94A3B8;margin-bottom:2px;">Laporan Bug &amp; Teknis:</span>
+            <a href="mailto:depelover@berbirru.com">depelover@berbirru.com</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom-row">
+        <span>© 2026 BERBIRRU.COM · Dirawat dengan rasa &amp; 100% Serverless di Cloudflare Edge.</span>
+        <span>Bebas Iklan · Bebas Pelacak Pihak Ketiga</span>
+      </div>
+    </footer>
 
   </div>
 </body>
