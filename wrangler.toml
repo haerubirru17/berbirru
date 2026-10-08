@@ -4,6 +4,11 @@ compatibility_date = "2025-06-01"
 
 workers_dev = true
 
+routes = [
+  { pattern = "berbirru.com/*", zone_name = "berbirru.com" },
+  { pattern = "www.berbirru.com/*", zone_name = "berbirru.com" }
+]
+
 [[d1_databases]]
 binding = "DB"
 database_name = "berbirru-db"
