@@ -91,7 +91,7 @@ export function renderFeedPage(user: any = null): string {
     .log-feed { display: flex; flex-direction: column; gap: 22px; }
     .thread-card {
       background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
-      box-shadow: var(--shadow-hard-lg); overflow: visible; position: relative; margin-top: 10px;
+      box-shadow: var(--shadow-hard-lg); overflow: hidden; position: relative; margin-top: 10px;
     }
     .thread-header-soft {
       background: var(--bg-blue-subtle); padding: 8px 12px 8px 68px; display: flex; justify-content: space-between;
@@ -163,7 +163,10 @@ export function renderFeedPage(user: any = null): string {
     .font-sans { font-family: 'Plus Jakarta Sans', sans-serif !important; }
     .font-mono { font-family: 'JetBrains Mono', monospace !important; background: #E0EEFD; padding: 1px 5px; border-radius: 4px; font-size: 13.5px; }
 
-    .thread-footer { padding: 8px 12px; background: #FFFFFF; display: flex; justify-content: space-between; align-items: center; border-top: var(--border-thin); }
+    .thread-footer {
+      padding: 8px 12px; background: #FFFFFF; display: flex; justify-content: space-between; align-items: center;
+      border-top: var(--border-thin); border-bottom-left-radius: 13px; border-bottom-right-radius: 13px;
+    }
     .actions-left { display: flex; gap: 6px; }
     .act-btn {
       background: var(--bg-main); border: var(--border-thin); border-radius: var(--radius-sm);
@@ -456,6 +459,16 @@ export function renderFeedPage(user: any = null): string {
       }
     }
 
+    /* Function Deterministic Vibrant Colors based on Pen Name */
+    function getAvatarColor(name) {
+      const colors = ['#1D61E7', '#0F3E99', '#059669', '#D97706', '#7C3AED', '#DB2777', '#0891B2', '#4F46E5'];
+      let hash = 0;
+      for (let i = 0; i < (name || '').length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      return colors[Math.abs(hash) % colors.length];
+    }
+
     function stripHtml(html) {
       const tmp = document.createElement('div');
       tmp.innerHTML = html || '';
@@ -469,7 +482,7 @@ export function renderFeedPage(user: any = null): string {
       return \`
         <div class="thread-card" id="post-\${p.id}">
           <div class="thread-header-soft">
-            <div class="thread-avatar-clip">
+            <div class="thread-avatar-clip" style="background:\${getAvatarColor(p.pen_name)};">
               \${(p.pen_name[0] || 'D').toUpperCase()}
               <svg class="paperclip-svg" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
             </div>

@@ -152,7 +152,11 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     .font-sans { font-family: 'Plus Jakarta Sans', sans-serif !important; }
     .font-mono { font-family: 'JetBrains Mono', monospace !important; background: #E0EEFD; padding: 1px 4px; border-radius: 4px; }
 
-    .thread-footer { padding: 8px 12px; background: #FFFFFF; border-top: var(--border-thin); display: flex; justify-content: space-between; align-items: center; }
+    .thread-footer {
+      padding: 8px 12px; background: #FFFFFF; border-top: var(--border-thin);
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom-left-radius: 13px; border-bottom-right-radius: 13px;
+    }
     
     /* Popover Menu Aksi Profil */
     .avatar-popover {
@@ -412,7 +416,16 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       window.location.href = '/login';
     }
 
-    async function loadUserData() {
+    function getAvatarColor(name) {
+      const colors = ['#1D61E7', '#0F3E99', '#059669', '#D97706', '#7C3AED', '#DB2777', '#0891B2', '#4F46E5'];
+      let hash = 0;
+      for (let i = 0; i < (name || '').length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      return colors[Math.abs(hash) % colors.length];
+    }
+
+    async function loadTab(tab) {
       try {
         const res = await fetch('/api/users/' + encodeURIComponent(currentPenName));
         const data = await res.json();
@@ -451,7 +464,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
         container.innerHTML = data.posts.map(p => \`
           <div class="thread-card">
             <div class="thread-header-soft">
-              <div class="thread-avatar-clip">
+              <div class="thread-avatar-clip" style="background:\${getAvatarColor(p.pen_name)};">
                 \${(p.pen_name[0] || 'D').toUpperCase()}
                 <svg class="paperclip-svg" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
               </div>
