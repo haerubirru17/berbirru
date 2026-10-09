@@ -267,6 +267,7 @@ export function renderLandingPage(user: any = null): string {
     .thread-card {
       background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
       box-shadow: var(--shadow-hard-lg); overflow: visible; position: relative; margin-top: 14px;
+      display: flex; flex-direction: column; justify-content: space-between; height: 100%;
     }
     .thread-header-soft {
       background: var(--bg-blue-subtle); padding: 8px 12px 8px 68px; display: flex; justify-content: space-between;
@@ -293,9 +294,9 @@ export function renderLandingPage(user: any = null): string {
     .time-main { font-size: 11px; font-weight: 800; color: var(--ink); }
     .date-sub { font-size: 9.5px; font-weight: 700; color: #64748B; }
 
-    .thread-body { padding: 14px 14px 12px; }
+    .thread-body { padding: 14px 14px 12px; flex: 1; display: flex; flex-direction: column; }
     .thread-title { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 800; color: var(--ink); margin-bottom: 6px; }
-    .thread-text { font-size: 14px; font-weight: 600; line-height: 1.6; color: #0F172A; }
+    .thread-text { font-size: 14px; font-weight: 600; line-height: 1.6; color: #0F172A; flex: 1; }
     .thread-text blockquote {
       background: #F8FAFC; border-left: 3.5px solid var(--ink); padding: 10px 14px;
       margin: 8px 0; font-style: italic; border-radius: 4px; color: #334155;
