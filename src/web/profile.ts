@@ -418,11 +418,12 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
 
     function getAvatarColor(name) {
       const colors = ['#1D61E7', '#0F3E99', '#059669', '#D97706', '#7C3AED', '#DB2777', '#0891B2', '#4F46E5'];
-      let hash = 0;
-      for (let i = 0; i < (name || '').length; i++) {
-        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+      const str = String(name || '');
+      let sum = 0;
+      for (let i = 0; i < str.length; i++) {
+        sum += str.charCodeAt(i) * (i + 1);
       }
-      return colors[Math.abs(hash) % colors.length];
+      return colors[sum % colors.length];
     }
 
     async function loadTab(tab) {
