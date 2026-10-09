@@ -404,7 +404,8 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Gagal menyimpan profil');
-        window.location.href = '/u/' + data.user.pen_name;
+        toggleEditModal(false);
+        window.location.href = '/u/' + encodeURIComponent(data.user.pen_name);
       } catch (err) {
         alert(err.message);
       }
@@ -426,7 +427,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       return colors[sum % colors.length];
     }
 
-    async function loadTab(tab) {
+    async function loadUserData() {
       try {
         const res = await fetch('/api/users/' + encodeURIComponent(currentPenName));
         const data = await res.json();
@@ -435,7 +436,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
           document.getElementById('penNameDisplay').textContent = '@' + data.user.pen_name;
           document.getElementById('avatarLetter').textContent = (data.user.pen_name[0] || 'D').toUpperCase();
           document.getElementById('cityDisplay').textContent = (data.user.city || 'Nusantara') + ' · Penulis Aktif';
-          document.getElementById('bioDisplay').textContent = '"' + (data.user.bio || 'Goresan perenungan rasa.') + '"';
+          document.getElementById('bioDisplay').textContent = '"' + (data.user.bio || 'Goresan perenungan rasa dan bait kata di Berbirru.') + '"';
           document.getElementById('countPosts').textContent = data.user.posts_count || 0;
           document.getElementById('countLikes').textContent = data.user.likes_count || 0;
           document.getElementById('countSaved').textContent = data.user.saves_count || 0;
