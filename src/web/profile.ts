@@ -105,7 +105,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     .feed-list { display: flex; flex-direction: column; gap: 20px; }
     .thread-card {
       background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
-      box-shadow: var(--shadow-hard); overflow: visible; position: relative; margin-top: 8px;
+      box-shadow: var(--shadow-hard-lg); overflow: visible; position: relative; margin-top: 14px;
     }
     .thread-header-soft {
       background: var(--bg-blue-subtle); padding: 8px 12px 8px 68px; display: flex; justify-content: space-between;

@@ -91,7 +91,7 @@ export function renderFeedPage(user: any = null): string {
     .log-feed { display: flex; flex-direction: column; gap: 22px; }
     .thread-card {
       background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
-      box-shadow: var(--shadow-hard-lg); overflow: hidden; position: relative; margin-top: 10px;
+      box-shadow: var(--shadow-hard-lg); overflow: visible; position: relative; margin-top: 14px;
     }
     .thread-header-soft {
       background: var(--bg-blue-subtle); padding: 8px 12px 8px 68px; display: flex; justify-content: space-between;
