@@ -81,7 +81,7 @@ app.get('/og-image.png', (c) => {
   const binary = Uint8Array.from(atob(OG_IMAGE_BASE64), (c) => c.charCodeAt(0));
   return new Response(binary, {
     headers: {
-      'Content-Type': 'image/png',
+      'Content-Type': 'image/jpeg',
       'Cache-Control': 'public, max-age=86400',
     },
   });
