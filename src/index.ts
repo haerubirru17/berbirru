@@ -16,6 +16,30 @@ export interface Env {
   JWT_SECRET: string;
   RESEND_API_KEY?: string;
   RESEND_FROM?: string;
+  TURNSTILE_SITE_KEY?: string;
+  TURNSTILE_SECRET_KEY?: string;
+}
+
+// Helper verifikasi Cloudflare Turnstile token
+async function verifyTurnstile(token: string, secretKey: string, remoteIp?: string): Promise<boolean> {
+  if (!secretKey) return true; // Jika secret key belum diset di env, bypass (fail-open for dev/staging)
+  if (!token) return false;
+  try {
+    const formData = new FormData();
+    formData.append('secret', secretKey.trim());
+    formData.append('response', token.trim());
+    if (remoteIp) formData.append('remoteip', remoteIp);
+
+    const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      body: formData
+    });
+    const data: any = await res.json();
+    return !!data.success;
+  } catch (err) {
+    console.error('Turnstile verification error:', err);
+    return false;
+  }
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -48,7 +72,7 @@ app.get('/', async (c) => {
 app.get('/login', async (c) => {
   const user = await getAuthUser(c);
   if (user) return c.redirect('/feed');
-  return c.html(renderLoginPage());
+  return c.html(renderLoginPage(c.env.TURNSTILE_SITE_KEY || ''));
 });
 
 app.get('/feed', async (c) => {
@@ -146,10 +170,18 @@ app.get('/api/auth/me', async (c) => {
 });
 
 app.post('/api/auth/register', async (c) => {
-  const { email, password, pen_name, city } = await c.req.json().catch(() => ({}));
+  const { email, password, pen_name, city, turnstile_token } = await c.req.json().catch(() => ({}));
   if (!email || !password || !pen_name) {
     return c.json({ error: 'Email, kata sandi, dan nama pena wajib diisi.' }, 400);
   }
+
+  // Verifikasi Turnstile
+  const clientIp = c.req.header('cf-connecting-ip') || '';
+  const isHuman = await verifyTurnstile(turnstile_token, c.env.TURNSTILE_SECRET_KEY || '', clientIp);
+  if (!isHuman) {
+    return c.json({ error: 'Verifikasi keamanan Turnstile gagal atau kedaluwarsa. Silakan muat ulang halaman.' }, 403);
+  }
+
   const cleanEmail = String(email).trim().toLowerCase();
   const cleanPenName = String(pen_name).replace(/^@/, '').trim().toLowerCase();
   
@@ -178,8 +210,15 @@ app.post('/api/auth/register', async (c) => {
 });
 
 app.post('/api/auth/login', async (c) => {
-  const { email, password } = await c.req.json().catch(() => ({}));
+  const { email, password, turnstile_token } = await c.req.json().catch(() => ({}));
   if (!email || !password) return c.json({ error: 'Email dan kata sandi wajib diisi.' }, 400);
+
+  // Verifikasi Turnstile
+  const clientIp = c.req.header('cf-connecting-ip') || '';
+  const isHuman = await verifyTurnstile(turnstile_token, c.env.TURNSTILE_SECRET_KEY || '', clientIp);
+  if (!isHuman) {
+    return c.json({ error: 'Verifikasi keamanan Turnstile gagal atau kedaluwarsa. Silakan muat ulang halaman.' }, 403);
+  }
 
   const cleanEmail = String(email).trim().toLowerCase();
   const user: any = await c.env.DB.prepare('SELECT * FROM users WHERE email = ? LIMIT 1').bind(cleanEmail).first();
@@ -201,8 +240,16 @@ app.post('/api/auth/login', async (c) => {
 
 // ---- OTP AUTH API (EMAIL TERDAFTAR ONLY) ----
 app.post('/api/auth/send-otp', async (c) => {
-  const { email } = await c.req.json().catch(() => ({}));
+  const { email, turnstile_token } = await c.req.json().catch(() => ({}));
   if (!email) return c.json({ error: 'Email wajib diisi' }, 400);
+
+  // Verifikasi Turnstile
+  const clientIp = c.req.header('cf-connecting-ip') || '';
+  const isHuman = await verifyTurnstile(turnstile_token, c.env.TURNSTILE_SECRET_KEY || '', clientIp);
+  if (!isHuman) {
+    return c.json({ error: 'Verifikasi keamanan Turnstile gagal atau kedaluwarsa. Silakan muat ulang halaman.' }, 403);
+  }
+
   const cleanEmail = String(email).trim().toLowerCase();
 
   // STRICT GUARD: Hanya email yang SUDAH TERDAFTAR yang boleh menerima OTP
@@ -219,8 +266,12 @@ app.post('/api/auth/send-otp', async (c) => {
     'INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, datetime("now", "+10 minutes"))'
   ).bind(crypto.randomUUID(), user.id, `otp_${otpCode}`).run();
 
-  const apiKey = c.env.RESEND_API_KEY || '';
+  const apiKey = String(c.env.RESEND_API_KEY || '').trim();
   const fromEmail = c.env.RESEND_FROM || 'BERBIRRU.COM <noreply@berbirru.com>';
+
+  if (!apiKey) {
+    return c.json({ error: 'Konfigurasi RESEND_API_KEY belum terpasang di server.' }, 500);
+  }
 
   const htmlContent = `
     <!DOCTYPE html>

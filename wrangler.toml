@@ -18,6 +18,7 @@ database_id = "03e44422-b75a-4a7d-8464-41640a5372c8"
 APP_NAME = "BERBIRRU"
 APP_DOMAIN = "berbirru.com"
 JWT_SECRET = "berbirru-jwt-secret-key-2026-prod"
+TURNSTILE_SITE_KEY = "0x4AAAAAAFNZJrpuicRBxVjq"
 
 [observability]
 enabled = true

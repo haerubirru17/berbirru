@@ -1,4 +1,4 @@
-export function renderLoginPage(): string {
+export function renderLoginPage(turnstileSiteKey = ''): string {
   return `<!DOCTYPE html>
 <html lang="id">
 <head>
@@ -12,6 +12,7 @@ export function renderLoginPage(): string {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800;900&family=Space+Grotesk:wght@600;700;800&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
+  ${turnstileSiteKey ? '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>' : ''}
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -133,6 +134,11 @@ export function renderLoginPage(): string {
             </div>
           </div>
 
+          ${turnstileSiteKey ? `
+          <div style="display:flex;justify-content:center;margin:12px 0 10px;min-height:65px;">
+            <div class="cf-turnstile" id="turnstileAuthWidget" data-sitekey="${turnstileSiteKey}" data-theme="light" data-size="normal"></div>
+          </div>` : ''}
+
           <button type="submit" class="btn-submit-auth" id="btnSubmit">
             <svg class="ico" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             <span id="btnSubmitText">Masuk</span>
@@ -161,6 +167,12 @@ export function renderLoginPage(): string {
             <label class="form-label">Alamat Email Terdaftar</label>
             <input type="email" id="otpEmailInput" class="form-input" placeholder="nama@email.com" required>
           </div>
+
+          ${turnstileSiteKey ? `
+          <div style="display:flex;justify-content:center;margin:12px 0 10px;min-height:65px;">
+            <div class="cf-turnstile" id="turnstileOtpWidget" data-sitekey="${turnstileSiteKey}" data-theme="light" data-size="normal"></div>
+          </div>` : ''}
+
           <button type="button" class="btn-submit-auth" id="btnSendOtp" onclick="handleSendOtp()">
             <svg class="ico" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             <span>Kirim Kode OTP</span>
@@ -220,10 +232,16 @@ export function renderLoginPage(): string {
         : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
     }
 
+    function getTurnstileToken() {
+      const el = document.querySelector('[name="cf-turnstile-response"]');
+      return el ? el.value : '';
+    }
+
     async function handleSendOtp() {
       const email = document.getElementById('otpEmailInput').value.trim();
       if (!email) return alert('Email wajib diisi!');
 
+      const turnstileToken = getTurnstileToken();
       const btn = document.getElementById('btnSendOtp');
       btn.disabled = true;
       btn.querySelector('span').textContent = 'Mengirim OTP...';
@@ -232,7 +250,7 @@ export function renderLoginPage(): string {
         const res = await fetch('/api/auth/send-otp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email })
+          body: JSON.stringify({ email, turnstile_token: turnstileToken })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Gagal mengirim kode OTP');
@@ -280,13 +298,18 @@ export function renderLoginPage(): string {
       const email = document.getElementById('emailInput').value.trim();
       const password = document.getElementById('passwordInput').value.trim();
       const penName = document.getElementById('penNameInput').value.trim();
+      const turnstileToken = getTurnstileToken();
       const endpoint = isLoginMode ? '/api/auth/login' : '/api/auth/register';
 
       try {
+        const payload = isLoginMode
+          ? { email, password, turnstile_token: turnstileToken }
+          : { email, password, pen_name: penName, turnstile_token: turnstileToken };
+
         const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, pen_name: penName })
+          body: JSON.stringify(payload)
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Terjadi kesalahan saat masuk');
