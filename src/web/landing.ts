@@ -13,12 +13,15 @@ export function renderLandingPage(user: any = null): string {
 
   <!-- Open Graph / Facebook / WhatsApp -->
   <meta property="og:type" content="website">
+  <meta property="og:site_name" content="BERBIRRU.COM">
   <meta property="og:url" content="https://berbirru.com/">
-  <meta property="og:title" content="BERBIRRU.COM — Pustaka Tulisan & Kolaborasi Kata">
+  <meta property="og:title" content="BERBIRRU.COM — Pustaka Tulisan &amp; Kolaborasi Kata">
   <meta property="og:description" content="Ruang literasi modern bebas algoritma bising. Goreskan bait rasa dan sambung estafet kata bersama lintas kota.">
-  <meta property="og:image" content="https://berbirru.com/og-image.png">
+  <meta property="og:image" content="https://berbirru.com/og-image.jpg">
+  <meta property="og:image:secure_url" content="https://berbirru.com/og-image.jpg">
+  <meta property="og:image:type" content="image/jpeg">
   <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
+  <meta property="og:image:height" content="1736">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">

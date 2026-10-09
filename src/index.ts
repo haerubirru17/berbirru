@@ -77,11 +77,23 @@ app.get('/favicon.ico', (c) => {
   return c.text(svg, 200, { 'Content-Type': 'image/svg+xml' });
 });
 
+app.get('/og-image.jpg', (c) => {
+  const binary = Uint8Array.from(atob(OG_IMAGE_BASE64), (c) => c.charCodeAt(0));
+  return new Response(binary, {
+    headers: {
+      'Content-Type': 'image/jpeg',
+      'Content-Length': binary.length.toString(),
+      'Cache-Control': 'public, max-age=86400',
+    },
+  });
+});
+
 app.get('/og-image.png', (c) => {
   const binary = Uint8Array.from(atob(OG_IMAGE_BASE64), (c) => c.charCodeAt(0));
   return new Response(binary, {
     headers: {
       'Content-Type': 'image/jpeg',
+      'Content-Length': binary.length.toString(),
       'Cache-Control': 'public, max-age=86400',
     },
   });
