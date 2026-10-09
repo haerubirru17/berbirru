@@ -1,4 +1,4 @@
-export async function sendMagicEmail(toEmail: string, magicUrl: string, env: any = null): Promise<boolean> {
+export async function sendOtpEmail(toEmail: string, otpCode: string, env: any = null): Promise<boolean> {
   const apiKey = (env && env.RESEND_API_KEY) || '';
   const fromEmail = (env && env.RESEND_FROM) || 'BERBIRRU.COM <noreply@berbirru.com>';
 
@@ -13,7 +13,7 @@ export async function sendMagicEmail(toEmail: string, magicUrl: string, env: any
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Tautan Masuk Instan — BERBIRRU.COM</title>
+      <title>Kode Masuk OTP — BERBIRRU.COM</title>
     </head>
     <body style="margin:0;padding:24px 12px;background-color:#F0F6FE;font-family:-apple-system,BlinkMacSystemFont,'Plus Jakarta Sans','Segoe UI',Roboto,Helvetica,sans-serif;color:#0B192C;">
       <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:480px;background:#FFFFFF;border:3px solid #0B192C;border-radius:16px;box-shadow:5px 5px 0 #1E293B;overflow:hidden;">
@@ -37,26 +37,26 @@ export async function sendMagicEmail(toEmail: string, magicUrl: string, env: any
         <!-- Body Content -->
         <tr>
           <td style="padding:28px 24px;">
-            <h3 style="margin:0 0 12px;font-size:20px;font-weight:800;color:#0B192C;line-height:1.3;">Tautan Masuk Instan</h3>
-            <p style="margin:0 0 16px;font-size:14px;color:#334155;line-height:1.6;">
-              Halo Sahabat Pena! Anda menerima surel ini karena meminta tautan masuk langsung tanpa kata sandi ke akun <strong>BERBIRRU.COM</strong>.
+            <h3 style="margin:0 0 12px;font-size:20px;font-weight:800;color:#0B192C;line-height:1.3;">Kode Masuk Verifikasi</h3>
+            <p style="margin:0 0 18px;font-size:14px;color:#334155;line-height:1.6;">
+              Gunakan 6 digit kode OTP di bawah ini untuk masuk atau mengatur ulang akun <strong>BERBIRRU.COM</strong> Anda:
             </p>
 
-            <!-- Call to Action Button -->
-            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:24px 0;">
+            <!-- OTP Code Badge -->
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:20px 0;">
               <tr>
                 <td align="center">
-                  <a href="${magicUrl}" style="display:inline-block;background:#1D61E7;color:#FFFFFF;font-size:14px;font-weight:800;text-decoration:none;padding:14px 28px;border-radius:10px;border:2.5px solid #0B192C;box-shadow:3px 3px 0 #0B192C;">
-                    Masuk ke Bilik Warkah &rarr;
-                  </a>
+                  <div style="display:inline-block;background:#FDE047;border:3px solid #0B192C;border-radius:12px;padding:14px 32px;box-shadow:4px 4px 0 #0B192C;letter-spacing:8px;font-family:'Space Grotesk',monospace;font-size:32px;font-weight:900;color:#0B192C;">
+                    ${otpCode}
+                  </div>
                 </td>
               </tr>
             </table>
 
             <!-- Notice Box -->
-            <div style="background:#F8FAFC;border-left:4px solid #FDE047;border:1.5px solid #0B192C;border-left-width:4px;border-radius:8px;padding:12px 14px;margin-top:20px;">
+            <div style="background:#F8FAFC;border-left:4px solid #1D61E7;border:1.5px solid #0B192C;border-left-width:4px;border-radius:8px;padding:12px 14px;margin-top:20px;">
               <p style="margin:0;font-size:12px;font-weight:600;color:#475569;line-height:1.5;">
-                ⏱ <strong>Masa Berlaku:</strong> Tautan ini hanya dapat digunakan satu kali dalam kurun waktu <strong>1 jam</strong>. Jika bukan Anda yang meminta, abaikan surel ini.
+                ⏱ <strong>Masa Berlaku:</strong> Kode ini hanya aktif selama <strong>10 menit</strong>. Jangan berikan kode ini kepada siapa pun demi keamanan karya Anda.
               </p>
             </div>
           </td>
@@ -89,19 +89,14 @@ export async function sendMagicEmail(toEmail: string, magicUrl: string, env: any
       body: JSON.stringify({
         from: fromEmail,
         to: [toEmail],
-        subject: 'Tautan Masuk Instan — BERBIRRU.COM',
+        subject: `Kode Masuk OTP: ${otpCode} — BERBIRRU.COM`,
         html: htmlContent
       })
     });
 
-    if (!res.ok) {
-      const errData = await res.text();
-      console.error('Resend API Error:', errData);
-      return false;
-    }
-    return true;
+    return res.ok;
   } catch (err) {
-    console.error('Resend fetch exception:', err);
+    console.error('Resend OTP error:', err);
     return false;
   }
 }

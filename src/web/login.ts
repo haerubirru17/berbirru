@@ -123,7 +123,7 @@ export function renderLoginPage(): string {
             <input type="email" id="emailInput" class="form-input" placeholder="nama@email.com" required>
           </div>
 
-          <div class="form-group">
+          <div class="form-group" id="passwordGroup">
             <label class="form-label">Kata Sandi</label>
             <div style="position:relative;display:flex;align-items:center;">
               <input type="password" id="passwordInput" class="form-input" placeholder="••••••••" style="padding-right:42px;" required>
@@ -140,33 +140,50 @@ export function renderLoginPage(): string {
         </form>
 
         <div class="auth-footer-help">
-          <p id="authHelperText">Lupa kata sandi? <a onclick="toggleMagicCard(true)">Kirim Tautan Masuk</a></p>
+          <p id="authHelperText">Lupa kata sandi? <a onclick="toggleOtpCard(true)">Masuk dengan Kode OTP</a></p>
         </div>
       </div>
     </div>
 
-    <!-- 2. Form Khusus Magic Link (Lupa Sandi) -->
-    <div class="auth-card" id="magicAuthCard" style="display:none;">
+    <!-- 2. Form Masuk dengan Kode OTP 6-Digit -->
+    <div class="auth-card" id="otpAuthCard" style="display:none;">
       <div style="padding:14px;background:#E0EEFD;border-bottom:var(--border-thick);font-family:'Space Grotesk';font-size:14px;font-weight:800;color:var(--blue-primary);display:flex;align-items:center;gap:6px;">
-        <svg class="ico" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-        <span>Masuk Cepat Tanpa Sandi</span>
+        <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <span>Verifikasi Kode OTP</span>
       </div>
       <div class="auth-body">
-        <p style="font-size:12.5px;font-weight:600;color:#475569;line-height:1.45;margin-bottom:14px;">
-          Ketikkan alamat email akun Anda. Kami akan mengirimkan tautan masuk instan langsung ke kotak masuk surel Anda.
-        </p>
-        <form onsubmit="handleMagicLink(event)">
+        <!-- Step 1: Input Email -->
+        <div id="otpStep1">
+          <p style="font-size:12.5px;font-weight:600;color:#475569;line-height:1.45;margin-bottom:14px;">
+            Masukkan email terdaftar Anda. Kami akan mengirimkan 6 digit kode OTP untuk masuk:
+          </p>
           <div class="form-group">
             <label class="form-label">Alamat Email Terdaftar</label>
-            <input type="email" id="magicEmailInput" class="form-input" placeholder="nama@email.com" required>
+            <input type="email" id="otpEmailInput" class="form-input" placeholder="nama@email.com" required>
           </div>
-          <button type="submit" class="btn-submit-auth" id="btnMagicSubmit">
+          <button type="button" class="btn-submit-auth" id="btnSendOtp" onclick="handleSendOtp()">
             <svg class="ico" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            <span>Kirim Tautan Masuk ke Surel</span>
+            <span>Kirim Kode OTP</span>
           </button>
-        </form>
+        </div>
+
+        <!-- Step 2: Input 6 Digit OTP -->
+        <div id="otpStep2" style="display:none;">
+          <p style="font-size:12.5px;font-weight:600;color:#475569;line-height:1.45;margin-bottom:14px;">
+            Masukkan 6 digit kode OTP yang telah dikirim ke <b id="otpSentEmail" style="color:var(--blue-primary);"></b>:
+          </p>
+          <div class="form-group">
+            <label class="form-label">Kode OTP 6-Digit</label>
+            <input type="text" id="otpCodeInput" maxlength="6" class="form-input" style="letter-spacing:6px;text-align:center;font-size:22px;font-family:'Space Grotesk',monospace;font-weight:800;" placeholder="••••••" required>
+          </div>
+          <button type="button" class="btn-submit-auth" id="btnVerifyOtp" style="background:#059669;" onclick="handleVerifyOtp()">
+            <svg class="ico" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Verifikasi &amp; Masuk</span>
+          </button>
+        </div>
+
         <div class="auth-footer-help" style="margin-top:16px;">
-          <a onclick="toggleMagicCard(false)">← Kembali ke Halaman Masuk Biasa</a>
+          <a onclick="toggleOtpCard(false)">← Kembali ke Masuk Sandi</a>
         </div>
       </div>
     </div>
@@ -184,11 +201,13 @@ export function renderLoginPage(): string {
       document.getElementById('authHelperText').style.display = isLogin ? 'block' : 'none';
     }
 
-    function toggleMagicCard(showMagic) {
-      document.getElementById('standardAuthCard').style.display = showMagic ? 'none' : 'block';
-      document.getElementById('magicAuthCard').style.display = showMagic ? 'block' : 'none';
-      if (showMagic) {
-        document.getElementById('magicEmailInput').value = document.getElementById('emailInput').value.trim();
+    function toggleOtpCard(showOtp) {
+      document.getElementById('standardAuthCard').style.display = showOtp ? 'none' : 'block';
+      document.getElementById('otpAuthCard').style.display = showOtp ? 'block' : 'none';
+      if (showOtp) {
+        document.getElementById('otpStep1').style.display = 'block';
+        document.getElementById('otpStep2').style.display = 'none';
+        document.getElementById('otpEmailInput').value = document.getElementById('emailInput').value.trim();
       }
     }
 
@@ -201,28 +220,58 @@ export function renderLoginPage(): string {
         : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
     }
 
-    async function handleMagicLink(e) {
-      e.preventDefault();
-      const email = document.getElementById('magicEmailInput').value.trim();
-      const btn = document.getElementById('btnMagicSubmit');
+    async function handleSendOtp() {
+      const email = document.getElementById('otpEmailInput').value.trim();
+      if (!email) return alert('Email wajib diisi!');
+
+      const btn = document.getElementById('btnSendOtp');
       btn.disabled = true;
-      btn.querySelector('span').textContent = 'Mengirim surel...';
+      btn.querySelector('span').textContent = 'Mengirim OTP...';
 
       try {
-        const res = await fetch('/api/auth/magic-link', {
+        const res = await fetch('/api/auth/send-otp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email })
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Gagal mengirim tautan masuk');
-        alert(data.message || 'Tautan masuk berhasil dikirim! Silakan periksa kotak masuk surel Anda.');
-        toggleMagicCard(false);
+        if (!res.ok) throw new Error(data.error || 'Gagal mengirim kode OTP');
+        
+        document.getElementById('otpSentEmail').textContent = email;
+        document.getElementById('otpStep1').style.display = 'none';
+        document.getElementById('otpStep2').style.display = 'block';
+        alert(data.message || 'Kode OTP berhasil dikirim!');
       } catch (err) {
         alert(err.message);
       } finally {
         btn.disabled = false;
-        btn.querySelector('span').textContent = 'Kirim Tautan Masuk ke Surel';
+        btn.querySelector('span').textContent = 'Kirim Kode OTP';
+      }
+    }
+
+    async function handleVerifyOtp() {
+      const email = document.getElementById('otpEmailInput').value.trim();
+      const otp = document.getElementById('otpCodeInput').value.trim();
+      if (!otp || otp.length !== 6) return alert('Masukkan 6 digit kode OTP!');
+
+      const btn = document.getElementById('btnVerifyOtp');
+      btn.disabled = true;
+      btn.querySelector('span').textContent = 'Memverifikasi...';
+
+      try {
+        const res = await fetch('/api/auth/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, otp })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Kode OTP salah');
+        window.location.href = '/feed';
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        btn.disabled = false;
+        btn.querySelector('span').textContent = 'Verifikasi & Masuk';
       }
     }
 

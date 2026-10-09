@@ -6,7 +6,7 @@ import { renderLoginPage } from './web/login';
 import { renderFeedPage } from './web/feed';
 import { renderProfilePage } from './web/profile';
 import { renderNotificationsPage } from './web/notifications';
-import { sendMagicEmail } from './mail';
+import { sendOtpEmail } from './mail';
 import { OG_IMAGE_BASE64 } from './assets';
 
 export interface Env {
@@ -197,48 +197,62 @@ app.post('/api/auth/login', async (c) => {
   return c.json({ ok: true, user: { id: user.id, pen_name: user.pen_name } });
 });
 
-app.post('/api/auth/magic-link', async (c) => {
+// ---- OTP AUTH API (EMAIL TERDAFTAR ONLY) ----
+app.post('/api/auth/send-otp', async (c) => {
   const { email } = await c.req.json().catch(() => ({}));
   if (!email) return c.json({ error: 'Email wajib diisi' }, 400);
   const cleanEmail = String(email).trim().toLowerCase();
-  let user: any = await c.env.DB.prepare('SELECT id, pen_name FROM users WHERE email = ? LIMIT 1').bind(cleanEmail).first();
-  
-  // Auto-register jika belum terdaftar saat minta magic link
+
+  // STRICT GUARD: Hanya email yang SUDAH TERDAFTAR yang boleh menerima OTP
+  const user: any = await c.env.DB.prepare('SELECT id, pen_name FROM users WHERE email = ? LIMIT 1').bind(cleanEmail).first();
   if (!user) {
-    const defaultPenName = 'penyair_' + crypto.randomUUID().slice(0, 4);
-    const userId = crypto.randomUUID();
-    await c.env.DB.prepare(
-      'INSERT INTO users (id, email, password_hash, pen_name, location) VALUES (?, ?, ?, ?, ?)'
-    ).bind(userId, cleanEmail, 'magic_link_auth', defaultPenName, 'Nusantara').run();
-    user = { id: userId, pen_name: defaultPenName };
+    return c.json({ error: 'Email tidak ditemukan! Pastikan Anda sudah mendaftar terlebih dahulu.' }, 404);
   }
 
-  const magicToken = crypto.randomUUID();
+  // Generate 6 Digit Random OTP (misal: 749281)
+  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+  // Simpan OTP ke sessions table (berlaku 10 menit)
   await c.env.DB.prepare(
-    'INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, datetime("now", "+1 hour"))'
-  ).bind(crypto.randomUUID(), user.id, magicToken).run();
+    'INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, datetime("now", "+10 minutes"))'
+  ).bind(crypto.randomUUID(), user.id, `otp_${otpCode}`).run();
 
-  const magicUrl = `https://${c.env.APP_DOMAIN || 'berbirru.com'}/api/auth/magic-callback?token=${magicToken}`;
-  const sent = await sendMagicEmail(cleanEmail, magicUrl, c.env);
-
+  const sent = await sendOtpEmail(cleanEmail, otpCode, c.env);
   if (!sent) {
-    return c.json({ error: 'Gagal mengirim surel. Pastikan kuota dan alamat email valid.' }, 500);
+    return c.json({ error: 'Gagal mengirim kode OTP ke email Anda.' }, 500);
   }
 
   return c.json({ 
-    message: 'Tautan masuk instan berhasil dikirim ke ' + cleanEmail + '!',
-    magic_url: magicUrl
+    message: 'Kode OTP 6-digit berhasil dikirim ke ' + cleanEmail + '!',
+    success: true
   });
 });
 
-app.get('/api/auth/magic-callback', async (c) => {
-  const token = c.req.query('token');
-  if (!token) return c.redirect('/login');
-  const session: any = await c.env.DB.prepare('SELECT user_id FROM sessions WHERE token = ? AND expires_at > datetime("now") LIMIT 1').bind(token).first();
-  if (!session) return c.html('<h3>Tautan kedaluwarsa atau tidak valid. <a href="/login">Kembali</a></h3>', 400);
+app.post('/api/auth/verify-otp', async (c) => {
+  const { email, otp } = await c.req.json().catch(() => ({}));
+  if (!email || !otp) return c.json({ error: 'Email dan Kode OTP wajib diisi' }, 400);
+  const cleanEmail = String(email).trim().toLowerCase();
 
-  setCookie(c, 'berbirru_session', token, { path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 60 * 60 * 24 * 30 });
-  return c.redirect('/feed');
+  const user: any = await c.env.DB.prepare('SELECT id, pen_name FROM users WHERE email = ? LIMIT 1').bind(cleanEmail).first();
+  if (!user) return c.json({ error: 'Email tidak ditemukan' }, 404);
+
+  const session: any = await c.env.DB.prepare(
+    'SELECT id FROM sessions WHERE user_id = ? AND token = ? AND expires_at > datetime("now") LIMIT 1'
+  ).bind(user.id, `otp_${otp.trim()}`).first();
+
+  if (!session) {
+    return c.json({ error: 'Kode OTP salah atau sudah kedaluwarsa.' }, 400);
+  }
+
+  // OTP Valid -> Hapus session OTP sementara, ganti dengan Session Cookie 30 hari
+  await c.env.DB.prepare('DELETE FROM sessions WHERE id = ?').bind(session.id).run();
+  const sessionToken = crypto.randomUUID();
+  await c.env.DB.prepare(
+    'INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, datetime("now", "+30 days"))'
+  ).bind(crypto.randomUUID(), user.id, sessionToken).run();
+
+  setCookie(c, 'berbirru_session', sessionToken, { path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 60 * 60 * 24 * 30 });
+  return c.json({ ok: true, user: { id: user.id, pen_name: user.pen_name } });
 });
 
 app.post('/api/auth/logout', async (c) => {
