@@ -178,20 +178,44 @@ export function renderLandingPage(user: any = null): string {
     }
     .section-label::after { content: ''; flex: 1; height: 2px; background: var(--ink); }
 
-    /* Section 1: Eksplorasi Fitur (Clean Unified Card Layout) */
-    .features-container-grid {
+    /* Section 1: Eksplorasi Fitur (Mobile: Clean Stack | Desktop: Smooth Auto-Marquee Track) */
+    .features-mobile-view {
       display: grid;
       grid-template-columns: 1fr;
       gap: 14px;
       margin-bottom: 24px;
     }
-    @media (min-width: 768px) {
-      .features-container-grid {
-        grid-template-columns: repeat(4, 1fr);
-        gap: 18px;
+    @media (min-width: 860px) {
+      .features-mobile-view { display: none; }
+    }
+
+    .features-desktop-marquee {
+      display: none;
+    }
+    @media (min-width: 860px) {
+      .features-desktop-marquee {
+        display: block;
+        width: 100%;
+        overflow: hidden;
+        position: relative;
         margin-bottom: 32px;
+        padding: 4px 0 12px;
+      }
+      .features-track {
+        display: flex;
+        gap: 18px;
+        width: max-content;
+        animation: marqueeAnimation 25s linear infinite;
+      }
+      .features-track:hover {
+        animation-play-state: paused;
+      }
+      @keyframes marqueeAnimation {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
       }
     }
+
     .feature-card-clean {
       background: var(--bg-card);
       border: var(--border-thick);
@@ -202,6 +226,12 @@ export function renderLandingPage(user: any = null): string {
       flex-direction: column;
       gap: 10px;
       height: 100%;
+    }
+    @media (min-width: 860px) {
+      .feature-card-clean {
+        width: 290px;
+        flex-shrink: 0;
+      }
     }
     .feature-icon-badge {
       width: 40px;
@@ -463,12 +493,13 @@ export function renderLandingPage(user: any = null): string {
 
     </div>
 
-    <!-- SECTION 1: EKSPLORASI FITUR (CLEAN & NATIVE) -->
+    <!-- SECTION 1: EKSPLORASI FITUR -->
     <div class="section-label">
       <span>Eksplorasi Tanpa Batas — Apa yang Bisa Kamu Lakukan?</span>
     </div>
 
-    <div class="features-container-grid">
+    <!-- Mobile View: Clean Static Stack -->
+    <div class="features-mobile-view">
       <div class="feature-card-clean">
         <div class="feature-icon-badge">
           <svg class="ico" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
@@ -499,6 +530,77 @@ export function renderLandingPage(user: any = null): string {
         </div>
         <h3 class="feature-title-clean">Apresiasi Murni Bebas Toxic</h3>
         <p class="feature-desc-clean">Sistem feed berbasis gravitasi makna dan kesegaran rasa. Tanpa tekanan angka followers dan tanpa DM bising.</p>
+      </div>
+    </div>
+
+    <!-- Desktop View: Smooth Infinite Auto-Marquee Track -->
+    <div class="features-desktop-marquee">
+      <div class="features-track">
+        <!-- Set 1 -->
+        <div class="feature-card-clean">
+          <div class="feature-icon-badge">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
+          </div>
+          <h3 class="feature-title-clean">Goreskan Segala Bentuk Tulisan</h3>
+          <p class="feature-desc-clean">Mulai dari puisi, kutipan bermakna, micro-fiction, resensi buku, hingga cerita absurd dengan tipografi Serif, Sans, dan Mono.</p>
+        </div>
+
+        <div class="feature-card-clean">
+          <div class="feature-icon-badge" style="background:#0F3E99;">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          </div>
+          <h3 class="feature-title-clean">Sambung Estafet Lintas Kota</h3>
+          <p class="feature-desc-clean">Lanjutkan bait warkah penulis lain dari kota berbeda dalam satu klik. Jadilah bagian dari rantai untaian karya kolaboratif.</p>
+        </div>
+
+        <div class="feature-card-clean">
+          <div class="feature-icon-badge" style="background:#059669;">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          </div>
+          <h3 class="feature-title-clean">Pustaka Antologi Paspor</h3>
+          <p class="feature-desc-clean">Setiap bait karyamu, riwayat warkah yang disukai, dan simpanan favorit tersusun rapi dalam paspor antologi pribadimu.</p>
+        </div>
+
+        <div class="feature-card-clean">
+          <div class="feature-icon-badge" style="background:#D97706;">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </div>
+          <h3 class="feature-title-clean">Apresiasi Murni Bebas Toxic</h3>
+          <p class="feature-desc-clean">Sistem feed berbasis gravitasi makna dan kesegaran rasa. Tanpa tekanan angka followers dan tanpa DM bising.</p>
+        </div>
+
+        <!-- Set 2 (Seamless Loop) -->
+        <div class="feature-card-clean">
+          <div class="feature-icon-badge">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
+          </div>
+          <h3 class="feature-title-clean">Goreskan Segala Bentuk Tulisan</h3>
+          <p class="feature-desc-clean">Mulai dari puisi, kutipan bermakna, micro-fiction, resensi buku, hingga cerita absurd dengan tipografi Serif, Sans, dan Mono.</p>
+        </div>
+
+        <div class="feature-card-clean">
+          <div class="feature-icon-badge" style="background:#0F3E99;">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          </div>
+          <h3 class="feature-title-clean">Sambung Estafet Lintas Kota</h3>
+          <p class="feature-desc-clean">Lanjutkan bait warkah penulis lain dari kota berbeda dalam satu klik. Jadilah bagian dari rantai untaian karya kolaboratif.</p>
+        </div>
+
+        <div class="feature-card-clean">
+          <div class="feature-icon-badge" style="background:#059669;">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          </div>
+          <h3 class="feature-title-clean">Pustaka Antologi Paspor</h3>
+          <p class="feature-desc-clean">Setiap bait karyamu, riwayat warkah yang disukai, dan simpanan favorit tersusun rapi dalam paspor antologi pribadimu.</p>
+        </div>
+
+        <div class="feature-card-clean">
+          <div class="feature-icon-badge" style="background:#D97706;">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </div>
+          <h3 class="feature-title-clean">Apresiasi Murni Bebas Toxic</h3>
+          <p class="feature-desc-clean">Sistem feed berbasis gravitasi makna dan kesegaran rasa. Tanpa tekanan angka followers dan tanpa DM bising.</p>
+        </div>
       </div>
     </div>
 
