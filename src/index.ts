@@ -7,6 +7,7 @@ import { renderFeedPage } from './web/feed';
 import { renderProfilePage } from './web/profile';
 import { renderNotificationsPage } from './web/notifications';
 import { sendMagicEmail } from './mail';
+import { OG_IMAGE_BASE64 } from './assets';
 
 export interface Env {
   DB: D1Database;
@@ -68,6 +69,24 @@ app.get('/u/:pen_name', async (c) => {
 });
 
 // ---- SEO & CRAWLER ENDPOINTS ----
+app.get('/favicon.ico', (c) => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="#1D61E7" stroke="#0B192C" stroke-width="2"/>
+    <path d="M22 17V11a2 2 0 0 0-1-1.73l-5-2.88a2 2 0 0 0-2 0l-5 2.88A2 2 0 0 0 8 11v6a2 2 0 0 0 1 1.73l5 2.88a2 2 0 0 0 2 0l5-2.88A2 2 0 0 0 22 17z" stroke="#FFFFFF" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+  return c.text(svg, 200, { 'Content-Type': 'image/svg+xml' });
+});
+
+app.get('/og-image.png', (c) => {
+  const binary = Uint8Array.from(atob(OG_IMAGE_BASE64), (c) => c.charCodeAt(0));
+  return new Response(binary, {
+    headers: {
+      'Content-Type': 'image/png',
+      'Cache-Control': 'public, max-age=86400',
+    },
+  });
+});
+
 app.get('/robots.txt', (c) => {
   const robots = `User-agent: *
 Allow: /

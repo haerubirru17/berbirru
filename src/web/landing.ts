@@ -5,6 +5,27 @@ export function renderLandingPage(user: any = null): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BERBIRRU.COM — Pustaka Tulisan & Kolaborasi Kata</title>
+  
+  <!-- Primary Meta Tags -->
+  <meta name="title" content="BERBIRRU.COM — Pustaka Tulisan & Kolaborasi Kata">
+  <meta name="description" content="Tempat segala bentuk tulisan—puisi, kutipan bermakna, cerita kilat, resensi buku, hingga perenungan absurd—dicatat abadi dan disambung bersama.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.ico">
+
+  <!-- Open Graph / Facebook / WhatsApp -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://berbirru.com/">
+  <meta property="og:title" content="BERBIRRU.COM — Pustaka Tulisan & Kolaborasi Kata">
+  <meta property="og:description" content="Ruang literasi modern bebas algoritma bising. Goreskan bait rasa dan sambung estafet kata bersama lintas kota.">
+  <meta property="og:image" content="https://berbirru.com/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://berbirru.com/">
+  <meta name="twitter:title" content="BERBIRRU.COM — Pustaka Tulisan & Kolaborasi Kata">
+  <meta name="twitter:description" content="Ruang literasi modern bebas algoritma bising. Goreskan bait rasa dan sambung estafet kata bersama lintas kota.">
+  <meta name="twitter:image" content="https://berbirru.com/og-image.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800;900&family=Space+Grotesk:wght@600;700;800&family=JetBrains+Mono:wght@600;800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">

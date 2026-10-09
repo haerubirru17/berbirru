@@ -5,6 +5,10 @@ export function renderFeedPage(user: any = null): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Beranda Warkah — BERBIRRU.COM</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.ico">
+  <meta property="og:title" content="Beranda Warkah — BERBIRRU.COM">
+  <meta property="og:description" content="Linimasa sastra, puisi, dan sambung bait kata bersama.">
+  <meta property="og:image" content="https://berbirru.com/og-image.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800;900&family=Space+Grotesk:wght@600;700;800&family=JetBrains+Mono:wght@600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
