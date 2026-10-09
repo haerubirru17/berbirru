@@ -14,6 +14,8 @@ export interface Env {
   APP_NAME: string;
   APP_DOMAIN: string;
   JWT_SECRET: string;
+  RESEND_API_KEY?: string;
+  RESEND_FROM?: string;
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -217,9 +219,57 @@ app.post('/api/auth/send-otp', async (c) => {
     'INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, datetime("now", "+10 minutes"))'
   ).bind(crypto.randomUUID(), user.id, `otp_${otpCode}`).run();
 
-  const sent = await sendOtpEmail(cleanEmail, otpCode, c.env);
-  if (!sent) {
-    return c.json({ error: 'Gagal mengirim kode OTP ke email Anda.' }, 500);
+  const apiKey = c.env.RESEND_API_KEY || '';
+  const fromEmail = c.env.RESEND_FROM || 'BERBIRRU.COM <noreply@berbirru.com>';
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html lang="id">
+    <head><meta charset="UTF-8"><title>Kode OTP</title></head>
+    <body style="margin:0;padding:24px;background:#F0F6FE;font-family:sans-serif;">
+      <div style="max-width:440px;margin:0 auto;background:#FFF;border:3px solid #0B192C;border-radius:14px;padding:24px;box-shadow:4px 4px 0 #0B192C;">
+        <h2 style="color:#1D61E7;margin-top:0;">BERBIRRU.COM</h2>
+        <p style="font-size:14px;color:#334155;">Gunakan 6 digit kode OTP di bawah ini untuk masuk ke akun Anda:</p>
+        <div style="background:#FDE047;border:2.5px solid #0B192C;border-radius:10px;padding:12px;text-align:center;font-size:28px;font-weight:900;letter-spacing:6px;margin:18px 0;color:#0B192C;">
+          \${otpCode}
+        </div>
+        <p style="font-size:12px;color:#64748B;margin-bottom:0;">⏱ Kode aktif selama 10 menit. Jangan berikan kepada siapa pun.</p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  try {
+    const resendRes = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + apiKey,
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0'
+      },
+      body: JSON.stringify({
+        from: fromEmail,
+        to: [cleanEmail],
+        subject: `Kode Masuk OTP: ${otpCode} — BERBIRRU.COM`,
+        html: `
+          <div style="max-width:440px;margin:0 auto;background:#FFF;border:3px solid #0B192C;border-radius:14px;padding:24px;box-shadow:4px 4px 0 #0B192C;font-family:sans-serif;">
+            <h2 style="color:#1D61E7;margin-top:0;">BERBIRRU.COM</h2>
+            <p style="font-size:14px;color:#334155;">Gunakan 6 digit kode OTP di bawah ini untuk masuk ke akun Anda:</p>
+            <div style="background:#FDE047;border:2.5px solid #0B192C;border-radius:10px;padding:12px;text-align:center;font-size:32px;font-weight:900;letter-spacing:6px;margin:18px 0;color:#0B192C;">
+              ${otpCode}
+            </div>
+            <p style="font-size:12px;color:#64748B;margin-bottom:0;">⏱ Kode aktif selama 10 menit. Jangan berikan kepada siapa pun.</p>
+          </div>
+        `
+      })
+    });
+
+    if (!resendRes.ok) {
+      const errTxt = await resendRes.text();
+      return c.json({ error: 'Resend API Error: ' + errTxt }, 500);
+    }
+  } catch (err: any) {
+    return c.json({ error: 'Fetch error: ' + err.message }, 500);
   }
 
   return c.json({ 

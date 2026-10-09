@@ -79,6 +79,7 @@ export async function sendOtpEmail(toEmail: string, otpCode: string, env: any = 
   `;
 
   try {
+    console.log(`[resend] Sending email from=${fromEmail} to=${toEmail} using key_len=${apiKey ? apiKey.length : 0}`);
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -94,6 +95,10 @@ export async function sendOtpEmail(toEmail: string, otpCode: string, env: any = 
       })
     });
 
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('[resend error]', res.status, errText);
+    }
     return res.ok;
   } catch (err) {
     console.error('Resend OTP error:', err);
