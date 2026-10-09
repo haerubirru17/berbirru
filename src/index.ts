@@ -201,8 +201,17 @@ app.post('/api/auth/magic-link', async (c) => {
   const { email } = await c.req.json().catch(() => ({}));
   if (!email) return c.json({ error: 'Email wajib diisi' }, 400);
   const cleanEmail = String(email).trim().toLowerCase();
-  const user: any = await c.env.DB.prepare('SELECT id, pen_name FROM users WHERE email = ? LIMIT 1').bind(cleanEmail).first();
-  if (!user) return c.json({ error: 'Email belum terdaftar. Silakan buat akun terlebih dahulu.' }, 404);
+  let user: any = await c.env.DB.prepare('SELECT id, pen_name FROM users WHERE email = ? LIMIT 1').bind(cleanEmail).first();
+  
+  // Auto-register jika belum terdaftar saat minta magic link
+  if (!user) {
+    const defaultPenName = 'penyair_' + crypto.randomUUID().slice(0, 4);
+    const userId = crypto.randomUUID();
+    await c.env.DB.prepare(
+      'INSERT INTO users (id, email, password_hash, pen_name, location) VALUES (?, ?, ?, ?, ?)'
+    ).bind(userId, cleanEmail, 'magic_link_auth', defaultPenName, 'Nusantara').run();
+    user = { id: userId, pen_name: defaultPenName };
+  }
 
   const magicToken = crypto.randomUUID();
   await c.env.DB.prepare(
@@ -210,7 +219,11 @@ app.post('/api/auth/magic-link', async (c) => {
   ).bind(crypto.randomUUID(), user.id, magicToken).run();
 
   const magicUrl = `https://${c.env.APP_DOMAIN || 'berbirru.com'}/api/auth/magic-callback?token=${magicToken}`;
-  await sendMagicEmail(cleanEmail, magicUrl, c.env);
+  const sent = await sendMagicEmail(cleanEmail, magicUrl, c.env);
+
+  if (!sent) {
+    return c.json({ error: 'Gagal mengirim surel. Pastikan kuota dan alamat email valid.' }, 500);
+  }
 
   return c.json({ 
     message: 'Tautan masuk instan berhasil dikirim ke ' + cleanEmail + '!',
