@@ -232,8 +232,13 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
     }
 
     function onTurnstileError() {
-      console.warn('Turnstile script blocked by adblocker / network filter. Falling back gracefully.');
+      console.warn('Turnstile gagal (adblocker/iframe diblokir). Widget disembunyikan, lanjut tanpa verifikasi.');
+      document.querySelectorAll('.cf-turnstile').forEach(el => { if (el.parentElement) el.parentElement.style.display = 'none'; });
+      window.__tsBlocked = true;
+      return true; // serahkan ke app — jangan tampilkan kotak error Cloudflare
     }
+    // Bila script api.js diblokir total (widget tak pernah render), sembunyikan placeholder kosong
+    setTimeout(() => { if (!window.turnstile) onTurnstileError(); }, 6000);
 
     function getTurnstileToken() {
       const el = document.querySelector('[name="cf-turnstile-response"]');

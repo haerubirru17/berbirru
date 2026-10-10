@@ -42,6 +42,39 @@ async function verifyTurnstile(token: string, secretKey: string, remoteIp?: stri
   }
 }
 
+// Throttle ringan lintas-request pakai edge cache (tanpa KV/D1/migrasi).
+// ponytail: cache.default per-datacenter, kasar (bukan global) — cukup untuk
+// meredam spam ketika Turnstile terblokir adblocker. Naikkan ke KV/DO kalau
+// nanti perlu limit global presisi.
+async function tooMany(key: string, limit: number, windowSec: number): Promise<boolean> {
+  const cache = (caches as any).default;
+  const url = new URL(`https://throttle.internal/${encodeURIComponent(key)}`);
+  const hit = await cache.match(url);
+  const count = hit ? parseInt((await hit.text()) || '0', 10) || 0 : 0;
+  if (count >= limit) return true;
+  await cache.put(url, new Response(String(count + 1), { headers: { 'Cache-Control': `max-age=${windowSec}` } }));
+  return false;
+}
+
+// Gate auth: Turnstile wajib bila token tersedia; bila script diblokir adblocker
+// (token kosong) → fail-open terbatas: dijaga throttle per-IP + tetap butuh
+// kredensial nyata (password benar / email terdaftar).
+// register tetap hard: tanpa Turnstile token tidak boleh daftar.
+async function requireHuman(c: any, token: string, bucket: string, limit: number, windowSec: number): Promise<string | null> {
+  const secret = c.env.TURNSTILE_SECRET_KEY || '';
+  const ip = c.req.header('cf-connecting-ip') || 'unknown';
+  if (secret && token) {
+    const ok = await verifyTurnstile(token, secret, ip);
+    if (ok) return null;
+    return 'Verifikasi keamanan Turnstile gagal atau kedaluwarsa. Silakan muat ulang halaman.';
+  }
+  // Token kosong → kemungkinan besar adblocker memblokir challenges.cloudflare.com
+  if (await tooMany(`${bucket}:${ip}`, limit, windowSec)) {
+    return 'Terlalu banyak percobaan dari jaringan ini. Coba lagi beberapa menit lagi.';
+  }
+  return null;
+}
+
 const app = new Hono<{ Bindings: Env }>();
 
 app.use('*', cors());
@@ -213,12 +246,9 @@ app.post('/api/auth/login', async (c) => {
   const { email, password, turnstile_token } = await c.req.json().catch(() => ({}));
   if (!email || !password) return c.json({ error: 'Email dan kata sandi wajib diisi.' }, 400);
 
-  // Verifikasi Turnstile
-  const clientIp = c.req.header('cf-connecting-ip') || '';
-  const isHuman = await verifyTurnstile(turnstile_token, c.env.TURNSTILE_SECRET_KEY || '', clientIp);
-  if (!isHuman) {
-    return c.json({ error: 'Verifikasi keamanan Turnstile gagal atau kedaluwarsa. Silakan muat ulang halaman.' }, 403);
-  }
+  // Turnstile: gagal-terbuka terbatas bila adblocker memblokir widget (dijaga throttle + password tetap wajib)
+  const humanErr = await requireHuman(c, turnstile_token || '', 'login', 5, 300);
+  if (humanErr) return c.json({ error: humanErr }, 403);
 
   const cleanEmail = String(email).trim().toLowerCase();
   const user: any = await c.env.DB.prepare('SELECT * FROM users WHERE email = ? LIMIT 1').bind(cleanEmail).first();
@@ -243,12 +273,9 @@ app.post('/api/auth/send-otp', async (c) => {
   const { email, turnstile_token } = await c.req.json().catch(() => ({}));
   if (!email) return c.json({ error: 'Email wajib diisi' }, 400);
 
-  // Verifikasi Turnstile
-  const clientIp = c.req.header('cf-connecting-ip') || '';
-  const isHuman = await verifyTurnstile(turnstile_token, c.env.TURNSTILE_SECRET_KEY || '', clientIp);
-  if (!isHuman) {
-    return c.json({ error: 'Verifikasi keamanan Turnstile gagal atau kedaluwarsa. Silakan muat ulang halaman.' }, 403);
-  }
+  // Turnstile: fail-open terbatas bila adblocker memblokir widget; throttle ketat karena endpoint ini kirim email
+  const humanErr = await requireHuman(c, turnstile_token || '', 'otp', 3, 600);
+  if (humanErr) return c.json({ error: humanErr }, 403);
 
   const cleanEmail = String(email).trim().toLowerCase();
 
