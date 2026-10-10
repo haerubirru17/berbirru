@@ -303,6 +303,9 @@ app.post('/api/auth/login', async (c) => {
     await c.env.DB.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(upgraded, user.id).run();
   }
 
+  // Login berhasil → reset penghitung gagal akun ini (hanya kegagalan berturut yang menumpuk).
+  await c.env.DB.prepare('DELETE FROM rate_limits WHERE key = ?').bind(`pw:${cleanEmail}`).run();
+
   // Batas jumlah sesi paralel per akun (temuan vuln-0006): simpan 5 sesi terbaru saja.
   await c.env.DB.prepare(
     `DELETE FROM sessions WHERE user_id = ? AND token NOT LIKE 'otp_%' AND id NOT IN (
