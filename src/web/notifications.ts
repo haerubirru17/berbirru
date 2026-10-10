@@ -214,6 +214,10 @@ export function renderNotificationsPage(user: any = null): string {
       }
     }
 
+    function escapeHtml(t) {
+      return String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
     function renderNotifCard(n) {
       let badgeHtml = '';
       let actionText = '';
@@ -240,9 +244,9 @@ export function renderNotificationsPage(user: any = null): string {
             \${badgeHtml}
           </div>
           <div class="notif-content">
-            <div class="notif-text"><b>@\${n.actor_pen_name}</b> \${actionText}</div>
-            \${n.post_title ? \`<div class="notif-quote-preview">"\${n.post_title}"</div>\` : ''}
-            <div class="notif-time">\${n.created_at}</div>
+            <div class="notif-text"><b>@\${escapeHtml(n.actor_pen_name)}</b> \${actionText}</div>
+            \${n.post_title ? \`<div class="notif-quote-preview">"\${escapeHtml(n.post_title)}"</div>\` : ''}
+            <div class="notif-time">\${escapeHtml(n.created_at)}</div>
           </div>
         </a>
       \`;

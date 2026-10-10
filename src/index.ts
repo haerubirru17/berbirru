@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
+import { hashPassword, verifyPassword, passwordIssue } from './lib/password';
+import { sanitizeRich, escapeHtml, stripTags } from './lib/sanitize';
 import { renderLandingPage } from './web/landing';
 import { renderLoginPage } from './web/login';
 import { renderFeedPage } from './web/feed';
@@ -22,7 +24,12 @@ export interface Env {
 
 // Helper verifikasi Cloudflare Turnstile token
 async function verifyTurnstile(token: string, secretKey: string, remoteIp?: string): Promise<boolean> {
-  if (!secretKey) return true; // Jika secret key belum diset di env, bypass (fail-open for dev/staging)
+  // Fail-CLOSED: secret wajib terpasang di produksi. Kalau hilang → tolak + log,
+  // jangan pernah diam-diam meloloskan semua orang (temuan vuln-0002 Strix).
+  if (!secretKey) {
+    console.error('TURNSTILE_SECRET_KEY belum diset — verifikasi Turnstile DITOLAK (fail-closed).');
+    return false;
+  }
   if (!token) return false;
   try {
     const formData = new FormData();
@@ -42,34 +49,36 @@ async function verifyTurnstile(token: string, secretKey: string, remoteIp?: stri
   }
 }
 
-// Throttle ringan lintas-request pakai edge cache (tanpa KV/D1/migrasi).
-// ponytail: cache.default per-datacenter, kasar (bukan global) — cukup untuk
-// meredam spam ketika Turnstile terblokir adblocker. Naikkan ke KV/DO kalau
-// nanti perlu limit global presisi.
-async function tooMany(key: string, limit: number, windowSec: number): Promise<boolean> {
-  const cache = (caches as any).default;
-  const url = new URL(`https://throttle.internal/${encodeURIComponent(key)}`);
-  const hit = await cache.match(url);
-  const count = hit ? parseInt((await hit.text()) || '0', 10) || 0 : 0;
-  if (count >= limit) return true;
-  await cache.put(url, new Response(String(count + 1), { headers: { 'Cache-Control': `max-age=${windowSec}` } }));
-  return false;
+// ---- RATE LIMITING (D1) ----
+// Batas per-key (IP atau email) per jendela waktu, disimpan di D1 supaya berlaku
+// global lintas-datacenter (temuan vuln-0004 & 0005 Strix). Sebelumnya pakai
+// edge cache yang per-POP sehingga mudah dilewati.
+// ponytail: satu UPSERT per percobaan; cukup untuk skala ini. Naikkan ke Durable
+// Object kalau nanti butuh presisi/throughput jauh lebih tinggi.
+async function hitRate(db: D1Database, key: string, limit: number, windowSec: number): Promise<boolean> {
+  const row: any = await db.prepare(
+    `INSERT INTO rate_limits (key, count, expires_at) VALUES (?, 1, datetime('now', '+' || ? || ' seconds'))
+     ON CONFLICT(key) DO UPDATE SET
+       count = CASE WHEN rate_limits.expires_at < datetime('now') THEN 1 ELSE rate_limits.count + 1 END,
+       expires_at = CASE WHEN rate_limits.expires_at < datetime('now') THEN datetime('now', '+' || ? || ' seconds') ELSE rate_limits.expires_at END
+     RETURNING count`
+  ).bind(key, windowSec, windowSec).first();
+  return ((row && row.count) || 0) > limit;
 }
 
-// Gate auth: Turnstile wajib bila token tersedia; bila script diblokir adblocker
-// (token kosong) → fail-open terbatas: dijaga throttle per-IP + tetap butuh
-// kredensial nyata (password benar / email terdaftar).
-// register tetap hard: tanpa Turnstile token tidak boleh daftar.
+// Gate auth: Turnstile WAJIB (fail-closed). Token kosong/gagal = ditolak, sehingga
+// desain fail-open lama (vuln-0002) tertutup. Rate limit per-IP sebagai lapisan kedua.
 async function requireHuman(c: any, token: string, bucket: string, limit: number, windowSec: number): Promise<string | null> {
   const secret = c.env.TURNSTILE_SECRET_KEY || '';
+  if (!secret) {
+    console.error('TURNSTILE_SECRET_KEY belum diset — auth DITOLAK (fail-closed).');
+    return 'Layanan verifikasi keamanan sedang tidak tersedia. Coba beberapa saat lagi.';
+  }
   const ip = c.req.header('cf-connecting-ip') || 'unknown';
-  if (secret && token) {
-    const ok = await verifyTurnstile(token, secret, ip);
-    if (ok) return null;
+  if (!(await verifyTurnstile(token, secret, ip))) {
     return 'Verifikasi keamanan Turnstile gagal atau kedaluwarsa. Silakan muat ulang halaman.';
   }
-  // Token kosong → kemungkinan besar adblocker memblokir challenges.cloudflare.com
-  if (await tooMany(`${bucket}:${ip}`, limit, windowSec)) {
+  if (await hitRate(c.env.DB, `rl:${bucket}:${ip}`, limit, windowSec)) {
     return 'Terlalu banyak percobaan dari jaringan ini. Coba lagi beberapa menit lagi.';
   }
   return null;
@@ -77,16 +86,34 @@ async function requireHuman(c: any, token: string, bucket: string, limit: number
 
 const app = new Hono<{ Bindings: Env }>();
 
-app.use('*', cors());
+// CORS dikunci ke domain sendiri (sebelumnya `*` = siapa pun bisa memanggil API
+// dengan kredensial; bagian dari temuan vuln-0009). Tanpa origin (same-origin
+// fetch dari browser tidak mengirim Origin) → tanpa header CORS, tetap aman.
+const ALLOWED_ORIGINS = ['https://berbirru.com', 'https://www.berbirru.com'];
+app.use('*', cors({
+  origin: (origin: string) => (ALLOWED_ORIGINS.includes(origin) ? origin : null),
+  credentials: true,
+}));
+
+// Proteksi CSRF server-side (temuan vuln-0009). Catatan: `csrf()` bawaan Hono HANYA
+// memeriksa content-type form (x-www-form-urlencoded|multipart|text/plain), sehingga
+// API JSON kita lolos begitu saja (sudah diuji). Jadi kita periksa Origin sendiri
+// untuk semua metode yang mengubah state. Wajib dipasang SEBELUM semua route —
+// Hono hanya menjalankan middleware yang terdaftar lebih dulu.
+app.use('*', async (c, next) => {
+  const method = c.req.method.toUpperCase();
+  if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {
+    const origin = c.req.header('origin');
+    if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+      return c.json({ error: 'Permintaan dari situs lain ditolak.' }, 403);
+    }
+  }
+  await next();
+  c.header('X-Content-Type-Options', 'nosniff');
+  c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+});
 
 // ---- AUTH HELPERS ----
-async function hashPassword(password: string): Promise<string> {
-  const msgUint8 = new TextEncoder().encode(password + 'berbirru-salt-2026');
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
 async function getAuthUser(c: any): Promise<{ id: string; email: string; pen_name: string; city: string; bio: string } | null> {
   const token = getCookie(c, 'berbirru_session');
   if (!token) return null;
@@ -208,19 +235,20 @@ app.post('/api/auth/register', async (c) => {
     return c.json({ error: 'Email, kata sandi, dan nama pena wajib diisi.' }, 400);
   }
 
-  // Verifikasi Turnstile
-  const clientIp = c.req.header('cf-connecting-ip') || '';
-  const isHuman = await verifyTurnstile(turnstile_token, c.env.TURNSTILE_SECRET_KEY || '', clientIp);
-  if (!isHuman) {
-    return c.json({ error: 'Verifikasi keamanan Turnstile gagal atau kedaluwarsa. Silakan muat ulang halaman.' }, 403);
-  }
+  // Verifikasi Turnstile (fail-closed — wajib lolos sebelum boleh daftar)
+  const humanErr = await requireHuman(c, turnstile_token || '', 'register', 10, 600);
+  if (humanErr) return c.json({ error: humanErr }, 403);
 
   const cleanEmail = String(email).trim().toLowerCase();
   const cleanPenName = String(pen_name).replace(/^@/, '').trim().toLowerCase();
-  
+
   if (!/^[a-z0-9._-]+$/.test(cleanPenName)) {
     return c.json({ error: 'Nama pena hanya boleh huruf kecil, angka, titik, underscore, dan strip.' }, 400);
   }
+
+  // Kebijakan kekuatan kata sandi (temuan vuln-0007)
+  const pwdErr = passwordIssue(password, cleanEmail, cleanPenName);
+  if (pwdErr) return c.json({ error: pwdErr }, 400);
 
   const existing = await c.env.DB.prepare('SELECT id FROM users WHERE email = ? OR pen_name = ? LIMIT 1').bind(cleanEmail, cleanPenName).first();
   if (existing) {
@@ -246,18 +274,41 @@ app.post('/api/auth/login', async (c) => {
   const { email, password, turnstile_token } = await c.req.json().catch(() => ({}));
   if (!email || !password) return c.json({ error: 'Email dan kata sandi wajib diisi.' }, 400);
 
-  // Turnstile: gagal-terbuka terbatas bila adblocker memblokir widget (dijaga throttle + password tetap wajib)
-  const humanErr = await requireHuman(c, turnstile_token || '', 'login', 5, 300);
+  // Turnstile wajib (fail-closed). Rate limit per-IP di dalam requireHuman.
+  const humanErr = await requireHuman(c, turnstile_token || '', 'login', 10, 300);
   if (humanErr) return c.json({ error: humanErr }, 403);
 
   const cleanEmail = String(email).trim().toLowerCase();
-  const user: any = await c.env.DB.prepare('SELECT * FROM users WHERE email = ? LIMIT 1').bind(cleanEmail).first();
-  if (!user) return c.json({ error: 'Akun tidak ditemukan. Silakan daftar terlebih dahulu.' }, 401);
 
-  const pwdHash = await hashPassword(password);
-  if (user.password_hash !== pwdHash) {
-    return c.json({ error: 'Kata sandi tidak sesuai.' }, 401);
+  // Lockout per-email (temuan vuln-0004): dibatasi juga per akun, bukan cuma per IP,
+  // supaya credential stuffing dari banyak IP tetap ketahan.
+  if (await hitRate(c.env.DB, `pw:${cleanEmail}`, 5, 900)) {
+    return c.json({ error: 'Terlalu banyak percobaan masuk untuk akun ini. Coba lagi nanti.' }, 429);
   }
+
+  const user: any = await c.env.DB.prepare('SELECT * FROM users WHERE email = ? LIMIT 1').bind(cleanEmail).first();
+  // Pesan seragam untuk email tak terdaftar & sandi salah → cegah enumerasi (vuln-0003).
+  const BAD_CRED = { error: 'Email atau kata sandi tidak sesuai.' };
+
+  if (!user) return c.json(BAD_CRED, 401);
+
+  const check = await verifyPassword(password, user.password_hash);
+  if (!check.ok) {
+    return c.json(BAD_CRED, 401);
+  }
+
+  // Migrasi transparan: hash lama (SHA-256 + salt statis) di-upgrade ke PBKDF2 saat login.
+  if (check.needsRehash) {
+    const upgraded = await hashPassword(password);
+    await c.env.DB.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(upgraded, user.id).run();
+  }
+
+  // Batas jumlah sesi paralel per akun (temuan vuln-0006): simpan 5 sesi terbaru saja.
+  await c.env.DB.prepare(
+    `DELETE FROM sessions WHERE user_id = ? AND token NOT LIKE 'otp_%' AND id NOT IN (
+       SELECT id FROM sessions WHERE user_id = ? AND token NOT LIKE 'otp_%' ORDER BY created_at DESC LIMIT 4
+     )`
+  ).bind(user.id, user.id).run();
 
   const token = crypto.randomUUID() + '-' + crypto.randomUUID();
   await c.env.DB.prepare(
@@ -273,22 +324,29 @@ app.post('/api/auth/send-otp', async (c) => {
   const { email, turnstile_token } = await c.req.json().catch(() => ({}));
   if (!email) return c.json({ error: 'Email wajib diisi' }, 400);
 
-  // Turnstile: fail-open terbatas bila adblocker memblokir widget; throttle ketat karena endpoint ini kirim email
-  const humanErr = await requireHuman(c, turnstile_token || '', 'otp', 3, 600);
+  // Turnstile wajib (fail-closed) + rate limit per-IP.
+  const humanErr = await requireHuman(c, turnstile_token || '', 'otp', 5, 600);
   if (humanErr) return c.json({ error: humanErr }, 403);
 
   const cleanEmail = String(email).trim().toLowerCase();
 
-  // STRICT GUARD: Hanya email yang SUDAH TERDAFTAR yang boleh menerima OTP
-  const user: any = await c.env.DB.prepare('SELECT id, pen_name FROM users WHERE email = ? LIMIT 1').bind(cleanEmail).first();
-  if (!user) {
-    return c.json({ error: 'Email tidak ditemukan! Pastikan Anda sudah mendaftar terlebih dahulu.' }, 404);
+  // Batas pengiriman OTP per email (vuln-0005) — cegah flooding ke satu korban.
+  if (await hitRate(c.env.DB, `otp:${cleanEmail}`, 5, 900)) {
+    return c.json({ error: 'Terlalu banyak permintaan kode untuk email ini. Coba lagi nanti.' }, 429);
   }
 
-  // Generate 6 Digit Random OTP (misal: 749281)
-  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+  // Pesan SERAGAM: terdaftar atau tidak, jawabannya sama → cegah enumerasi email (vuln-0003).
+  const UNIFORM = { message: 'Jika email terdaftar, kode OTP sudah dikirim. Cek kotak masuk (dan folder spam) Anda.', success: true };
 
-  // Simpan OTP ke sessions table (berlaku 10 menit)
+  const user: any = await c.env.DB.prepare('SELECT id, pen_name FROM users WHERE email = ? LIMIT 1').bind(cleanEmail).first();
+  // Email tak terdaftar: balas pesan yang sama, jangan kirim email, jangan simpan OTP.
+  if (!user) return c.json(UNIFORM);
+
+  // OTP acak kriptografis (Math.random bisa diprediksi).
+  const otpCode = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0');
+
+  // Hapus OTP lama user ini — hanya kode terbaru yang berlaku.
+  await c.env.DB.prepare("DELETE FROM sessions WHERE user_id = ? AND token LIKE 'otp_%'").bind(user.id).run();
   await c.env.DB.prepare(
     'INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, datetime("now", "+10 minutes"))'
   ).bind(crypto.randomUUID(), user.id, `otp_${otpCode}`).run();
@@ -344,32 +402,40 @@ app.post('/api/auth/send-otp', async (c) => {
 
     if (!resendRes.ok) {
       const errTxt = await resendRes.text();
-      return c.json({ error: 'Resend API Error: ' + errTxt }, 500);
+      console.error('Resend API Error:', errTxt);
+      return c.json({ error: 'Gagal mengirim kode OTP saat ini. Coba lagi beberapa saat lagi.' }, 502);
     }
   } catch (err: any) {
-    return c.json({ error: 'Fetch error: ' + err.message }, 500);
+    console.error('OTP fetch error:', err?.message);
+    return c.json({ error: 'Gagal mengirim kode OTP saat ini. Coba lagi beberapa saat lagi.' }, 502);
   }
 
-  return c.json({ 
-    message: 'Kode OTP 6-digit berhasil dikirim ke ' + cleanEmail + '!',
-    success: true
-  });
+  return c.json(UNIFORM);
 });
 
 app.post('/api/auth/verify-otp', async (c) => {
   const { email, otp } = await c.req.json().catch(() => ({}));
   if (!email || !otp) return c.json({ error: 'Email dan Kode OTP wajib diisi' }, 400);
   const cleanEmail = String(email).trim().toLowerCase();
+  const ip = c.req.header('cf-connecting-ip') || 'unknown';
+
+  // Anti brute-force OTP (vuln-0005): batas per-IP dan per-akun.
+  if (await hitRate(c.env.DB, `votp:ip:${ip}`, 10, 600) || await hitRate(c.env.DB, `votp:${cleanEmail}`, 10, 600)) {
+    return c.json({ error: 'Terlalu banyak percobaan kode. Tunggu beberapa menit lalu coba lagi.' }, 429);
+  }
+
+  // Pesan seragam untuk email tak terdaftar / kode salah → cegah enumerasi (vuln-0003).
+  const BAD_OTP = { error: 'Kode OTP salah atau sudah kedaluwarsa.' };
 
   const user: any = await c.env.DB.prepare('SELECT id, pen_name FROM users WHERE email = ? LIMIT 1').bind(cleanEmail).first();
-  if (!user) return c.json({ error: 'Email tidak ditemukan' }, 404);
+  if (!user) return c.json(BAD_OTP, 400);
 
   const session: any = await c.env.DB.prepare(
     'SELECT id FROM sessions WHERE user_id = ? AND token = ? AND expires_at > datetime("now") LIMIT 1'
   ).bind(user.id, `otp_${otp.trim()}`).first();
 
   if (!session) {
-    return c.json({ error: 'Kode OTP salah atau sudah kedaluwarsa.' }, 400);
+    return c.json(BAD_OTP, 400);
   }
 
   // OTP Valid -> Hapus session OTP sementara, ganti dengan Session Cookie 30 hari
@@ -408,11 +474,16 @@ app.patch('/api/users/me', async (c) => {
     if (existing) return c.json({ error: 'Nama pena sudah digunakan penulis lain.' }, 400);
   }
 
+  // bio & city disimpan apa adanya; semua sink render meng-escape (textContent /
+  // escapeHtml) — lihat feed.ts & profile.ts (vuln-0008).
+  const cleanCity = city !== undefined ? String(city).trim().slice(0, 60) : user.city;
+  const cleanBio = bio !== undefined ? String(bio).trim().slice(0, 300) : user.bio;
+
   await c.env.DB.prepare(
     'UPDATE users SET pen_name = ?, city = ?, bio = ? WHERE id = ?'
-  ).bind(cleanPenName, city !== undefined ? String(city).trim() : user.city, bio !== undefined ? String(bio).trim() : user.bio, user.id).run();
+  ).bind(cleanPenName, cleanCity, cleanBio, user.id).run();
 
-  return c.json({ ok: true, user: { id: user.id, pen_name: cleanPenName, city: city || user.city, bio: bio || user.bio } });
+  return c.json({ ok: true, user: { id: user.id, pen_name: cleanPenName, city: cleanCity, bio: cleanBio } });
 });
 
 app.get('/api/users/:pen_name', async (c) => {
@@ -488,13 +559,14 @@ app.get('/api/users/:pen_name/posts', async (c) => {
   return c.json({ tab, posts });
 });
 
-// ---- POSTS & FEED API ----
+// ---- NOTIFIKASI (SSR) ----
 app.get('/notifications', async (c) => {
   const user = await getAuthUser(c);
   if (!user) return c.redirect('/login');
   return c.html(renderNotificationsPage(user));
 });
 
+// ---- POSTS & FEED API ----
 app.get('/api/notifications', async (c) => {
   const user = await getAuthUser(c);
   if (!user) return c.json({ error: 'Unauthorized' }, 401);
@@ -598,12 +670,21 @@ app.post('/api/posts', async (c) => {
   if (!user) return c.json({ error: 'Silakan masuk untuk menerbitkan warkah.' }, 401);
 
   const { title, content, parent_id } = await c.req.json().catch(() => ({}));
-  if (!content || !content.trim()) return c.json({ error: 'Isi warkah tidak boleh kosong.' }, 400);
+
+  // Sanitasi di titik masuk API (temuan vuln-0008): konten kaya dibersihkan dengan
+  // allowlist (format editor tetap), judul di-escape jadi teks biasa. Semua sink
+  // render (feed, profil, notifikasi) otomatis aman dari satu titik ini.
+  const cleanContent = sanitizeRich(content).trim();
+  if (!cleanContent || stripTags(cleanContent).trim() === '') {
+    return c.json({ error: 'Isi warkah tidak boleh kosong.' }, 400);
+  }
+  // Judul: teks biasa, disimpan apa adanya — di-escape saat render (feed/profil).
+  const cleanTitle = title ? String(title).trim().slice(0, 200) : null;
 
   const postId = crypto.randomUUID();
   await c.env.DB.prepare(
     'INSERT INTO posts (id, author_id, title, content, parent_id) VALUES (?, ?, ?, ?, ?)'
-  ).bind(postId, user.id, title ? String(title).trim() : null, content.trim(), parent_id ? String(parent_id) : null).run();
+  ).bind(postId, user.id, cleanTitle, cleanContent, parent_id ? String(parent_id) : null).run();
 
   if (parent_id) {
     await c.env.DB.prepare('UPDATE posts SET chains_count = chains_count + 1 WHERE id = ?').bind(parent_id).run();

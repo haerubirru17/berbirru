@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS posts (
   id TEXT PRIMARY KEY,
   author_id TEXT NOT NULL,
   content TEXT NOT NULL,
+  title TEXT,
   parent_id TEXT, -- NULL for original warkah, or post_id for estafet chains
   likes_count INTEGER DEFAULT 0,
   saves_count INTEGER DEFAULT 0,
@@ -74,6 +75,13 @@ CREATE TABLE IF NOT EXISTS follows (
   PRIMARY KEY (follower_id, following_id),
   FOREIGN KEY (follower_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (following_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- 8. Rate limiting (global lintas-datacenter; lihat src/index.ts hitRate)
+CREATE TABLE IF NOT EXISTS rate_limits (
+  key TEXT PRIMARY KEY,
+  count INTEGER NOT NULL DEFAULT 0,
+  expires_at TIMESTAMP NOT NULL
 );
 
 -- Indexes for lightning-fast queries

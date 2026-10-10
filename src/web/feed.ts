@@ -489,8 +489,8 @@ export function renderFeedPage(user: any = null): string {
             </div>
             <div class="thread-author-wrap">
               <div class="thread-author-info">
-                <a href="/u/\${p.pen_name}" class="thread-pen-name">@\${p.pen_name}</a>
-                <span class="thread-city">\${p.city || 'Nusantara'}</span>
+                <a href="/u/\${p.pen_name}" class="thread-pen-name">@\${escapeHtml(p.pen_name)}</a>
+                <span class="thread-city">\${escapeHtml(p.city || 'Nusantara')}</span>
               </div>
             </div>
             \${formatTimestamp(p.created_at)}
@@ -499,7 +499,7 @@ export function renderFeedPage(user: any = null): string {
           \${p.parent_id ? \`
             <div class="thread-parent-connector" onclick="scrollToPost('\${p.parent_id}')">
               <svg class="ico" style="color:#1D61E7;" viewBox="0 0 24 24"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>
-              <span>Menyambung warkah <b>@\${p.parent_author}</b>: <i>"\${escapeHtml(stripHtml(p.parent_content).slice(0, 45) + '...')}"</i></span>
+              <span>Menyambung warkah <b>@\${escapeHtml(p.parent_author)}</b>: <i>"\${escapeHtml(stripHtml(p.parent_content).slice(0, 45) + '...')}"</i></span>
             </div>
           \` : ''}
 
@@ -526,7 +526,7 @@ export function renderFeedPage(user: any = null): string {
                 <span>\${p.saves_count || 0} Simpan</span>
               </button>
             </div>
-            <button class="chain-btn" onclick="openStudioModal('\${p.id}', '\${escapeHtml(p.title || p.pen_name)}')">
+            <button class="chain-btn" onclick="openStudioModal('\${p.id}', '\${escapeHtml(p.title || p.pen_name).replace(/'/g, '’')}')">
               <svg class="ico" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
               <span>\${p.chains_count ? p.chains_count + ' Sambungan' : 'Sambung Bait'}</span>
             </button>
@@ -536,7 +536,7 @@ export function renderFeedPage(user: any = null): string {
     }
 
     function escapeHtml(t) {
-      return String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
     function toggleExpandPost(id, btn) {
@@ -645,7 +645,7 @@ export function renderFeedPage(user: any = null): string {
     async function submitStudioWarkah() {
       const title = document.getElementById('studioTitle').value.trim();
       const content = document.getElementById('editorCanvas').innerHTML.trim();
-      if (!content || content === '<br>') return alert('Tuliskan isi warkah terlebih dahulu.');
+      if (!content || stripHtml(content).trim() === '') return alert('Tuliskan isi warkah terlebih dahulu.');
 
       try {
         const res = await fetch('/api/posts', {

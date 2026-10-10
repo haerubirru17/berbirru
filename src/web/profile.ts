@@ -454,6 +454,10 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       return '<div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.25;font-family:JetBrains Mono,monospace;"><span style="font-size:11px;font-weight:800;color:#0B192C;">' + timePart + ' WIB</span><span style="font-size:9.5px;font-weight:700;color:#64748B;">' + datePart + '</span></div>';
     }
 
+    function escapeHtml(t) {
+      return String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
     async function loadProfilePosts(tab = 'original') {
       try {
         const res = await fetch('/api/users/' + encodeURIComponent(currentPenName) + '/posts?tab=' + tab);
@@ -472,14 +476,14 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
               </div>
               <div class="thread-author-wrap">
                 <div class="thread-author-info">
-                  <span class="thread-pen-name">@\${p.pen_name}</span>
+                  <span class="thread-pen-name">@\${escapeHtml(p.pen_name)}</span>
                 </div>
               </div>
               \${formatTimestamp(p.created_at)}
             </div>
             <div class="thread-body">
-              \${p.title ? \`<h3 class="thread-title">\${p.title}</h3>\` : ''}
-              <div class="thread-text">\${p.content}</div>
+              \${p.title ? \`<h3 class="thread-title">\${escapeHtml(p.title)}</h3>\` : ''}
+              <div class="thread-text">\${escapeHtml(p.content)}</div>
             </div>
             <div class="thread-footer">
               <span style="font-size:11.5px;font-weight:800;color:#1D61E7;">\${p.likes_count || 0} Terpaut · \${p.saves_count || 0} Simpan · \${p.chains_count || 0} Sambungan</span>
