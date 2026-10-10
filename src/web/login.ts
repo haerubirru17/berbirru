@@ -92,7 +92,6 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
     <div class="brand-header">
       <a href="/" class="brand-wrap">
         <div class="brand-badge">
-          <svg class="ico" style="width:18px;height:18px;" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
           <h1>BERBIRRU</h1>
         </div>
         <span class="brand-com-tag">.com</span>
