@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "test": "node --experimental-strip-types tests/password.test.ts && node --experimental-strip-types tests/sanitize.test.ts"
+    "test": "for f in tests/*.test.ts; do node --experimental-strip-types \"$f\" || exit 1; done"
   },
   "dependencies": {
     "hono": "^4.6.14"

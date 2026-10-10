@@ -3,6 +3,7 @@ import { cors } from 'hono/cors';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { hashPassword, verifyPassword, passwordIssue } from './lib/password';
 import { sanitizeRich, escapeHtml, stripTags } from './lib/sanitize';
+import { turnstileGate } from './lib/turnstile-gate';
 import { renderLandingPage } from './web/landing';
 import { renderLoginPage } from './web/login';
 import { renderFeedPage } from './web/feed';
@@ -67,20 +68,58 @@ async function hitRate(db: D1Database, key: string, limit: number, windowSec: nu
 
 // Gate auth: Turnstile WAJIB (fail-closed). Token kosong/gagal = ditolak, sehingga
 // desain fail-open lama (vuln-0002) tertutup. Rate limit per-IP sebagai lapisan kedua.
-async function requireHuman(c: any, token: string, bucket: string, limit: number, windowSec: number): Promise<string | null> {
+async function requireHuman(
+  c: any,
+  token: string,
+  bucket: string,
+  limit: number,
+  windowSec: number,
+  fallback?: { limit: number; windowSec: number },
+): Promise<string | null> {
   const secret = c.env.TURNSTILE_SECRET_KEY || '';
-  if (!secret) {
-    console.error('TURNSTILE_SECRET_KEY belum diset — auth DITOLAK (fail-closed).');
-    return 'Layanan verifikasi keamanan sedang tidak tersedia. Coba beberapa saat lagi.';
-  }
   const ip = c.req.header('cf-connecting-ip') || 'unknown';
-  if (!(await verifyTurnstile(token, secret, ip))) {
-    return 'Verifikasi keamanan Turnstile gagal atau kedaluwarsa. Silakan muat ulang halaman.';
+  const hasToken = !!String(token || '').trim();
+  // Jangan panggil siteverify kalau secret belum diset (percuma + spam log).
+  const tokenValid = secret && hasToken ? await verifyTurnstile(token, secret, ip) : false;
+
+  const decision = turnstileGate({ hasSecret: !!secret, hasToken, tokenValid, allowFallback: !!fallback });
+
+  if (decision === 'reject') {
+    if (!secret) {
+      console.error('TURNSTILE_SECRET_KEY belum diset — auth DITOLAK (fail-closed).');
+      return 'Layanan verifikasi keamanan sedang tidak tersedia. Coba beberapa saat lagi.';
+    }
+    return hasToken
+      ? 'Verifikasi keamanan Turnstile gagal atau kedaluwarsa. Silakan muat ulang halaman.'
+      : 'Verifikasi keamanan tidak dapat dimuat di peramban ini. Coba peramban lain atau muat ulang halaman.';
   }
+
+  // Jalur cadangan (widget diblokir adblocker): kuota JAUH lebih ketat dan terpisah,
+  // supaya tidak bisa dipakai mengeruk endpoint auth tanpa menyelesaikan Turnstile.
+  if (decision === 'fallback') {
+    if (await hitRate(c.env.DB, `rl:${bucket}:nt:${ip}`, fallback!.limit, fallback!.windowSec)) {
+      return 'Terlalu banyak percobaan tanpa verifikasi dari jaringan ini. Coba lagi nanti.';
+    }
+    return null;
+  }
+
   if (await hitRate(c.env.DB, `rl:${bucket}:${ip}`, limit, windowSec)) {
     return 'Terlalu banyak percobaan dari jaringan ini. Coba lagi beberapa menit lagi.';
   }
   return null;
+}
+
+// Data lama (dibuat sebelum sanitasi masuk di vuln-0008) bisa berisi HTML mentah di
+// DB. Bersihkan di titik KELUAR API supaya tidak ada baris legacy yang lolos ke
+// innerHTML client, tanpa perlu menyentuh database.
+// ponytail: sanitasi per-request, ~40 baris/feed. Kalau nanti feed membesar,
+// backfill sekali jalan lalu hapus baris ini.
+function hardenPost(p: any): any {
+  if (!p) return p;
+  if (p.content != null) p.content = sanitizeRich(p.content);
+  if (p.parent_content != null) p.parent_content = sanitizeRich(p.parent_content);
+  if (p.post_content != null) p.post_content = sanitizeRich(p.post_content);
+  return p;
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -235,6 +274,8 @@ app.post('/api/auth/register', async (c) => {
   }
 
   // Verifikasi Turnstile (fail-closed — wajib lolos sebelum boleh daftar)
+  // Register: gerbang KERAS (tanpa jalur cadangan) — endpoint ini yang paling
+  // disalahgunakan bot (buat akun massal) dan tidak punya lockout per-akun.
   const humanErr = await requireHuman(c, turnstile_token || '', 'register', 10, 600);
   if (humanErr) return c.json({ error: humanErr }, 403);
 
@@ -274,7 +315,9 @@ app.post('/api/auth/login', async (c) => {
   if (!email || !password) return c.json({ error: 'Email dan kata sandi wajib diisi.' }, 400);
 
   // Turnstile wajib (fail-closed). Rate limit per-IP di dalam requireHuman.
-  const humanErr = await requireHuman(c, turnstile_token || '', 'login', 10, 300);
+  // Login: jalur cadangan berkuota ketat kalau widget Turnstile diblokir adblocker.
+  // Aman karena lockout per-akun (pw:) di bawah tetap berlaku.
+  const humanErr = await requireHuman(c, turnstile_token || '', 'login', 10, 300, { limit: 5, windowSec: 900 });
   if (humanErr) return c.json({ error: humanErr }, 403);
 
   const cleanEmail = String(email).trim().toLowerCase();
@@ -327,7 +370,7 @@ app.post('/api/auth/send-otp', async (c) => {
   if (!email) return c.json({ error: 'Email wajib diisi' }, 400);
 
   // Turnstile wajib (fail-closed) + rate limit per-IP.
-  const humanErr = await requireHuman(c, turnstile_token || '', 'otp', 5, 600);
+  const humanErr = await requireHuman(c, turnstile_token || '', 'otp', 5, 600, { limit: 3, windowSec: 900 });
   if (humanErr) return c.json({ error: humanErr }, 403);
 
   const cleanEmail = String(email).trim().toLowerCase();
@@ -558,7 +601,7 @@ app.get('/api/users/:pen_name/posts', async (c) => {
   }
 
   const posts = await c.env.DB.prepare(query).bind(...binds).all().then((r) => r.results);
-  return c.json({ tab, posts });
+  return c.json({ tab, posts: posts.map(hardenPost) });
 });
 
 // ---- NOTIFIKASI (SSR) ----
@@ -583,7 +626,7 @@ app.get('/api/notifications', async (c) => {
     LIMIT 50
   `).bind(user.id).all();
 
-  return c.json({ notifications: results || [] });
+  return c.json({ notifications: (results || []).map(hardenPost) });
 });
 
 app.get('/api/notifications/unread-count', async (c) => {
@@ -664,7 +707,7 @@ app.get('/api/posts', async (c) => {
     });
   }
 
-  return c.json({ mode, posts });
+  return c.json({ mode, posts: posts.map(hardenPost) });
 });
 
 app.post('/api/posts', async (c) => {
