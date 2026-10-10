@@ -1,4 +1,4 @@
-// Cek runnable: node --experimental-strip-types src/lib/password.test.ts
+// Cek runnable: npm test
 import { hashPassword, verifyPassword, passwordIssue } from '../src/lib/password.ts';
 
 const assert = (cond: unknown, msg: string) => { if (!cond) throw new Error('GAGAL: ' + msg); };

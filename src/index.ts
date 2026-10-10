@@ -15,7 +15,6 @@ export interface Env {
   DB: D1Database;
   APP_NAME: string;
   APP_DOMAIN: string;
-  JWT_SECRET: string;
   RESEND_API_KEY?: string;
   RESEND_FROM?: string;
   TURNSTILE_SITE_KEY?: string;

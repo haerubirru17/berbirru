@@ -1,11 +1,13 @@
 {
   "name": "berbirru",
   "version": "1.0.0",
+  "type": "module",
   "description": "BERBIRRU.COM — Pustaka Tulisan & Kolaborasi Kata di Edge Cloudflare",
   "main": "src/index.ts",
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "test": "node --experimental-strip-types tests/password.test.ts && node --experimental-strip-types tests/sanitize.test.ts"
   },
   "dependencies": {
     "hono": "^4.6.14"
