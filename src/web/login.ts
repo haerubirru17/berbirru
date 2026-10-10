@@ -240,16 +240,25 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
     // Bila script api.js diblokir total (widget tak pernah render), sembunyikan placeholder kosong
     setTimeout(() => { if (!window.turnstile) onTurnstileError(); }, 6000);
 
-    function getTurnstileToken() {
-      const el = document.querySelector('[name="cf-turnstile-response"]');
+    function getTurnstileToken(widgetId) {
+      const el = document.querySelector('#' + widgetId + ' [name="cf-turnstile-response"]');
       return el ? el.value : '';
+    }
+
+    // Token Turnstile single-use: habis dikirim (walau server menolaknya), widget
+    // harus di-reset agar attempt berikutnya mint token baru — kalau tidak, retry
+    // selamanya kirim token hangus dan gagal "kedaluwarsa".
+    function resetTurnstile() {
+      try { if (window.turnstile) window.turnstile.reset(); } catch (e) {}
+      const el = document.querySelector('[name="cf-turnstile-response"]');
+      if (el) el.value = '';
     }
 
     async function handleSendOtp() {
       const email = document.getElementById('otpEmailInput').value.trim();
       if (!email) return alert('Email wajib diisi!');
 
-      const turnstileToken = getTurnstileToken();
+      const turnstileToken = getTurnstileToken('turnstileOtpWidget');
       const btn = document.getElementById('btnSendOtp');
       btn.disabled = true;
       btn.querySelector('span').textContent = 'Mengirim OTP...';
@@ -268,6 +277,7 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
         document.getElementById('otpStep2').style.display = 'block';
         alert(data.message || 'Kode OTP berhasil dikirim!');
       } catch (err) {
+        resetTurnstile();
         alert(err.message);
       } finally {
         btn.disabled = false;
@@ -306,7 +316,7 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
       const email = document.getElementById('emailInput').value.trim();
       const password = document.getElementById('passwordInput').value.trim();
       const penName = document.getElementById('penNameInput').value.trim();
-      const turnstileToken = getTurnstileToken();
+      const turnstileToken = getTurnstileToken('turnstileAuthWidget');
       const endpoint = isLoginMode ? '/api/auth/login' : '/api/auth/register';
 
       try {
@@ -323,6 +333,7 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
         if (!res.ok) throw new Error(data.error || 'Terjadi kesalahan saat masuk');
         window.location.href = '/feed';
       } catch (err) {
+        resetTurnstile();
         alert(err.message);
       }
     }
