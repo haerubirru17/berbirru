@@ -33,4 +33,12 @@ assert(passwordIssue('1234567') !== null, '7 karakter seharusnya ditolak');
 assert(passwordIssue('rahasiaYangKuat123') === null, 'kata sandi kuat malah ditolak');
 assert(passwordIssue('rahasiaYangKuat123', 'rahasiaYangKuat123') !== null, 'sandi == email seharusnya ditolak');
 
+// 6. OTP disimpan sebagai `otp_<hash>` (vuln-0006) — kode mentah tak boleh ada di token.
+const otpCode = '483920';
+const storedOtp = `otp_${await hashPassword(otpCode)}`;
+assert(!storedOtp.startsWith(`otp_${otpCode}`), 'token masih menyimpan kode OTP mentah');
+assert(storedOtp.length > 60, 'token OTP tidak terlihat seperti hash: ' + storedOtp.length);
+assert((await verifyPassword('483920', storedOtp.slice(4))).ok === true, 'OTP benar ditolak setelah di-hash');
+assert((await verifyPassword('483921', storedOtp.slice(4))).ok === false, 'OTP salah diterima');
+
 console.log('OK — password: semua cek lolos');

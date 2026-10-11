@@ -1,14 +1,16 @@
 // Password hashing: PBKDF2-SHA256 via WebCrypto native (tanpa dependency).
-// Iterasi 10k: dikalibrasi untuk limit CPU 10ms/request Workers FREE plan.
-// 600k butuh ±330ms CPU (terukur di workerd lokal) → pasti kena
-// "exceeded CPU time limit" di free plan (root cause 500 massal login usai
-// hardening 10 Okt). 10k ≈ 5ms CPU — muat dengan headroom. Kalau nanti pindah
-// Workers Paid (30s), naikkan ke 600k+ — hash lama auto-upgrade saat login.
+// Iterasi 10k: dikalibrasi untuk limit CPU 10ms/request Workers FREE plan
+// (10k ≈ 5ms CPU — muat dengan headroom). Plafon keras runtime: WebCrypto
+// Workers MENOLAK iterasi >100.000 (NotSupportedError "iteration counts above
+// 100000 are not supported"), jadi 100k adalah maksimum yang mungkin — bukan
+// 600k rekomendasi OWASP, dan bukan soal free/paid. 600k pernah dicoba →
+// 500 massal di login (root cause insiden 10 Okt). Kalau pindah Workers Paid
+// (30s CPU), naikkan maksimal ke 100k — hash lama auto-upgrade saat login.
 // Format simpanan: pbkdf2$sha256$<iterasi>$<salt-b64>$<hash-b64> (salt 16 byte per user).
 // Verifikasi tetap menerima hash lama (SHA-256 + salt statis) supaya login user lama
 // tidak putus; hash lama otomatis di-upgrade saat login berikutnya (rehash transparan).
 
-// ponytail: 10k ≈ 5ms CPU — angka maksimum yang muat di cap 10ms free plan; naikkan begitu pindah paid.
+// ponytail: 10k ≈ 5ms CPU — maksimum yang muat di cap 10ms free plan; plafon runtime 100k, naikkan begitu pindah paid.
 const PBKDF2_ITER = 10_000;
 const LEGACY_SALT = 'berbirru-salt-2026';
 

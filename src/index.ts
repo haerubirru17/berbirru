@@ -400,9 +400,12 @@ app.post('/api/auth/send-otp', async (c) => {
 
   // Hapus OTP lama user ini — hanya kode terbaru yang berlaku.
   await c.env.DB.prepare("DELETE FROM sessions WHERE user_id = ? AND token LIKE 'otp_%'").bind(user.id).run();
+  // Simpan HASH OTP, bukan kode mentah (temuan vuln-0006 Strix): kalau isi tabel
+  // bocor, penyerang tidak langsung dapat kode yang bisa dipakai masuk.
+  const otpHash = await hashPassword(otpCode);
   await c.env.DB.prepare(
     'INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, datetime("now", "+10 minutes"))'
-  ).bind(crypto.randomUUID(), user.id, `otp_${otpCode}`).run();
+  ).bind(crypto.randomUUID(), user.id, `otp_${otpHash}`).run();
 
   const apiKey = String(c.env.RESEND_API_KEY || '').trim();
   const fromEmail = c.env.RESEND_FROM || 'BERBIRRU.COM <noreply@berbirru.com>';
@@ -483,13 +486,18 @@ app.post('/api/auth/verify-otp', async (c) => {
   const user: any = await c.env.DB.prepare('SELECT id, pen_name FROM users WHERE email = ? LIMIT 1').bind(cleanEmail).first();
   if (!user) return c.json(BAD_OTP, 400);
 
-  const session: any = await c.env.DB.prepare(
-    'SELECT id FROM sessions WHERE user_id = ? AND token = ? AND expires_at > datetime("now") LIMIT 1'
-  ).bind(user.id, `otp_${otp.trim()}`).first();
+  // OTP disimpan sebagai `otp_<hash pbkdf2>` (vuln-0006 Strix), jadi cari dulu
+  // OTP aktif milik user, baru bandingkan hash-nya.
+  const row: any = await c.env.DB.prepare(
+    "SELECT id, token FROM sessions WHERE user_id = ? AND token LIKE 'otp_%' AND expires_at > datetime(\"now\") ORDER BY created_at DESC LIMIT 1"
+  ).bind(user.id).first();
 
-  if (!session) {
+  // String(otp): klien bisa kirim angka → dulu `otp.trim()` meledak jadi 500.
+  const otpOk = row ? (await verifyPassword(String(otp).trim(), String(row.token).slice(4))).ok : false;
+  if (!otpOk) {
     return c.json(BAD_OTP, 400);
   }
+  const session = row;
 
   // OTP Valid -> Hapus session OTP sementara, ganti dengan Session Cookie 30 hari
   await c.env.DB.prepare('DELETE FROM sessions WHERE id = ?').bind(session.id).run();
@@ -508,6 +516,17 @@ app.post('/api/auth/logout', async (c) => {
     await c.env.DB.prepare('DELETE FROM sessions WHERE token = ?').bind(token).run();
   }
   deleteCookie(c, 'berbirru_session');
+  return c.json({ ok: true });
+});
+
+// Keluar dari SEMUA perangkat (temuan vuln-0007 Strix): kalau token bocor, user
+// butuh satu tombol buat mencabut semua sesi lain — bukan cuma sesi di device ini.
+app.post('/api/auth/logout-all', async (c) => {
+  const user = await getAuthUser(c);
+  if (!user) return c.json({ error: 'Silakan masuk terlebih dahulu' }, 401);
+  const token = getCookie(c, 'berbirru_session') || '';
+  // Sesi lain + OTP yang masih menggantung ikut dimatikan.
+  await c.env.DB.prepare('DELETE FROM sessions WHERE user_id = ? AND token != ?').bind(user.id, token).run();
   return c.json({ ok: true });
 });
 
