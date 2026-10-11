@@ -73,14 +73,33 @@ Mengadopsi taksonomi resmi **Cloudflare Security Audit Harness**, seluruh lapisa
 
 ## 3. Standar Kriptografi & Manajemen Sesi
 
-1. **Hashing Kata Sandi:**
-   - Menggunakan algoritma **Scrypt / Argon2id** dengan *cost parameter* standar OWASP via Web Crypto API.
+1. **Hashing Kata Sandi:** PBKDF2-SHA256 via WebCrypto (`crypto.subtle.deriveBits`),
+   **10.000 iterasi**, salt acak 16 byte per user, format simpanan
+   `pbkdf2$sha256$<iterasi>$<salt-b64>$<hash-b64>`.
+   - **Batas yang diketahui & diterima:** OWASP menyarankan 600k iterasi
+     PBKDF2-SHA256. Angka itu **tidak dapat dicapai** di runtime ini — WebCrypto
+     Workers menolak iterasi > 100.000 (`NotSupportedError`), dan cap CPU 10 ms
+     per request pada Workers Free hanya menyisakan ruang untuk ±10k (≈5 ms).
+     Percobaan 600k menyebabkan 500 massal pada login (insiden 10 Okt 2026).
+     100k baru layak bila pindah ke Workers Paid (30 s CPU); hash lama otomatis
+     di-upgrade saat login berikutnya.
+   - Argon2id/scrypt **tidak tersedia** di WebCrypto dan tidak dipakai (Workers
+     tanpa dependency biner), meski secara teori lebih kuat.
 2. **Manajemen Sesi:**
-   - Diterbitkan dalam bentuk cryptographically random tokens (256-bit entropy).
-   - Cookie disetel dengan atribut: `HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/`.
+   - Token acak kriptografis 2× `crypto.randomUUID()` (≈244 bit entropy),
+     disimpan di tabel `sessions` D1; masa berlaku 30 hari, maksimal 5 sesi
+     per user.
+   - Cookie: `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/`.
+     `Lax` (bukan `Strict`) dipilih agar navigasi dari tautan eksternal/email
+     tetap membawa sesi; endpoint pengubah data tetap diproteksi pemeriksaan
+     `Origin`.
+   - `POST /api/auth/logout-all` mencabut seluruh sesi lain milik user.
 3. **Adaptive Step-Up OTP:**
-   - Kode OTP 6-digit dihasilkan menggunakan CSPRNG (`crypto.getRandomValues`).
-   - Hash OTP disimpan di D1 dengan batas masa berlaku 5 menit dan *maximum 5 attempts* sebelum *locked out*.
+   - Kode OTP 6-digit dari CSPRNG (`crypto.getRandomValues`).
+   - **Disimpan sebagai hash PBKDF2**, bukan kode mentah (`otp_<hash>` di tabel
+     `sessions`), berlaku **10 menit**, satu kode aktif per user.
+   - Pembatasan percobaan lewat rate limit D1: 5 kirim / 15 menit per email,
+     10 verifikasi / 10 menit per IP **dan** per akun.
 
 ---
 
@@ -89,5 +108,9 @@ Mengadopsi taksonomi resmi **Cloudflare Security Audit Harness**, seluruh lapisa
 Setiap rilis kode ke produksi `https://berbirru.com` wajib melewati uji validasi keamanan otomatis:
 ```bash
 # Uji kepatuhan skema & sanitasi kode
-node ~/.hermes/skills/security/security-audit/validate-findings.cjs
+npm test
+
+# Validasi berkas temuan audit (wajib argumen)
+node ~/.hermes/skills/security/security-audit/validate-findings.cjs <path-to-findings.json>
+node ~/.hermes/skills/security/security-audit/validate-coverage-ledger.cjs <path-to-coverage-ledger.json>
 ```
