@@ -1,10 +1,15 @@
-// Password hashing: PBKDF2-SHA256 600k iterasi via WebCrypto native (tanpa dependency).
-// Native crypto di Workers ~75ms/600k — tidak menyentuh limit CPU 10ms.
+// Password hashing: PBKDF2-SHA256 via WebCrypto native (tanpa dependency).
+// Iterasi 10k: dikalibrasi untuk limit CPU 10ms/request Workers FREE plan.
+// 600k butuh ±330ms CPU (terukur di workerd lokal) → pasti kena
+// "exceeded CPU time limit" di free plan (root cause 500 massal login usai
+// hardening 10 Okt). 10k ≈ 5ms CPU — muat dengan headroom. Kalau nanti pindah
+// Workers Paid (30s), naikkan ke 600k+ — hash lama auto-upgrade saat login.
 // Format simpanan: pbkdf2$sha256$<iterasi>$<salt-b64>$<hash-b64> (salt 16 byte per user).
 // Verifikasi tetap menerima hash lama (SHA-256 + salt statis) supaya login user lama
 // tidak putus; hash lama otomatis di-upgrade saat login berikutnya (rehash transparan).
 
-const PBKDF2_ITER = 600_000;
+// ponytail: 10k ≈ 5ms CPU — angka maksimum yang muat di cap 10ms free plan; naikkan begitu pindah paid.
+const PBKDF2_ITER = 10_000;
 const LEGACY_SALT = 'berbirru-salt-2026';
 
 const b64 = (b: Uint8Array): string => btoa(String.fromCharCode(...b));

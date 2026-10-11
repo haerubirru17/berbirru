@@ -6,7 +6,7 @@ const assert = (cond: unknown, msg: string) => { if (!cond) throw new Error('GAG
 // 1. Hash baru: format PHC, bukan SHA-256 heksadesimal, dan ada salt acak.
 const h1 = await hashPassword('rahasiaYangKuat123');
 const h2 = await hashPassword('rahasiaYangKuat123');
-assert(h1.startsWith('pbkdf2$sha256$600000$'), 'format hash salah: ' + h1.slice(0, 30));
+assert(/^pbkdf2\$sha256\$\d+\$/.test(h1), 'format hash salah: ' + h1.slice(0, 30));
 assert(h1 !== h2, 'salt tidak acak — dua hash identik (rainbow table masih bisa)');
 assert(h1.length !== 64, 'sepertinya masih SHA-256 heksadesimal');
 

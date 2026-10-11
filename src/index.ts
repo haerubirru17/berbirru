@@ -124,6 +124,14 @@ function hardenPost(p: any): any {
 
 const app = new Hono<{ Bindings: Env }>();
 
+// Exception tak tertangkap: log stack ke tail (satu-satunya jalan lihat error asli
+// di produksi) + balikin JSON rapi. Tanpa ini Hono cuma balas teks polos
+// "Internal Server Error" dan error-nya tidak kelihatan di mana pun.
+app.onError((err, c) => {
+  console.error(`Unhandled error ${c.req.method} ${c.req.path}:`, err);
+  return c.json({ error: 'Terjadi kesalahan internal. Coba lagi sebentar.' }, 500);
+});
+
 // CORS dikunci ke domain sendiri (sebelumnya `*` = siapa pun bisa memanggil API
 // dengan kredensial; bagian dari temuan vuln-0009). Tanpa origin (same-origin
 // fetch dari browser tidak mengirim Origin) → tanpa header CORS, tetap aman.
