@@ -23,10 +23,9 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       --radius: 16px; --radius-sm: 10px;
     }
     body {
-      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
-      background-color: var(--bg-main); color: var(--ink); min-height: 100vh;
-      background-image: radial-gradient(#CBD5E1 1.5px, transparent 1.5px);
-      background-size: 22px 22px; padding: 20px 16px 60px;
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      background-color: var(--paper, #FBF8F3); color: var(--ink); min-height: 100vh;
+      padding: 20px 16px 80px;
     }
     .container { max-width: 480px; margin: 0 auto; }
     .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
@@ -45,11 +44,12 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     .brand-com-tag {
       font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 900;
       color: var(--blue-primary); position: relative; display: inline-block;
-      transform: rotate(2deg); margin-left: 2px; margin-top: 1px; z-index: 1;
+      transform: rotate(2deg); margin-left: 2px; margin-top: 1px; z-index: 1; line-height: 1;
+      padding-bottom: 2px;
     }
     .brand-com-tag::after {
-      content: ''; position: absolute; left: -16px; bottom: 0px; width: calc(100% + 20px); height: 4.5px;
-      background: var(--accent-yellow); border-radius: 2px; z-index: 0;
+      content: ''; position: absolute; left: -16px; bottom: -2px; width: calc(100% + 20px); height: 4.5px;
+      background: var(--accent-yellow); border-radius: 2px; z-index: -1;
     }
     .profile-card {
       background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
@@ -174,33 +174,37 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       display: none; background: #FFF; border: var(--border-thick); border-radius: var(--radius);
       padding: 18px; margin-bottom: 20px; box-shadow: var(--shadow-hard);
     }
-    /* 5-TAB DOCKED BOTTOM NAVBAR */
+    /* 5-TAB DOCKED BOTTOM NAVBAR — Lucide Style */
     .bottom-navbar {
-      position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255, 255, 255, 0.96);
-      backdrop-filter: blur(10px); border-top: var(--border-thick); padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
-      display: flex; justify-content: space-between; z-index: 1000; box-shadow: 0 -4px 16px rgba(11,25,44,0.06);
+      position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-top: 1.5px solid #0B192C; padding: 6px 12px calc(6px + env(safe-area-inset-bottom));
+      display: flex; justify-content: space-between; z-index: 1000; box-shadow: 0 -4px 20px rgba(11,25,44,0.08);
     }
     .navbar-inner {
       width: 100%; max-width: 480px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; align-items: center;
     }
     .nav-item {
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 3px; text-decoration: none; color: #64748B; padding: 4px 0; cursor: pointer;
+      gap: 3px; text-decoration: none; color: #64748B; padding: 5px 0; cursor: pointer;
+      transition: color 0.15s ease, transform 0.1s ease;
     }
-    .nav-item span { font-size: 10px; font-weight: 800; }
+    .nav-item span { font-size: 10.5px; font-weight: 700; letter-spacing: -0.01em; }
+    .nav-item svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .nav-item.active { color: var(--blue-primary); }
     .nav-item.active span { color: var(--blue-primary); font-weight: 900; }
-    .nav-item.active svg { stroke: var(--blue-primary); stroke-width: 2.8; }
+    .nav-item.active svg { stroke: var(--blue-primary); stroke-width: 2.3; }
 
     /* Middle Action Button (Pen Icon) */
     .nav-item-center {
-      position: relative; top: -10px;
+      position: relative; top: -8px;
     }
     .btn-create-floating {
       width: 46px; height: 46px; background: var(--accent-yellow); color: var(--ink);
-      border: var(--border-thick); border-radius: 14px; display: grid; place-items: center;
+      border: 2.5px solid var(--ink); border-radius: 14px; display: grid; place-items: center;
       box-shadow: 2.5px 2.5px 0 var(--shadow-ink); transform: rotate(-2deg); transition: transform 0.05s ease;
     }
+    .btn-create-floating svg { width: 20px; height: 20px; stroke: #0B192C; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .btn-create-floating:active { transform: translate(1.5px, 1.5px); box-shadow: none; }
 
     .bell-wrap { position: relative; }
@@ -327,34 +331,39 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     <div class="feed-list" id="profileFeed"></div>
   </div>
 
-  <!-- 5-TAB DOCKED BOTTOM NAVBAR -->
+  <!-- 5-TAB DOCKED BOTTOM NAVBAR — Lucide Icons -->
   <nav class="bottom-navbar">
     <div class="navbar-inner">
       <a href="/feed" class="nav-item">
-        <svg class="ico" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <!-- Lucide Home -->
+        <svg viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         <span>Beranda</span>
       </a>
 
       <a href="/feed?tab=search" class="nav-item">
-        <svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <!-- Lucide Search -->
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
         <span>Telusuri</span>
       </a>
 
       <a href="/feed?action=compose" class="nav-item nav-item-center">
         <div class="btn-create-floating">
-          <svg style="width:19px;height:19px;stroke:#0B192C;stroke-width:2.5;fill:none;" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
+          <!-- Lucide SquarePen -->
+          <svg viewBox="0 0 24 24"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z"/></svg>
         </div>
       </a>
 
       <a href="/notifications" class="nav-item">
         <div class="bell-wrap">
-          <svg class="ico" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <!-- Lucide Bell -->
+          <svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
         </div>
         <span>Aktivitas</span>
       </a>
 
       <a href="${currentUser ? '/u/' + currentUser.pen_name : '/login'}" class="nav-item active">
-        <svg class="ico" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <!-- Lucide User -->
+        <svg viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         <span>Akun</span>
       </a>
     </div>
