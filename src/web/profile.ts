@@ -510,7 +510,14 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
                   <span class="thread-pen-name">@\${escapeHtml(p.pen_name)}</span>
                 </div>
               </div>
-              \${formatTimestamp(p.created_at)}
+              <div style="display:flex;align-items:center;gap:8px;">
+                \${formatTimestamp(p.created_at)}
+                ${isMe ? `
+                  <button onclick="deletePost('\${p.id}')" title="Hapus Warkah" style="background:transparent;border:none;cursor:pointer;color:#EF4444;display:flex;align-items:center;padding:2px;" aria-label="Hapus Warkah">
+                    <svg style="width:15px;height:15px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                  </button>
+                ` : ''}
+              </div>
             </div>
             <div class="thread-body">
               \${p.title ? \`<h3 class="thread-title">\${escapeHtml(p.title)}</h3>\` : ''}
@@ -530,6 +537,19 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       document.querySelectorAll('.tab-reddit-item').forEach(b => b.classList.remove('active'));
       el.classList.add('active');
       loadProfilePosts(tab);
+    }
+
+    async function deletePost(postId) {
+      if (!confirm('Hapus warkah ini secara permanen?')) return;
+      try {
+        const res = await fetch('/api/posts/' + postId, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal menghapus');
+        loadProfilePosts('original');
+        loadUserData();
+      } catch (err) {
+        alert(err.message);
+      }
     }
 
     loadUserData();

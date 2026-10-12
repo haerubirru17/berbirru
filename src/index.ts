@@ -775,6 +775,31 @@ app.post('/api/posts', async (c) => {
   return c.json({ ok: true, post: { id: postId, author_pen_name: user.pen_name } }, 201);
 });
 
+// Hapus Postingan (Hanya oleh Pemilik Postingan)
+app.delete('/api/posts/:id', async (c) => {
+  const user = await getAuthUser(c);
+  if (!user) return c.json({ error: 'Silakan masuk terlebih dahulu' }, 401);
+  const postId = c.req.param('id');
+
+  const post: any = await c.env.DB.prepare('SELECT author_id, parent_id FROM posts WHERE id = ?').bind(postId).first();
+  if (!post) return c.json({ error: 'Postingan tidak ditemukan' }, 404);
+  if (post.author_id !== user.id) return c.json({ error: 'Anda tidak memiliki akses untuk menghapus postingan ini' }, 403);
+
+  // Hapus interaksi terkait & postingan
+  await c.env.DB.batch([
+    c.env.DB.prepare('DELETE FROM likes WHERE post_id = ?').bind(postId),
+    c.env.DB.prepare('DELETE FROM bookmarks WHERE post_id = ?').bind(postId),
+    c.env.DB.prepare('DELETE FROM notifications WHERE post_id = ?').bind(postId),
+    c.env.DB.prepare('DELETE FROM posts WHERE id = ?').bind(postId),
+  ]);
+
+  if (post.parent_id) {
+    await c.env.DB.prepare('UPDATE posts SET chains_count = MAX(0, chains_count - 1) WHERE id = ?').bind(post.parent_id).run();
+  }
+
+  return c.json({ ok: true });
+});
+
 // Like & Bookmark Toggle
 app.post('/api/posts/:id/like', async (c) => {
   const user = await getAuthUser(c);

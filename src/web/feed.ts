@@ -504,6 +504,12 @@ export function renderFeedPage(user: any = null): string {
                 <svg class="ico" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
                 <span>\${p.saves_count || 0} Simpan</span>
               </button>
+              \${isUserLoggedIn && p.author_id === '${user?.id || ''}' ? \`
+                <button class="act-btn" onclick="deleteFeedPost('\${p.id}')" style="color:#EF4444;" title="Hapus">
+                  <svg class="ico" viewBox="0 0 24 24"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                  <span>Hapus</span>
+                </button>
+              \` : ''}
             </div>
             <button class="chain-btn" onclick="openStudioModal('\${p.id}', '\${escapeHtml(p.title || p.pen_name).replace(/'/g, '’')}')">
               <svg class="ico" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
@@ -705,6 +711,20 @@ export function renderFeedPage(user: any = null): string {
         const dot = document.getElementById('notifDot');
         if (dot && data.count > 0) dot.style.display = 'block';
       } catch (err) {}
+    }
+
+    async function deleteFeedPost(postId) {
+      if (!confirm('Hapus warkah ini secara permanen?')) return;
+      try {
+        const res = await fetch('/api/posts/' + postId, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal menghapus');
+        const card = document.getElementById('post-' + postId);
+        if (card) card.remove();
+        else loadFeed();
+      } catch (err) {
+        alert(err.message);
+      }
     }
 
     loadFeed();
