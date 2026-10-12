@@ -100,6 +100,10 @@ Mengadopsi taksonomi resmi **Cloudflare Security Audit Harness**, seluruh lapisa
      `sessions`), berlaku **10 menit**, satu kode aktif per user.
    - Pembatasan percobaan lewat rate limit D1: 5 kirim / 15 menit per email,
      10 verifikasi / 10 menit per IP **dan** per akun.
+4. **Otorisasi & Kontrol Akses IDOR (Access Control):**
+   - Mutasi data sensitif seperti `DELETE /api/posts/:id` memvalidasi kepemilikan mutlak di server (`author_id === user.id`).
+   - Halaman profil privat `/u/:pen_name` memproteksi sesi via redirect login untuk pengunjung yang belum terautentikasi.
+   - Operasi penghapusan memakai transaksi `D1.batch()` untuk menjamin integritas relasi likes, bookmarks, dan notifikasi.
 
 ---
 
