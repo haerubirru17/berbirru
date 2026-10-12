@@ -25,55 +25,62 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     body {
       font-family: 'DM Sans', -apple-system, sans-serif;
       background-color: var(--paper, #FBF8F3); color: var(--ink); min-height: 100vh;
-      padding: 20px 16px 80px;
+      padding: 12px 14px 90px;
     }
-    .container { max-width: 480px; margin: 0 auto; }
-    /* Top Bar: Back to Feed & Right Menu */
-    .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; position: relative; }
-    .nav-back-btn {
-      background: var(--bg-card); border: var(--border-med); border-radius: 99px;
-      padding: 6px 14px; font-size: 12px; font-weight: 800; box-shadow: var(--shadow-hard-sm);
-      display: inline-flex; align-items: center; gap: 6px; text-decoration: none; color: var(--ink);
+    .container { max-width: 480px; margin: 0 auto; position: relative; }
+
+    /* Profile Card with Integrated Cover Banner (Zero Dead Space) */
+    .profile-card {
+      background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
+      box-shadow: var(--shadow-hard-lg); overflow: hidden; margin-bottom: 18px; position: relative;
     }
-    .nav-menu-btn {
-      width: 38px; height: 38px; background: var(--bg-card); border: var(--border-med);
-      border-radius: 12px; display: grid; place-items: center; box-shadow: var(--shadow-hard-sm);
-      cursor: pointer; color: var(--ink);
+
+    /* Banner Gradasi Transparan Halus ke Bawah */
+    .cover-banner {
+      height: 120px; width: 100%;
+      background: linear-gradient(180deg, #1D61E7 0%, rgba(29, 97, 231, 0.45) 60%, rgba(251, 248, 243, 0) 100%);
+      position: relative;
     }
-    .nav-menu-btn:active { transform: translate(1px, 1px); box-shadow: none; }
+
+    /* Floating Navigation di dalam banner */
+    .banner-floating-nav {
+      position: absolute; top: 10px; left: 10px; right: 10px;
+      display: flex; justify-content: space-between; align-items: center; z-index: 10;
+    }
+    .nav-btn-glass {
+      background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(8px);
+      border: 1.5px solid #0B192C; border-radius: 99px; padding: 5px 12px;
+      font-size: 11.5px; font-weight: 800; color: var(--ink); text-decoration: none;
+      box-shadow: 2px 2px 0 var(--shadow-ink); display: inline-flex; align-items: center; gap: 4px;
+    }
+    .nav-menu-glass {
+      width: 32px; height: 32px; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(8px);
+      border: 1.5px solid #0B192C; border-radius: 10px; display: grid; place-items: center;
+      box-shadow: 2px 2px 0 var(--shadow-ink); cursor: pointer; color: var(--ink);
+    }
+    .nav-btn-glass:active, .nav-menu-glass:active { transform: translate(1px, 1px); box-shadow: none; }
 
     /* Settings Menu Dropdown */
     .settings-popover {
-      display: none; position: absolute; top: 46px; right: 0; width: 200px;
+      display: none; position: absolute; top: 48px; right: 10px; width: 190px;
       background: #FFFFFF; border: var(--border-thick); border-radius: var(--radius-sm);
       box-shadow: var(--shadow-hard); z-index: 100; padding: 6px; flex-direction: column; gap: 2px;
     }
     .settings-item {
-      padding: 9px 12px; border-radius: 6px; font-size: 12px; font-weight: 800;
+      padding: 8px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 800;
       color: var(--ink); display: flex; align-items: center; gap: 8px; cursor: pointer;
       text-decoration: none;
     }
-    .settings-item:hover, .settings-item:active {
-      background: var(--bg-blue-subtle); color: var(--blue-primary);
-    }
+    .settings-item:hover, .settings-item:active { background: var(--bg-blue-subtle); color: var(--blue-primary); }
     .settings-item.danger { color: var(--accent-red); }
     .settings-item.danger:hover, .settings-item.danger:active { background: #FEE2E2; }
     .settings-divider { height: 1px; background: #E2E8F0; margin: 3px 6px; }
 
-    /* Profile Card with Cover/Banner Header */
-    .profile-card {
-      background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
-      box-shadow: var(--shadow-hard-lg); overflow: hidden; margin-bottom: 20px; position: relative;
-    }
-    .cover-banner {
-      height: 96px; width: 100%;
-      background: linear-gradient(135deg, #1D61E7 0%, #0F3E99 60%, #0B192C 100%);
-      position: relative; border-bottom: var(--border-med);
-    }
+    /* Profile Content */
     .profile-meta-wrap { padding: 0 16px 16px; }
     .avatar-action-row {
       display: flex; justify-content: space-between; align-items: flex-end;
-      margin-top: -36px; margin-bottom: 12px;
+      margin-top: -38px; margin-bottom: 12px;
     }
     .avatar-box {
       width: 72px; height: 72px; background: var(--blue-primary); color: #FFFFFF; border: var(--border-thick);
@@ -81,27 +88,28 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       font-size: 34px; font-weight: 700; box-shadow: var(--shadow-hard-sm); flex-shrink: 0;
       position: relative; user-select: none;
     }
-    .pen-name-group { display: flex; flex-direction: column; }
-    .display-name-main { font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 800; color: var(--ink); line-height: 1.2; }
-    .pen-name { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; font-weight: 700; color: #64748B; margin-top: 2px; }
-    .city-badge {
-      font-size: 11px; font-weight: 700; color: var(--blue-primary); background: var(--bg-blue-subtle);
-      padding: 2px 8px; border-radius: 99px; border: 1px solid rgba(29,97,231,0.2);
-      display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; align-self: flex-start;
+    .city-badge-top {
+      font-size: 11px; font-weight: 800; color: var(--blue-primary); background: var(--bg-blue-subtle);
+      padding: 4px 10px; border-radius: 99px; border: 1.5px solid var(--ink);
+      box-shadow: 2px 2px 0 var(--shadow-ink); display: inline-flex; align-items: center; gap: 4px;
+      margin-bottom: 4px;
     }
+    .pen-name-group { display: flex; flex-direction: column; margin-bottom: 8px; }
+    .display-name-main { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 800; color: var(--ink); line-height: 1.2; }
+    .pen-name { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; font-weight: 700; color: #64748B; margin-top: 2px; }
     .btn-follow {
       background: var(--accent-yellow); color: var(--ink); border: var(--border-med); border-radius: 99px;
       padding: 6px 16px; font-size: 12px; font-weight: 900; box-shadow: var(--shadow-hard-sm); cursor: pointer;
-      display: inline-flex; align-items: center; gap: 5px;
+      display: inline-flex; align-items: center; gap: 5px; margin-bottom: 4px;
     }
     .bio-box {
-      font-size: 13.5px; font-weight: 500; line-height: 1.5; color: #334155; margin-top: 10px; margin-bottom: 16px;
+      font-size: 13.5px; font-weight: 500; line-height: 1.5; color: #334155; margin-bottom: 14px;
     }
     
     /* Reddit-Style 3-Column Metrics */
     .reddit-stats-row {
       display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1.5px solid #E2E8F0;
-      padding-top: 14px; margin-top: 4px;
+      padding-top: 12px; margin-top: 4px;
     }
     .stat-col {
       display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -110,21 +118,23 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     .stat-col:last-child { border-right: none; }
     .stat-number {
       font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 800; color: var(--ink);
-      line-height: 1; margin-bottom: 3px;
+      line-height: 1; margin-bottom: 2px;
     }
     .stat-label {
-      font-size: 10px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px;
+      font-size: 9.5px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px;
     }
 
-    /* Reddit-Style Clean Underline Tabs */
+    /* Tab Underline Bersih (Hanya 1 Aktif) */
     .profile-tabs-reddit {
-      display: flex; border-bottom: 2px solid #E2E8F0; margin-bottom: 18px; justify-content: space-around; padding: 0 4px;
+      display: flex; border-bottom: 2px solid #E2E8F0; margin-bottom: 16px; justify-content: space-around; padding: 0 4px;
     }
     .tab-reddit-item {
-      padding: 10px 8px; font-size: 13px; font-weight: 800; color: #64748B;
-      cursor: pointer; position: relative; text-decoration: none; display: flex; align-items: center; gap: 6px;
+      padding: 9px 8px; font-size: 12.5px; font-weight: 700; color: #64748B;
+      cursor: pointer; position: relative; text-decoration: none; user-select: none;
     }
-    .tab-reddit-item.active { color: var(--blue-primary); }
+    .tab-reddit-item.active {
+      color: var(--blue-primary); font-weight: 800;
+    }
     .tab-reddit-item.active::after {
       content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 3px;
       background: var(--blue-primary); border-radius: 3px 3px 0 0;
@@ -248,64 +258,49 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
 </head>
 <body>
   <div class="container">
-    <div class="top-nav">
-      <a href="/feed" class="nav-back-btn">
-        <svg style="width:14px;height:14px;stroke:currentColor;stroke-width:2.5;fill:none;" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
-        <span>Feed</span>
-      </a>
-
-      <!-- Hamburger Menu Khusus Profil -->
-      ${isMe ? `
-        <button class="nav-menu-btn" onclick="toggleSettingsMenu()" aria-label="Menu Pengaturan">
-          <svg style="width:18px;height:18px;stroke:currentColor;stroke-width:2.4;fill:none;stroke-linecap:round;" viewBox="0 0 24 24"><line x1="4" x2="20" y1="7" y2="7"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="17" y2="17"/></svg>
-        </button>
-        <div class="settings-popover" id="settingsPopover">
-          <div class="settings-item" onclick="toggleEditModal(true); toggleSettingsMenu(false);">
-            <svg style="width:15px;height:15px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-            <span>Edit Profil</span>
-          </div>
-          <div class="settings-item" onclick="alert('BERBIRRU — Platform sastra & kolaborasi warkah di edge.'); toggleSettingsMenu(false);">
-            <svg style="width:15px;height:15px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-            <span>Informasi Akun</span>
-          </div>
-          <div class="settings-divider"></div>
-          <div class="settings-item danger" onclick="handleLogout()">
-            <svg style="width:15px;height:15px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            <span>Keluar Akun</span>
-          </div>
-        </div>
-      ` : ''}
-    </div>
-
-    <!-- Edit Profile Modal -->
-    <div class="edit-modal" id="editModal">
-      <h3 style="font-family:'Space Grotesk';font-size:15px;font-weight:800;margin-bottom:10px;">Perbarui Profil Anda</h3>
-      <div style="margin-bottom:10px;">
-        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Nama Pena</label>
-        <input type="text" id="editPenName" style="width:100%;padding:8px;border:2px solid #0B192C;border-radius:8px;font-weight:700;">
-      </div>
-      <div style="margin-bottom:10px;">
-        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Kota / Asal</label>
-        <input type="text" id="editCity" style="width:100%;padding:8px;border:2px solid #0B192C;border-radius:8px;font-weight:700;">
-      </div>
-      <div style="margin-bottom:12px;">
-        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Bio / Catatan Pribadi</label>
-        <textarea id="editBio" style="width:100%;height:60px;padding:8px;border:2px solid #0B192C;border-radius:8px;font-weight:600;"></textarea>
-      </div>
-      <div style="display:flex;justify-content:flex-end;gap:8px;">
-        <button onclick="toggleEditModal(false)" style="padding:6px 12px;border:2px solid #0B192C;border-radius:6px;font-weight:800;background:#FFF;cursor:pointer;">Batal</button>
-        <button onclick="saveProfile()" style="padding:6px 14px;border:2px solid #0B192C;border-radius:6px;font-weight:900;background:#1D61E7;color:#FFF;cursor:pointer;">Simpan</button>
-      </div>
-    </div>
 
     <!-- Profile Card with Cover/Banner Header -->
     <div class="profile-card">
-      <div class="cover-banner"></div>
+      <div class="cover-banner">
+        <!-- Floating Navigation di dalam banner -->
+        <div class="banner-floating-nav">
+          <a href="/feed" class="nav-btn-glass">
+            <svg style="width:13px;height:13px;stroke:currentColor;stroke-width:2.5;fill:none;" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+            <span>Feed</span>
+          </a>
+
+          ${isMe ? `
+            <button class="nav-menu-glass" onclick="toggleSettingsMenu(event)" aria-label="Menu Pengaturan">
+              <svg style="width:16px;height:16px;stroke:currentColor;stroke-width:2.4;fill:none;stroke-linecap:round;" viewBox="0 0 24 24"><line x1="4" x2="20" y1="7" y2="7"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="17" y2="17"/></svg>
+            </button>
+            <div class="settings-popover" id="settingsPopover">
+              <div class="settings-item" onclick="toggleEditModal(true); toggleSettingsMenu(false);">
+                <svg style="width:14px;height:14px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                <span>Edit Profil</span>
+              </div>
+              <div class="settings-item" onclick="alert('BERBIRRU — Platform sastra & kolaborasi warkah di edge.'); toggleSettingsMenu(false);">
+                <svg style="width:14px;height:14px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                <span>Informasi Akun</span>
+              </div>
+              <div class="settings-divider"></div>
+              <div class="settings-item danger" onclick="handleLogout()">
+                <svg style="width:14px;height:14px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                <span>Keluar Akun</span>
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      </div>
 
       <div class="profile-meta-wrap">
         <div class="avatar-action-row">
           <div class="avatar-box" id="avatarLetter">
             ${(penName[0] || 'D').toUpperCase()}
+          </div>
+          <!-- Opsi A: Badge Lokasi duduk di sisi kanan avatar -->
+          <div class="city-badge-top">
+            <svg style="width:11px;height:11px;stroke:currentColor;stroke-width:2.5;fill:none;" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span id="cityDisplay">Nusantara</span>
           </div>
           ${!isMe ? `
             <button class="btn-follow" onclick="followUser('${penName}')">
@@ -318,10 +313,6 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
         <div class="pen-name-group">
           <span class="display-name-main">${penName}</span>
           <span class="pen-name" id="penNameDisplay">@${penName}</span>
-          <div class="city-badge">
-            <svg style="width:11px;height:11px;stroke:currentColor;stroke-width:2.5;fill:none;" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-            <span id="cityDisplay">Nusantara</span>
-          </div>
         </div>
 
         <div class="bio-box" id="bioDisplay">
@@ -342,6 +333,27 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
             <span class="stat-label">Tersimpan</span>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div class="edit-modal" id="editModal">
+      <h3 style="font-family:'Space Grotesk';font-size:15px;font-weight:800;margin-bottom:10px;">Perbarui Profil Anda</h3>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Nama Pena</label>
+        <input type="text" id="editPenName" style="width:100%;padding:8px;border:2px solid #0B192C;border-radius:8px;font-weight:700;">
+      </div>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Kota / Asal</label>
+        <input type="text" id="editCity" style="width:100%;padding:8px;border:2px solid #0B192C;border-radius:8px;font-weight:700;">
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Bio / Catatan Pribadi</label>
+        <textarea id="editBio" style="width:100%;height:60px;padding:8px;border:2px solid #0B192C;border-radius:8px;font-weight:600;"></textarea>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;">
+        <button onclick="toggleEditModal(false)" style="padding:6px 12px;border:2px solid #0B192C;border-radius:6px;font-weight:800;background:#FFF;cursor:pointer;">Batal</button>
+        <button onclick="saveProfile()" style="padding:6px 14px;border:2px solid #0B192C;border-radius:6px;font-weight:900;background:#1D61E7;color:#FFF;cursor:pointer;">Simpan</button>
       </div>
     </div>
 
@@ -532,7 +544,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     }
 
     function switchProfileTab(tab, el) {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-reddit-item').forEach(b => b.classList.remove('active'));
       el.classList.add('active');
       loadProfilePosts(tab);
     }
