@@ -16,15 +16,15 @@ export function renderLandingPage(user: any = null): string {
   <meta property="og:url" content="https://berbirru.com/" />
   <meta property="og:title" content="BERBIRRU.COM — Pustaka Tulisan &amp; Kolaborasi Kata" />
   <meta property="og:description" content="Pernah tiba-tiba nulis ide bagus, tapi pas mau dibaca lagi malah lupa ditaruh di mana? Berbirru adalah rumahnya." />
-  <meta property="og:image" content="https://berbirru.com/og-image.png?v=2" />
-  <meta property="og:image:secure_url" content="https://berbirru.com/og-image.png?v=2" />
+  <meta property="og:image" content="https://berbirru.com/og-image.png?v=3" />
+  <meta property="og:image:secure_url" content="https://berbirru.com/og-image.png?v=3" />
   <meta property="og:image:type" content="image/jpeg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="BERBIRRU.COM — Pustaka Tulisan &amp; Kolaborasi Kata" />
   <meta name="twitter:description" content="Pernah tiba-tiba nulis ide bagus, tapi pas mau dibaca lagi malah lupa ditaruh di mana? Berbirru adalah rumahnya." />
-  <meta name="twitter:image" content="https://berbirru.com/og-image.png?v=2" />
+  <meta name="twitter:image" content="https://berbirru.com/og-image.png?v=3" />
   <style>
     :root{
       color-scheme:light;
