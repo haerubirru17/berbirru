@@ -23,10 +23,9 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
       --radius: 16px; --radius-sm: 10px;
     }
     body {
-      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
-      background-color: var(--bg-main); color: var(--ink); min-height: 100vh;
-      background-image: radial-gradient(#CBD5E1 1.5px, transparent 1.5px);
-      background-size: 22px 22px; padding: 24px 16px;
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      background-color: var(--paper, #FBF8F3); color: var(--ink); min-height: 100vh;
+      padding: 24px 16px;
       display: flex; flex-direction: column; justify-content: center; align-items: center;
     }
     .container { width: 100%; max-width: 400px; margin: 0 auto; }
@@ -37,15 +36,17 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
       color: #FFFFFF; padding: 6px 14px; border: var(--border-thick); border-radius: var(--radius);
       box-shadow: var(--shadow-hard); transform: rotate(-1deg); position: relative; z-index: 2;
     }
-    .brand-badge h1 { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 800; letter-spacing: 0.5px; }
+    .brand-badge h1 { margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 800; letter-spacing: 0.5px; color: #FFFFFF; line-height: 1; }
+    .brand-badge svg { width: 16px; height: 16px; stroke: #FFFFFF; stroke-width: 2; fill: none; flex-shrink: 0; }
     .brand-com-tag {
-      font-family: 'Space Grotesk', sans-serif; font-size: 27px; font-weight: 900;
+      font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 900;
       color: var(--blue-primary); position: relative; display: inline-block;
-      transform: rotate(2deg); margin-left: 4px; margin-top: 2px; z-index: 1;
+      transform: rotate(2deg); margin-left: 4px; margin-top: 2px; z-index: 1; line-height: 1;
+      padding-bottom: 3px;
     }
     .brand-com-tag::after {
-      content: ''; position: absolute; left: -24px; bottom: 0px; width: calc(100% + 28px); height: 6px;
-      background: var(--accent-yellow); border-radius: 3px; z-index: 0;
+      content: ''; position: absolute; left: -24px; bottom: -3px; width: calc(100% + 28px); height: 6px;
+      background: var(--accent-yellow); border-radius: 3px; z-index: -1;
     }
     .auth-card {
       background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
@@ -92,6 +93,7 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
     <div class="brand-header">
       <a href="/" class="brand-wrap">
         <div class="brand-badge">
+          <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
           <h1>BERBIRRU</h1>
         </div>
         <span class="brand-com-tag">.com</span>
