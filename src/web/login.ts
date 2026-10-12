@@ -18,6 +18,7 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
     :root {
       --bg-main: #F0F6FE; --bg-card: #FFFFFF; --bg-blue-subtle: #E0EEFD;
       --ink: #0B192C; --shadow-ink: #1E293B; --blue-primary: #1D61E7;
+      --accent-yellow: #FDE047;
       --border-thick: 3px solid var(--ink); --border-med: 2.5px solid var(--ink);
       --shadow-hard: 4px 4px 0 var(--shadow-ink); --shadow-hard-lg: 6px 6px 0 var(--shadow-ink); --shadow-hard-sm: 2.5px 2.5px 0 var(--shadow-ink);
       --radius: 16px; --radius-sm: 10px;
@@ -212,6 +213,7 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
       document.getElementById('penNameGroup').style.display = isLogin ? 'none' : 'block';
       document.getElementById('btnSubmitText').textContent = isLogin ? 'Masuk' : 'Daftar Pustaka';
       document.getElementById('authHelperText').style.display = isLogin ? 'block' : 'none';
+      try { if (window.turnstile) window.turnstile.reset('#turnstileAuthWidget'); } catch (e) {}
     }
 
     function toggleOtpCard(showOtp) {
@@ -221,6 +223,9 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
         document.getElementById('otpStep1').style.display = 'block';
         document.getElementById('otpStep2').style.display = 'none';
         document.getElementById('otpEmailInput').value = document.getElementById('emailInput').value.trim();
+        try { if (window.turnstile) window.turnstile.reset('#turnstileOtpWidget'); } catch (e) {}
+      } else {
+        try { if (window.turnstile) window.turnstile.reset('#turnstileAuthWidget'); } catch (e) {}
       }
     }
 
