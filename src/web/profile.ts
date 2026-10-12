@@ -82,12 +82,21 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       display: flex; justify-content: space-between; align-items: flex-end;
       margin-top: -38px; margin-bottom: 12px;
     }
+    .avatar-wrapper { position: relative; display: inline-flex; }
     .avatar-box {
       width: 72px; height: 72px; background: var(--blue-primary); color: #FFFFFF; border: var(--border-thick);
       border-radius: 18px; display: grid; place-items: center; font-family: 'Newsreader', serif;
       font-size: 34px; font-weight: 700; box-shadow: var(--shadow-hard-sm); flex-shrink: 0;
       position: relative; user-select: none;
     }
+    .btn-follow-badge {
+      position: absolute; right: -8px; bottom: -4px; width: 28px; height: 28px;
+      background: var(--accent-yellow); color: var(--ink); border: 2px solid var(--ink);
+      border-radius: 50%; display: grid; place-items: center; box-shadow: 2px 2px 0 var(--shadow-ink);
+      cursor: pointer; transition: transform 0.1s ease; z-index: 5;
+    }
+    .btn-follow-badge svg { width: 14px; height: 14px; stroke: #0B192C; stroke-width: 3; fill: none; }
+    .btn-follow-badge:active { transform: scale(0.92); box-shadow: none; }
     .profile-right-actions {
       display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
     }
@@ -95,11 +104,6 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       font-size: 11px; font-weight: 800; color: var(--blue-primary); background: var(--bg-blue-subtle);
       padding: 4px 10px; border-radius: 99px; border: 1.5px solid var(--ink);
       box-shadow: 2px 2px 0 var(--shadow-ink); display: inline-flex; align-items: center; gap: 4px;
-    }
-    .btn-follow {
-      background: var(--accent-yellow); color: var(--ink); border: var(--border-med); border-radius: 99px;
-      padding: 5px 14px; font-size: 12px; font-weight: 900; box-shadow: var(--shadow-hard-sm); cursor: pointer;
-      display: inline-flex; align-items: center; gap: 4px;
     }
     .pen-name-group { display: flex; flex-direction: column; margin-bottom: 8px; }
     .bio-box {
@@ -304,20 +308,21 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
 
       <div class="profile-meta-wrap">
         <div class="avatar-action-row">
-          <div class="avatar-box" id="avatarLetter">
-            ${(penName[0] || 'D').toUpperCase()}
+          <div class="avatar-wrapper">
+            <div class="avatar-box" id="avatarLetter">
+              ${(penName[0] || 'D').toUpperCase()}
+            </div>
+            ${!isMe ? `
+              <button class="btn-follow-badge" onclick="followUser('${penName}')" aria-label="Ikuti Penulis" title="Ikuti Penulis">
+                <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+              </button>
+            ` : ''}
           </div>
           <div class="profile-right-actions">
             <div class="city-badge-top">
               <svg style="width:11px;height:11px;stroke:currentColor;stroke-width:2.5;fill:none;" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
               <span id="cityDisplay">Nusantara</span>
             </div>
-            ${!isMe ? `
-              <button class="btn-follow" onclick="followUser('${penName}')">
-                <svg style="width:12px;height:12px;stroke:currentColor;stroke-width:2.5;fill:none;" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-                <span>Ikuti</span>
-              </button>
-            ` : ''}
           </div>
         </div>
 
@@ -409,7 +414,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
         <span>Aktivitas</span>
       </a>
 
-      <a href="${currentUser ? '/u/' + currentUser.pen_name : '/login'}" class="nav-item active">
+      <a href="${currentUser ? '/u/' + currentUser.pen_name : '/login'}" class="nav-item ${isMe ? 'active' : ''}">
         <!-- Lucide User -->
         <svg viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         <span>Akun</span>
@@ -494,7 +499,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
           currentUserData = data.user;
           document.getElementById('penNameDisplay').textContent = '@' + data.user.pen_name;
           document.getElementById('avatarLetter').textContent = (data.user.pen_name[0] || 'D').toUpperCase();
-          document.getElementById('cityDisplay').textContent = (data.user.city || 'Nusantara') + ' · Penulis Aktif';
+          document.getElementById('cityDisplay').textContent = data.user.city || 'Nusantara';
           document.getElementById('bioDisplay').textContent = '"' + (data.user.bio || 'Goresan perenungan rasa dan bait kata di Berbirru.') + '"';
           document.getElementById('countPosts').textContent = data.user.posts_count || 0;
           document.getElementById('countLikes').textContent = data.user.likes_count || 0;
