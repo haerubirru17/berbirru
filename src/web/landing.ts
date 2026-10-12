@@ -72,7 +72,7 @@ export function renderLandingPage(user: any = null): string {
     .menu{display:none;width:46px;height:44px;place-items:center;border:2px solid var(--line);background:var(--paper-2);color:var(--ink);box-shadow:3px 3px 0 var(--shadow)}
     .menu svg{width:22px;height:22px}
 
-    .hero{display:grid;grid-template-columns:minmax(0,1.13fr) minmax(350px,.87fr);gap:clamp(46px,7vw,98px);align-items:center;padding:84px 0 106px;min-height:720px}
+    .hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(380px,.95fr);gap:clamp(36px,5vw,72px);align-items:center;padding:84px 0 106px;min-height:720px}
     .kicker{display:flex;align-items:center;gap:11px;margin-bottom:24px;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
     .kicker::before{content:"";width:38px;height:4px;border:1px solid var(--line);background:var(--yellow)}
     h1{max-width:760px;margin-bottom:28px;font-family:"Newsreader",serif;font-size:clamp(56px,7.6vw,98px);font-weight:500;line-height:.92;letter-spacing:-.052em}
@@ -84,7 +84,7 @@ export function renderLandingPage(user: any = null): string {
     .reading-card::before{inset:16px -4px -8px 18px;background:var(--sky);box-shadow:9px 9px 0 var(--shadow);transform:rotate(2.6deg)}
     .reading-card::after{inset:0 16px 14px 0;background:var(--paper-2);transform:rotate(-1.3deg)}
     .card-meta{display:flex;justify-content:space-between;gap:16px;padding-bottom:13px;border-bottom:1px solid var(--soft);font-size:12px;font-weight:800}
-    .reading-card blockquote{max-width:390px;margin:46px 0;font-family:"Newsreader",serif;font-size:clamp(34px,3.8vw,48px);line-height:1.12}
+    .reading-card blockquote{max-width:440px;margin:46px 0;font-family:"Newsreader",serif;font-size:clamp(34px,3.8vw,48px);line-height:1.15}
     .reading-card blockquote span{background:linear-gradient(transparent 69%,var(--yellow) 69%)}
     .card-foot{display:flex;align-items:center;gap:14px;padding-top:18px;border-top:1px dashed var(--line);color:var(--muted);font-size:13px}
     .relay-dots{display:flex}.relay-dots i{width:28px;height:28px;margin-left:-6px;border:1.5px solid #122031;border-radius:50%;background:var(--mint);display:grid;place-items:center;color:#122031;font-style:normal;font-size:10px;font-weight:900}.relay-dots i:first-child{margin-left:0}.relay-dots i:nth-child(2){background:var(--yellow)}.relay-dots i:nth-child(3){background:var(--coral)}
@@ -219,7 +219,7 @@ export function renderLandingPage(user: any = null): string {
       <div class="reading-card" aria-label="Ilustrasi bait yang tumbuh bersama">
         <div class="burst">3 PENULIS<br/>LINTAS KOTA</div>
         <div class="card-meta"><span>#UNTAIAN-8910</span><span>Contoh nyata</span></div>
-        <blockquote>kotaku basah oleh hujan yang tak kunjung reda, seperti kepalaku yang penuh tanya tanpa jeda, namun di sudut cangkir kopi ini, <span>kita tahu cara merawat jeda bersama.</span></blockquote>
+        <blockquote>Kita tak pulang ke kota yang sama, tapi membawa <span>langit yang serupa.</span></blockquote>
         <div class="card-foot"><div class="relay-dots" aria-hidden="true"><i>S</i><i>L</i><i>P</i></div><span>@senja_kelabu · Jakarta &nbsp;@langit_biru · Bandung &nbsp;@penyair_nusantara · Yogyakarta</span></div>
       </div>
     </section>
