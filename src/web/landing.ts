@@ -12,6 +12,13 @@ export function renderLandingPage(user: any = null): string {
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet" />
   <title>BERBIRRU.COM — Pustaka Tulisan &amp; Kolaborasi Kata</title>
   <meta name="description" content="Tempat segala bentuk tulisan—puisi, kutipan bermakna, cerita kilat, resensi buku, hingga perenungan absurd—dicatat abadi dan disambung bersama." />
+  <meta property="og:title" content="BERBIRRU.COM — Pustaka Tulisan &amp; Kolaborasi Kata" />
+  <meta property="og:description" content="Pernah tiba-tiba nulis ide bagus, tapi pas mau dibaca lagi malah lupa ditaruh di mana? Berbirru adalah rumahnya." />
+  <meta property="og:image" content="https://berbirru.com/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://berbirru.com/og-image.png" />
   <style>
     :root{
       color-scheme:light;
