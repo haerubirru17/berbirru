@@ -28,77 +28,107 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       padding: 20px 16px 80px;
     }
     .container { max-width: 480px; margin: 0 auto; }
-    .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    /* Top Bar: Back to Feed & Right Menu */
+    .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; position: relative; }
     .nav-back-btn {
-      background: var(--bg-card); border: var(--border-med); border-radius: var(--radius-sm);
+      background: var(--bg-card); border: var(--border-med); border-radius: 99px;
       padding: 6px 14px; font-size: 12px; font-weight: 800; box-shadow: var(--shadow-hard-sm);
       display: inline-flex; align-items: center; gap: 6px; text-decoration: none; color: var(--ink);
     }
-    .brand-wrap { display: inline-flex; align-items: center; text-decoration: none; position: relative; }
-    .brand-badge {
-      display: inline-flex; align-items: center; gap: 4px; background: var(--blue-primary);
-      color: #FFFFFF; padding: 4px 10px; border: var(--border-med); border-radius: var(--radius-sm);
-      box-shadow: var(--shadow-hard-sm); transform: rotate(-1deg); position: relative; z-index: 2;
+    .nav-menu-btn {
+      width: 38px; height: 38px; background: var(--bg-card); border: var(--border-med);
+      border-radius: 12px; display: grid; place-items: center; box-shadow: var(--shadow-hard-sm);
+      cursor: pointer; color: var(--ink);
     }
-    .brand-badge span { font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 800; }
-    .brand-com-tag {
-      font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 900;
-      color: var(--blue-primary); position: relative; display: inline-block;
-      transform: rotate(2deg); margin-left: 2px; margin-top: 1px; z-index: 1; line-height: 1;
-      padding-bottom: 2px;
+    .nav-menu-btn:active { transform: translate(1px, 1px); box-shadow: none; }
+
+    /* Settings Menu Dropdown */
+    .settings-popover {
+      display: none; position: absolute; top: 46px; right: 0; width: 200px;
+      background: #FFFFFF; border: var(--border-thick); border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-hard); z-index: 100; padding: 6px; flex-direction: column; gap: 2px;
     }
-    .brand-com-tag::after {
-      content: ''; position: absolute; left: -16px; bottom: -2px; width: calc(100% + 20px); height: 4.5px;
-      background: var(--accent-yellow); border-radius: 2px; z-index: -1;
+    .settings-item {
+      padding: 9px 12px; border-radius: 6px; font-size: 12px; font-weight: 800;
+      color: var(--ink); display: flex; align-items: center; gap: 8px; cursor: pointer;
+      text-decoration: none;
     }
+    .settings-item:hover, .settings-item:active {
+      background: var(--bg-blue-subtle); color: var(--blue-primary);
+    }
+    .settings-item.danger { color: var(--accent-red); }
+    .settings-item.danger:hover, .settings-item.danger:active { background: #FEE2E2; }
+    .settings-divider { height: 1px; background: #E2E8F0; margin: 3px 6px; }
+
+    /* Profile Card with Cover/Banner Header */
     .profile-card {
       background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
-      box-shadow: var(--shadow-hard-lg); padding: 18px 16px; margin-bottom: 20px; position: relative;
+      box-shadow: var(--shadow-hard-lg); overflow: hidden; margin-bottom: 20px; position: relative;
     }
-    .profile-top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .profile-avatar-wrap { display: flex; gap: 12px; align-items: center; position: relative; }
+    .cover-banner {
+      height: 96px; width: 100%;
+      background: linear-gradient(135deg, #1D61E7 0%, #0F3E99 60%, #0B192C 100%);
+      position: relative; border-bottom: var(--border-med);
+    }
+    .profile-meta-wrap { padding: 0 16px 16px; }
+    .avatar-action-row {
+      display: flex; justify-content: space-between; align-items: flex-end;
+      margin-top: -36px; margin-bottom: 12px;
+    }
     .avatar-box {
-      width: 54px; height: 54px; background: var(--blue-primary); color: #FFFFFF; border: var(--border-thick);
-      border-radius: 14px; display: grid; place-items: center; font-family: 'Space Grotesk', sans-serif;
-      font-size: 24px; font-weight: 700; box-shadow: var(--shadow-hard-sm); flex-shrink: 0; cursor: pointer;
+      width: 72px; height: 72px; background: var(--blue-primary); color: #FFFFFF; border: var(--border-thick);
+      border-radius: 18px; display: grid; place-items: center; font-family: 'Newsreader', serif;
+      font-size: 34px; font-weight: 700; box-shadow: var(--shadow-hard-sm); flex-shrink: 0;
       position: relative; user-select: none;
     }
     .pen-name-group { display: flex; flex-direction: column; }
-    .pen-name { font-family: 'JetBrains Mono', monospace; font-size: 16.5px; font-weight: 800; color: var(--ink); }
-    .city-badge { font-size: 11px; font-weight: 700; color: #64748B; display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+    .display-name-main { font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 800; color: var(--ink); line-height: 1.2; }
+    .pen-name { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; font-weight: 700; color: #64748B; margin-top: 2px; }
+    .city-badge {
+      font-size: 11px; font-weight: 700; color: var(--blue-primary); background: var(--bg-blue-subtle);
+      padding: 2px 8px; border-radius: 99px; border: 1px solid rgba(29,97,231,0.2);
+      display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; align-self: flex-start;
+    }
     .btn-follow {
-      background: var(--accent-yellow); color: var(--ink); border: var(--border-med); border-radius: var(--radius-sm);
-      padding: 7px 14px; font-size: 12px; font-weight: 900; box-shadow: var(--shadow-hard-sm); cursor: pointer;
+      background: var(--accent-yellow); color: var(--ink); border: var(--border-med); border-radius: 99px;
+      padding: 6px 16px; font-size: 12px; font-weight: 900; box-shadow: var(--shadow-hard-sm); cursor: pointer;
       display: inline-flex; align-items: center; gap: 5px;
     }
     .bio-box {
-      font-size: 13px; font-weight: 600; line-height: 1.45; color: #334155; background: var(--bg-blue-subtle);
-      border: 1.5px solid var(--ink); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 14px;
+      font-size: 13.5px; font-weight: 500; line-height: 1.5; color: #334155; margin-top: 10px; margin-bottom: 16px;
     }
-    .metrics-bar {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; background: #0F172A;
-      padding: 10px; border: var(--border-med); border-radius: var(--radius-sm); box-shadow: 2px 2px 0 var(--shadow-ink);
+    
+    /* Reddit-Style 3-Column Metrics */
+    .reddit-stats-row {
+      display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1.5px solid #E2E8F0;
+      padding-top: 14px; margin-top: 4px;
     }
-    .metric-cell { text-align: center; border-right: 1px dashed rgba(255,255,255,0.2); }
-    .metric-cell:last-child { border-right: none; }
-    .metric-val { font-family: 'JetBrains Mono', monospace; font-size: 17px; font-weight: 800; color: var(--accent-yellow); line-height: 1.1; }
-    .metric-lbl { font-size: 9.5px; font-weight: 800; color: #94A3B8; text-transform: uppercase; margin-top: 2px; }
-    /* Soft Pastel Colors for Profile Tabs (Zero Harsh Dark Blue) */
-    .tiktok-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 20px; }
-    .tab-btn {
-      background: var(--bg-card); border: var(--border-med); border-radius: var(--radius-sm);
-      padding: 9px 4px; font-size: 11px; font-weight: 900; cursor: pointer; box-shadow: var(--shadow-hard-sm);
-      display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--ink);
-      transition: all 0.05s ease;
+    .stat-col {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      border-right: 1.5px solid #E2E8F0;
     }
-    .tab-btn:active { transform: translate(1px, 1px); box-shadow: none; }
-    .tab-btn.active {
-      background: var(--bg-blue-subtle);
-      color: var(--blue-primary);
-      border-color: var(--blue-primary);
-      box-shadow: inset 0 -3px 0 var(--blue-primary), 2px 2px 0 var(--shadow-ink);
+    .stat-col:last-child { border-right: none; }
+    .stat-number {
+      font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 800; color: var(--ink);
+      line-height: 1; margin-bottom: 3px;
     }
-    .tab-btn.active svg { stroke: var(--blue-primary); stroke-width: 2.8; }
+    .stat-label {
+      font-size: 10px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+
+    /* Reddit-Style Clean Underline Tabs */
+    .profile-tabs-reddit {
+      display: flex; border-bottom: 2px solid #E2E8F0; margin-bottom: 18px; justify-content: space-around; padding: 0 4px;
+    }
+    .tab-reddit-item {
+      padding: 10px 8px; font-size: 13px; font-weight: 800; color: #64748B;
+      cursor: pointer; position: relative; text-decoration: none; display: flex; align-items: center; gap: 6px;
+    }
+    .tab-reddit-item.active { color: var(--blue-primary); }
+    .tab-reddit-item.active::after {
+      content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 3px;
+      background: var(--blue-primary); border-radius: 3px 3px 0 0;
+    }
     .feed-list { display: flex; flex-direction: column; gap: 16px; }
 
     /* Unified Threads Card Style in Profile with Paperclip Badge */
@@ -220,15 +250,31 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
   <div class="container">
     <div class="top-nav">
       <a href="/feed" class="nav-back-btn">
-        <svg class="ico" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-        <span>Kembali ke Feed</span>
+        <svg style="width:14px;height:14px;stroke:currentColor;stroke-width:2.5;fill:none;" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+        <span>Feed</span>
       </a>
-      <a href="/" class="brand-wrap">
-        <div class="brand-badge">
-          <span>BERBIRRU</span>
+
+      <!-- Hamburger Menu Khusus Profil -->
+      ${isMe ? `
+        <button class="nav-menu-btn" onclick="toggleSettingsMenu()" aria-label="Menu Pengaturan">
+          <svg style="width:18px;height:18px;stroke:currentColor;stroke-width:2.4;fill:none;stroke-linecap:round;" viewBox="0 0 24 24"><line x1="4" x2="20" y1="7" y2="7"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="17" y2="17"/></svg>
+        </button>
+        <div class="settings-popover" id="settingsPopover">
+          <div class="settings-item" onclick="toggleEditModal(true); toggleSettingsMenu(false);">
+            <svg style="width:15px;height:15px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            <span>Edit Profil</span>
+          </div>
+          <div class="settings-item" onclick="alert('BERBIRRU — Platform sastra & kolaborasi warkah di edge.'); toggleSettingsMenu(false);">
+            <svg style="width:15px;height:15px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+            <span>Informasi Akun</span>
+          </div>
+          <div class="settings-divider"></div>
+          <div class="settings-item danger" onclick="handleLogout()">
+            <svg style="width:15px;height:15px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <span>Keluar Akun</span>
+          </div>
         </div>
-        <span class="brand-com-tag">.com</span>
-      </a>
+      ` : ''}
     </div>
 
     <!-- Edit Profile Modal -->
@@ -252,80 +298,59 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       </div>
     </div>
 
+    <!-- Profile Card with Cover/Banner Header -->
     <div class="profile-card">
-      <div class="profile-top-row">
-        <div class="profile-avatar-wrap">
-          <div class="avatar-box" id="avatarLetter" onclick="toggleAvatarPopover()">
+      <div class="cover-banner"></div>
+
+      <div class="profile-meta-wrap">
+        <div class="avatar-action-row">
+          <div class="avatar-box" id="avatarLetter">
             ${(penName[0] || 'D').toUpperCase()}
           </div>
-          <div class="pen-name-group">
-            <span class="pen-name" id="penNameDisplay">@${penName}</span>
-            <div class="city-badge">
-              <svg class="ico" style="width:11px;height:11px;" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              <span id="cityDisplay">Nusantara · Penulis Aktif</span>
-            </div>
-          </div>
-
-          <!-- Popover Menu Khusus Pemilik Akun -->
-          ${isMe ? `
-            <div class="avatar-popover" id="avatarPopover">
-              <div class="avatar-popover-item" onclick="toggleEditModal(true)">
-                <svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                <span>Edit Profil</span>
-              </div>
-              <div class="avatar-popover-item" onclick="handleLogout()">
-                <svg class="ico" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                <span>Keluar Akun</span>
-              </div>
-            </div>
+          ${!isMe ? `
+            <button class="btn-follow" onclick="followUser('${penName}')">
+              <svg style="width:12px;height:12px;stroke:currentColor;stroke-width:2.5;fill:none;" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+              <span>Ikuti</span>
+            </button>
           ` : ''}
         </div>
 
-        ${!isMe ? `
-          <button class="btn-follow" onclick="followUser('${penName}')">
-            <svg class="ico" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            <span>Ikuti</span>
-          </button>
-        ` : ''}
-      </div>
-
-      <div class="bio-box" id="bioDisplay">
-        "Goresan perenungan rasa dan bait kata di Berbirru."
-      </div>
-
-      <div class="metrics-bar">
-        <div class="metric-cell">
-          <div class="metric-val" id="countPosts">0</div>
-          <div class="metric-lbl">Warkah</div>
+        <div class="pen-name-group">
+          <span class="display-name-main">${penName}</span>
+          <span class="pen-name" id="penNameDisplay">@${penName}</span>
+          <div class="city-badge">
+            <svg style="width:11px;height:11px;stroke:currentColor;stroke-width:2.5;fill:none;" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span id="cityDisplay">Nusantara</span>
+          </div>
         </div>
-        <div class="metric-cell">
-          <div class="metric-val" id="countLikes">0</div>
-          <div class="metric-lbl">Terpaut</div>
+
+        <div class="bio-box" id="bioDisplay">
+          "Goresan perenungan rasa dan bait kata di Berbirru."
         </div>
-        <div class="metric-cell">
-          <div class="metric-val" id="countSaved">0</div>
-          <div class="metric-lbl">Tersimpan</div>
+
+        <div class="reddit-stats-row">
+          <div class="stat-col">
+            <span class="stat-number" id="countPosts">0</span>
+            <span class="stat-label">Warkah</span>
+          </div>
+          <div class="stat-col">
+            <span class="stat-number" id="countLikes">0</span>
+            <span class="stat-label">Terpaut</span>
+          </div>
+          <div class="stat-col">
+            <span class="stat-number" id="countSaved">0</span>
+            <span class="stat-label">Tersimpan</span>
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="tiktok-tabs">
-      <div class="tab-btn active" onclick="switchProfileTab('original', this)">
-        <svg class="ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        <span>Karya</span>
-      </div>
-      <div class="tab-btn" onclick="switchProfileTab('likes', this)">
-        <svg class="ico" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-        <span>Suka</span>
-      </div>
-      <div class="tab-btn" onclick="switchProfileTab('saved', this)">
-        <svg class="ico" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-        <span>Simpan</span>
-      </div>
-      <div class="tab-btn" onclick="switchProfileTab('chains', this)">
-        <svg class="ico" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-        <span>Estafet</span>
-      </div>
+    <!-- Underline Tab Navigation (Reddit Style) -->
+    <div class="profile-tabs-reddit">
+      <div class="tab-reddit-item active" onclick="switchProfileTab('original', this)">Karya</div>
+      <div class="tab-reddit-item" onclick="switchProfileTab('likes', this)">Disukai</div>
+      <div class="tab-reddit-item" onclick="switchProfileTab('saved', this)">Tersimpan</div>
+      <div class="tab-reddit-item" onclick="switchProfileTab('chains', this)">Estafet</div>
     </div>
 
     <div class="feed-list" id="profileFeed"></div>
@@ -373,25 +398,27 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     const currentPenName = '${penName}';
     let currentUserData = null;
 
-    function toggleAvatarPopover() {
-      const pop = document.getElementById('avatarPopover');
+    function toggleSettingsMenu(show) {
+      const pop = document.getElementById('settingsPopover');
       if (pop) {
-        pop.style.display = pop.style.display === 'block' ? 'none' : 'block';
+        if (typeof show === 'boolean') {
+          pop.style.display = show ? 'flex' : 'none';
+        } else {
+          pop.style.display = pop.style.display === 'flex' ? 'none' : 'flex';
+        }
       }
     }
 
     document.addEventListener('click', (e) => {
-      const pop = document.getElementById('avatarPopover');
-      const avatar = document.getElementById('avatarLetter');
-      if (pop && avatar && !avatar.contains(e.target) && !pop.contains(e.target)) {
+      const pop = document.getElementById('settingsPopover');
+      const btn = document.querySelector('.nav-menu-btn');
+      if (pop && btn && !btn.contains(e.target) && !pop.contains(e.target)) {
         pop.style.display = 'none';
       }
     });
 
     function toggleEditModal(show) {
       document.getElementById('editModal').style.display = show ? 'block' : 'none';
-      const pop = document.getElementById('avatarPopover');
-      if (pop) pop.style.display = 'none';
 
       if (show && currentUserData) {
         document.getElementById('editPenName').value = currentUserData.pen_name;
