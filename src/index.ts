@@ -190,8 +190,11 @@ app.get('/u/:pen_name', async (c) => {
   const penNameParam = c.req.param('pen_name');
   const user = await getAuthUser(c);
 
+  if (!user) {
+    return c.redirect('/login');
+  }
+
   if (penNameParam === 'saya') {
-    if (!user) return c.redirect('/login');
     return c.redirect('/u/' + user.pen_name);
   }
 

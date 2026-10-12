@@ -88,20 +88,20 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       font-size: 34px; font-weight: 700; box-shadow: var(--shadow-hard-sm); flex-shrink: 0;
       position: relative; user-select: none;
     }
+    .profile-right-actions {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+    }
     .city-badge-top {
       font-size: 11px; font-weight: 800; color: var(--blue-primary); background: var(--bg-blue-subtle);
       padding: 4px 10px; border-radius: 99px; border: 1.5px solid var(--ink);
       box-shadow: 2px 2px 0 var(--shadow-ink); display: inline-flex; align-items: center; gap: 4px;
-      margin-bottom: 4px;
     }
-    .pen-name-group { display: flex; flex-direction: column; margin-bottom: 8px; }
-    .display-name-main { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 800; color: var(--ink); line-height: 1.2; }
-    .pen-name { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; font-weight: 700; color: #64748B; margin-top: 2px; }
     .btn-follow {
       background: var(--accent-yellow); color: var(--ink); border: var(--border-med); border-radius: 99px;
-      padding: 6px 16px; font-size: 12px; font-weight: 900; box-shadow: var(--shadow-hard-sm); cursor: pointer;
-      display: inline-flex; align-items: center; gap: 5px; margin-bottom: 4px;
+      padding: 5px 14px; font-size: 12px; font-weight: 900; box-shadow: var(--shadow-hard-sm); cursor: pointer;
+      display: inline-flex; align-items: center; gap: 4px;
     }
+    .pen-name-group { display: flex; flex-direction: column; margin-bottom: 8px; }
     .bio-box {
       font-size: 13.5px; font-weight: 500; line-height: 1.5; color: #334155; margin-bottom: 14px;
     }
@@ -269,11 +269,11 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
             <span>Feed</span>
           </a>
 
-          ${isMe ? `
-            <button class="nav-menu-glass" onclick="toggleSettingsMenu(event)" aria-label="Menu Pengaturan">
-              <svg style="width:16px;height:16px;stroke:currentColor;stroke-width:2.4;fill:none;stroke-linecap:round;" viewBox="0 0 24 24"><line x1="4" x2="20" y1="7" y2="7"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="17" y2="17"/></svg>
-            </button>
-            <div class="settings-popover" id="settingsPopover">
+          <button class="nav-menu-glass" onclick="toggleSettingsMenu(event)" aria-label="Menu Pengaturan">
+            <svg style="width:16px;height:16px;stroke:currentColor;stroke-width:2.4;fill:none;stroke-linecap:round;" viewBox="0 0 24 24"><line x1="4" x2="20" y1="7" y2="7"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="17" y2="17"/></svg>
+          </button>
+          <div class="settings-popover" id="settingsPopover">
+            ${isMe ? `
               <div class="settings-item" onclick="toggleEditModal(true); toggleSettingsMenu(false);">
                 <svg style="width:14px;height:14px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                 <span>Edit Profil</span>
@@ -287,8 +287,18 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
                 <svg style="width:14px;height:14px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                 <span>Keluar Akun</span>
               </div>
-            </div>
-          ` : ''}
+            ` : `
+              <div class="settings-item" onclick="navigator.clipboard.writeText(location.href); alert('Tautan profil disalin!'); toggleSettingsMenu(false);">
+                <svg style="width:14px;height:14px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                <span>Salin Tautan</span>
+              </div>
+              <div class="settings-divider"></div>
+              <div class="settings-item danger" onclick="alert('Laporan diterima untuk ditinjau.'); toggleSettingsMenu(false);">
+                <svg style="width:14px;height:14px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>
+                <span>Laporkan Akun</span>
+              </div>
+            `}
+          </div>
         </div>
       </div>
 
@@ -297,17 +307,18 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
           <div class="avatar-box" id="avatarLetter">
             ${(penName[0] || 'D').toUpperCase()}
           </div>
-          <!-- Opsi A: Badge Lokasi duduk di sisi kanan avatar -->
-          <div class="city-badge-top">
-            <svg style="width:11px;height:11px;stroke:currentColor;stroke-width:2.5;fill:none;" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-            <span id="cityDisplay">Nusantara</span>
+          <div class="profile-right-actions">
+            <div class="city-badge-top">
+              <svg style="width:11px;height:11px;stroke:currentColor;stroke-width:2.5;fill:none;" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span id="cityDisplay">Nusantara</span>
+            </div>
+            ${!isMe ? `
+              <button class="btn-follow" onclick="followUser('${penName}')">
+                <svg style="width:12px;height:12px;stroke:currentColor;stroke-width:2.5;fill:none;" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                <span>Ikuti</span>
+              </button>
+            ` : ''}
           </div>
-          ${!isMe ? `
-            <button class="btn-follow" onclick="followUser('${penName}')">
-              <svg style="width:12px;height:12px;stroke:currentColor;stroke-width:2.5;fill:none;" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-              <span>Ikuti</span>
-            </button>
-          ` : ''}
         </div>
 
         <div class="pen-name-group">
@@ -531,7 +542,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
             </div>
             <div class="thread-body">
               \${p.title ? \`<h3 class="thread-title">\${escapeHtml(p.title)}</h3>\` : ''}
-              <div class="thread-text">\${escapeHtml(p.content)}</div>
+              <div class="thread-text">\${p.content}</div>
             </div>
             <div class="thread-footer">
               <span style="font-size:11.5px;font-weight:800;color:#1D61E7;">\${p.likes_count || 0} Terpaut · \${p.saves_count || 0} Simpan · \${p.chains_count || 0} Sambungan</span>
