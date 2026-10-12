@@ -96,12 +96,12 @@ export function renderFeedPage(user: any = null): string {
     /* Card Feed Threads-Style dengan Overlap Avatar & Paperclip Efek */
     .log-feed { display: flex; flex-direction: column; gap: 22px; }
     .thread-card {
-      background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
+      background: var(--bg-card); border: var(--border-thick); border-radius: 0px;
       box-shadow: var(--shadow-hard-lg); overflow: visible; position: relative; margin-top: 14px;
     }
     .thread-header-soft {
       background: var(--bg-blue-subtle); padding: 8px 12px 8px 68px; display: flex; justify-content: space-between;
-      align-items: center; border-bottom: var(--border-thin); border-top-left-radius: 13px; border-top-right-radius: 13px;
+      align-items: center; border-bottom: var(--border-thin); border-radius: 0px;
       position: relative; min-height: 44px;
     }
     .thread-author-wrap { display: flex; align-items: center; gap: 8px; }
@@ -110,7 +110,7 @@ export function renderFeedPage(user: any = null): string {
     .thread-avatar-clip {
       position: absolute; left: 10px; top: -14px; width: 48px; height: 50px;
       background: var(--blue-primary); color: #FFFFFF; border: var(--border-thick);
-      border-radius: 12px; display: grid; place-items: center; font-family: 'Space Grotesk', sans-serif;
+      border-radius: 0px; display: grid; place-items: center; font-family: 'Space Grotesk', sans-serif;
       font-size: 23px; font-weight: 900; box-shadow: none;
       transform: rotate(-2deg); z-index: 5;
     }
@@ -171,7 +171,7 @@ export function renderFeedPage(user: any = null): string {
 
     .thread-footer {
       padding: 8px 12px; background: #FFFFFF; display: flex; justify-content: space-between; align-items: center;
-      border-top: var(--border-thin); border-bottom-left-radius: 13px; border-bottom-right-radius: 13px;
+      border-top: var(--border-thin); border-radius: 0px;
     }
     .actions-left { display: flex; gap: 6px; }
     .act-btn {

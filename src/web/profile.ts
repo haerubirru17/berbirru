@@ -150,12 +150,12 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     /* Unified Threads Card Style in Profile with Paperclip Badge */
     .feed-list { display: flex; flex-direction: column; gap: 20px; }
     .thread-card {
-      background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
+      background: var(--bg-card); border: var(--border-thick); border-radius: 0px;
       box-shadow: var(--shadow-hard-lg); overflow: visible; position: relative; margin-top: 14px;
     }
     .thread-header-soft {
       background: var(--bg-blue-subtle); padding: 8px 12px 8px 68px; display: flex; justify-content: space-between;
-      align-items: center; border-bottom: var(--border-thin); border-top-left-radius: 13px; border-top-right-radius: 13px;
+      align-items: center; border-bottom: var(--border-thin); border-radius: 0px;
       min-height: 44px; position: relative;
     }
     .thread-author-wrap { display: flex; align-items: center; gap: 8px; }
@@ -164,7 +164,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     .thread-avatar-clip {
       position: absolute; left: 10px; top: -14px; width: 48px; height: 50px;
       background: var(--blue-primary); color: #FFFFFF; border: var(--border-thick);
-      border-radius: 12px; display: grid; place-items: center; font-family: 'Space Grotesk', sans-serif;
+      border-radius: 0px; display: grid; place-items: center; font-family: 'Space Grotesk', sans-serif;
       font-size: 23px; font-weight: 900; box-shadow: none;
       transform: rotate(-2deg); z-index: 5;
     }
