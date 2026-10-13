@@ -118,3 +118,26 @@ npm test
 node ~/.hermes/skills/security/security-audit/validate-findings.cjs <path-to-findings.json>
 node ~/.hermes/skills/security/security-audit/validate-coverage-ledger.cjs <path-to-coverage-ledger.json>
 ```
+
+---
+
+## 5. Hasil Audit Putaran 2 (Strix Deep — 13 Okt 2026)
+
+Laporan *deep scan* (31 temuan: 1 HIGH, 4 MEDIUM, 26 LOW) diverifikasi ulang terhadap kode
+sebelum diperbaiki. Semua temuan aplikasi (bukan CVE toolchain) telah ditutup:
+
+| # | Temuan | Penanganan | Bukti |
+| :-- | :-- | :-- | :-- |
+| 29 | Stored XSS via `parent_id` (HIGH) | `POST /api/posts` menerima hanya UUID yang benar-benar ada; sink `feed.ts` menolak nilai non-UUID sebelum masuk `onclick` | payload `');alert(1)//` tersimpan `NULL`; `alert(1)` tidak ada di HTML feed |
+| 26 | Stored XSS via judul pada tombol sambung | nilai judul pindah ke atribut `data-title` + `this.dataset.title` (tidak lagi string JS inline) | tidak ada interpolasi HTML ke konteks JS |
+| 22 | IDOR bookmark/likes (`tab=saved\|likes`) | ditutup untuk semua kecuali pemilik (`403`); tab disembunyikan untuk profil orang lain | `403` tanpa cookie, `200` untuk `tab=original` |
+| 23 | Pre-hijacking registrasi | `users.email_verified` (migrasi `0002`, default `1` untuk data lama); registrasi tidak lagi mengeluarkan sesi, wajib OTP; respons seragam; rate limit per IP & per email | login akun belum aktif → `403` |
+| 24 | Banjir notifikasi | dedup per (penerima, pelaku, jenis, pos), notifikasi ditarik saat unlike, rate limit `hitRate` 60/60 detik | 20 siklus toggle → maksimal 1 notifikasi |
+| 28 | Baris OTP pending diterima sebagai sesi | filter `s.token NOT LIKE 'otp_%'` di `getAuthUser` | — |
+| 31 | Fallback hash SHA-256 salt-statis | format non-`pbkdf2$` ditolak; `legacySha256` dihapus dari kode | hash lama → `ok:false` |
+| — | Akun lama terkunci oleh penolakan hash | `POST /api/auth/change-password` (wajib sesi, limit 5/jam) + field "Kata Sandi Baru" pada modal Edit Profil | sandi baru → `200`, sandi lama → ditolak |
+
+**Sisa (diterima):** 26 temuan LOW semuanya CVE pada dependensi *development* (wrangler →
+miniflare → undici/ws/sharp/busboy). Rantai itu tidak ikut ter-bundle ke Worker produksi —
+satunya dependensi runtime adalah `hono`. Upgrade `wrangler@^4` direkomendasikan saat jendela
+pemeliharaan.

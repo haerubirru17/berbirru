@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS users (
   pen_name TEXT UNIQUE NOT NULL,
   city TEXT DEFAULT 'Nusantara',
   bio TEXT DEFAULT 'Goresan perenungan rasa dan bait kata.',
+  -- 0 = menunggu bukti kepemilikan email (OTP). User lama = 1 (default migrasi 0002).
+  email_verified INTEGER NOT NULL DEFAULT 1,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -77,7 +79,21 @@ CREATE TABLE IF NOT EXISTS follows (
   FOREIGN KEY (following_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- 8. Rate limiting (global lintas-datacenter; lihat src/index.ts hitRate)
+-- 8. Notifications (dulu dibuat manual di produksi — masuk schema agar instalasi lokal sama)
+CREATE TABLE IF NOT EXISTS notifications (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  actor_id TEXT NOT NULL,
+  type TEXT NOT NULL,
+  post_id TEXT,
+  is_read INTEGER DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
+);
+
+-- 9. Rate limiting (global lintas-datacenter; lihat src/index.ts hitRate)
 CREATE TABLE IF NOT EXISTS rate_limits (
   key TEXT PRIMARY KEY,
   count INTEGER NOT NULL DEFAULT 0,

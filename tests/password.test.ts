@@ -14,14 +14,14 @@ assert(h1.length !== 64, 'sepertinya masih SHA-256 heksadesimal');
 assert((await verifyPassword('rahasiaYangKuat123', h1)).ok === true, 'password benar ditolak');
 assert((await verifyPassword('salahSekali', h1)).ok === false, 'password salah diterima');
 
-// 3. Hash LAMA (SHA-256 + salt statis) harus tetap bisa diverifikasi + ditandai needsRehash.
+// 3. Format lama (SHA-256 + salt statis) DITOLAK total (Strix #31) — reset lewat OTP.
 const enc = new TextEncoder().encode('password123' + 'berbirru-salt-2026');
 const buf = await crypto.subtle.digest('SHA-256', enc);
 const legacy = Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
 const vLegacy = await verifyPassword('password123', legacy);
-assert(vLegacy.ok === true, 'user lama tidak bisa login (migrasi putus)');
-assert(vLegacy.needsRehash === true, 'hash lama tidak ditandai perlu upgrade');
+assert(vLegacy.ok === false, 'hash format lama masih diterima (offline cracking)');
 assert((await verifyPassword('password123', h1)).needsRehash === false, 'hash baru salah ditandai perlu upgrade');
+assert((await verifyPassword('rahasiaYangKuat123', h2)).ok === true, 'hash baru kedua salah ditolak');
 
 // 4. Sampah di kolom hash tidak boleh bikin crash / menerima apa pun.
 assert((await verifyPassword('apa saja', 'pbkdf2$sha256$rusak')).ok === false, 'hash rusak diterima');

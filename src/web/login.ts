@@ -338,6 +338,18 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Terjadi kesalahan saat masuk');
+
+        // Pendaftaran kini butuh bukti kepemilikan email dulu (Strix #23):
+        // kode sudah dikirim server, langsung minta 6 digitnya.
+        if (data.need_otp) {
+          toggleOtpCard(true);
+          document.getElementById('otpSentEmail').textContent = data.email || email;
+          document.getElementById('otpStep1').style.display = 'none';
+          document.getElementById('otpStep2').style.display = 'block';
+          alert(data.message || 'Kami sudah mengirim kode verifikasi ke emailmu.');
+          return;
+        }
+
         window.location.href = '/feed';
       } catch (err) {
         resetTurnstile();

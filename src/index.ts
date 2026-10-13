@@ -164,7 +164,9 @@ async function getAuthUser(c: any): Promise<{ id: string; email: string; pen_nam
   const token = getCookie(c, 'berbirru_session');
   if (!token) return null;
   const session: any = await c.env.DB.prepare(
-    'SELECT u.id, u.email, u.pen_name, u.city, u.bio FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token = ? AND s.expires_at > datetime("now") LIMIT 1'
+    // Baris OTP pending (`otp_<hash>`) BUKAN sesi: tanpa filter ini, cookie berisi
+    // hash OTP lolos sebagai sesi valid (temuan Strix #28).
+    'SELECT u.id, u.email, u.pen_name, u.city, u.bio FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token = ? AND s.token NOT LIKE \'otp_%\' AND s.expires_at > datetime("now") LIMIT 1'
   ).bind(token).first();
   return session || null;
 }
@@ -301,24 +303,53 @@ app.post('/api/auth/register', async (c) => {
   const pwdErr = passwordIssue(password, cleanEmail, cleanPenName);
   if (pwdErr) return c.json({ error: pwdErr }, 400);
 
-  const existing = await c.env.DB.prepare('SELECT id FROM users WHERE email = ? OR pen_name = ? LIMIT 1').bind(cleanEmail, cleanPenName).first();
-  if (existing) {
-    return c.json({ error: 'Email atau Nama Pena sudah digunakan oleh penulis lain.' }, 400);
+  // Pembatas pendaftaran (Strix #23): per sumber dan per alamat.
+  const ip = c.req.header('cf-connecting-ip') || 'unknown';
+  if (await hitRate(c.env.DB, `reg:ip:${ip}`, 5, 3600) || await hitRate(c.env.DB, `reg:${cleanEmail}`, 3, 3600)) {
+    return c.json({ error: 'Terlalu banyak permintaan pendaftaran. Coba lagi nanti.' }, 429);
   }
 
-  const userId = crypto.randomUUID();
+  // Respons SERAGAM: daftar dengan email lama atau baru dijawab sama persis,
+  // sehingga penyerang tidak bisa memetakan alamat email yang sudah terpakai.
+  const UNIFORM = {
+    ok: true,
+    need_otp: true,
+    email: cleanEmail,
+    message: 'Kami sudah mengirim kode verifikasi ke emailmu. Masukkan kode itu untuk mengaktifkan akun.',
+  };
+
+  const byEmail: any = await c.env.DB.prepare('SELECT id, pen_name, email_verified FROM users WHERE email = ? LIMIT 1').bind(cleanEmail).first();
+  const byName: any = await c.env.DB.prepare('SELECT id, email FROM users WHERE pen_name = ? LIMIT 1').bind(cleanPenName).first();
+
+  // Konflik nama pena dengan penulis LAIN: nama pena itu publik, jadi boleh dijawab terang-terangan.
+  if (byName && byName.email !== cleanEmail) {
+    return c.json({ error: 'Nama pena sudah dipakai penulis lain.' }, 400);
+  }
+
   const pwdHash = await hashPassword(password);
-  await c.env.DB.prepare(
-    'INSERT INTO users (id, email, password_hash, pen_name, city, bio) VALUES (?, ?, ?, ?, ?, ?)'
-  ).bind(userId, cleanEmail, pwdHash, cleanPenName, city ? String(city).trim() : 'Nusantara', 'Goresan perenungan rasa dan bait kata.').run();
+  let userId: string;
 
-  const token = crypto.randomUUID() + '-' + crypto.randomUUID();
-  await c.env.DB.prepare(
-    'INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, datetime("now", "+30 days"))'
-  ).bind(crypto.randomUUID(), userId, token).run();
+  if (byEmail) {
+    if (byEmail.email_verified !== 0) {
+      // Sudah aktif dan terbukti miliknya → tidak ada yang diubah, jawabannya tetap seragam.
+      return c.json(UNIFORM);
+    }
+    // Akun belum aktif: yang membuktikan kepemilikan inbox-lah yang berhak → sandi diset ulang
+    // sehingga pendaftar terdahulu tidak meninggalkan kredensial di akun orang lain.
+    userId = byEmail.id;
+    const keepPenName = byName && byName.id === byEmail.id ? cleanPenName : (byName ? byEmail.pen_name : cleanPenName);
+    await c.env.DB.prepare('UPDATE users SET password_hash = ?, pen_name = ?, city = ?, bio = ?, email_verified = 0 WHERE id = ?')
+      .bind(pwdHash, keepPenName, city ? String(city).trim() : 'Nusantara', 'Goresan perenungan rasa dan bait kata.', userId).run();
+  } else {
+    userId = crypto.randomUUID();
+    await c.env.DB.prepare(
+      'INSERT INTO users (id, email, password_hash, pen_name, city, bio, email_verified) VALUES (?, ?, ?, ?, ?, ?, 0)'
+    ).bind(userId, cleanEmail, pwdHash, cleanPenName, city ? String(city).trim() : 'Nusantara', 'Goresan perenungan rasa dan bait kata.').run();
+  }
 
-  setCookie(c, 'berbirru_session', token, { path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 60 * 60 * 24 * 30 });
-  return c.json({ ok: true, user: { id: userId, pen_name: cleanPenName } }, 201);
+  // Tidak ada sesi di sini: akun baru hanya aktif setelah OTP terbukti masuk ke inbox (Strix #23).
+  await issueOtp(c.env, userId, cleanEmail);
+  return c.json(UNIFORM);
 });
 
 app.post('/api/auth/login', async (c) => {
@@ -350,6 +381,12 @@ app.post('/api/auth/login', async (c) => {
     return c.json(BAD_CRED, 401);
   }
 
+  // Akun belum dibuktikan kepemilikannya (Strix #23): wajib OTP dulu.
+  // Hanya pesan ini yang muncul setelah sandi benar — tidak membocorkan ke pihak lain.
+  if (user.email_verified === 0) {
+    return c.json({ error: 'Akun belum aktif. Masukkan kode OTP yang kami kirim ke emailmu (tab Masuk Kode).' }, 403);
+  }
+
   // Migrasi transparan: hash lama (SHA-256 + salt statis) di-upgrade ke PBKDF2 saat login.
   if (check.needsRehash) {
     const upgraded = await hashPassword(password);
@@ -375,7 +412,43 @@ app.post('/api/auth/login', async (c) => {
   return c.json({ ok: true, user: { id: user.id, pen_name: user.pen_name } });
 });
 
+/**
+ * Atur ulang kata sandi — hanya untuk sesi sah.
+ * Jalan masuk bagi akun lama yang hash-nya sudah tidak diterima lagi (Strix #31):
+ * masuk lewat kode OTP, lalu ganti kata sandi di sini.
+ */
+app.post('/api/auth/change-password', async (c) => {
+  const user = await getAuthUser(c);
+  if (!user) return c.json({ error: 'Silakan masuk terlebih dahulu' }, 401);
+
+  const { password } = await c.req.json().catch(() => ({}));
+  const pwdErr = passwordIssue(password, user.email, user.pen_name);
+  if (pwdErr) return c.json({ error: pwdErr }, 400);
+
+  if (await hitRate(c.env.DB, `cp:${user.id}`, 5, 3600)) {
+    return c.json({ error: 'Terlalu sering mengganti kata sandi. Coba lagi nanti.' }, 429);
+  }
+
+  await c.env.DB.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(await hashPassword(password), user.id).run();
+  return c.json({ ok: true });
+});
+
 // ---- OTP AUTH API (EMAIL TERDAFTAR ONLY) ----
+/**
+ * Simpan OTP sebagai hash + kirim emailnya. Kode lama user ini dibuang.
+ * Dipakai oleh jalur send-otp dan aktivasi akun saat registrasi (Strix #23).
+ */
+async function issueOtp(env: any, userId: string, cleanEmail: string): Promise<{ ok: boolean }> {
+  const otpCode = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0');
+  await env.DB.prepare("DELETE FROM sessions WHERE user_id = ? AND token LIKE 'otp_%'").bind(userId).run();
+  // Hash, bukan kode mentah: kalau isi tabel bocor, kode tidak langsung bisa dipakai.
+  const otpHash = await hashPassword(otpCode);
+  await env.DB.prepare(
+    'INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, datetime("now", "+10 minutes"))'
+  ).bind(crypto.randomUUID(), userId, `otp_${otpHash}`).run();
+  return { ok: await sendOtpEmail(cleanEmail, otpCode, env) };
+}
+
 app.post('/api/auth/send-otp', async (c) => {
   const { email, turnstile_token } = await c.req.json().catch(() => ({}));
   if (!email) return c.json({ error: 'Email wajib diisi' }, 400);
@@ -398,74 +471,9 @@ app.post('/api/auth/send-otp', async (c) => {
   // Email tak terdaftar: balas pesan yang sama, jangan kirim email, jangan simpan OTP.
   if (!user) return c.json(UNIFORM);
 
-  // OTP acak kriptografis (Math.random bisa diprediksi).
-  const otpCode = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0');
-
-  // Hapus OTP lama user ini — hanya kode terbaru yang berlaku.
-  await c.env.DB.prepare("DELETE FROM sessions WHERE user_id = ? AND token LIKE 'otp_%'").bind(user.id).run();
-  // Simpan HASH OTP, bukan kode mentah (temuan vuln-0006 Strix): kalau isi tabel
-  // bocor, penyerang tidak langsung dapat kode yang bisa dipakai masuk.
-  const otpHash = await hashPassword(otpCode);
-  await c.env.DB.prepare(
-    'INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, datetime("now", "+10 minutes"))'
-  ).bind(crypto.randomUUID(), user.id, `otp_${otpHash}`).run();
-
-  const apiKey = String(c.env.RESEND_API_KEY || '').trim();
-  const fromEmail = c.env.RESEND_FROM || 'BERBIRRU.COM <noreply@berbirru.com>';
-
-  if (!apiKey) {
-    return c.json({ error: 'Konfigurasi RESEND_API_KEY belum terpasang di server.' }, 500);
-  }
-
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html lang="id">
-    <head><meta charset="UTF-8"><title>Kode OTP</title></head>
-    <body style="margin:0;padding:24px;background:#F0F6FE;font-family:sans-serif;">
-      <div style="max-width:440px;margin:0 auto;background:#FFF;border:3px solid #0B192C;border-radius:14px;padding:24px;box-shadow:4px 4px 0 #0B192C;">
-        <h2 style="color:#1D61E7;margin-top:0;">BERBIRRU.COM</h2>
-        <p style="font-size:14px;color:#334155;">Gunakan 6 digit kode OTP di bawah ini untuk masuk ke akun Anda:</p>
-        <div style="background:#FDE047;border:2.5px solid #0B192C;border-radius:10px;padding:12px;text-align:center;font-size:28px;font-weight:900;letter-spacing:6px;margin:18px 0;color:#0B192C;">
-          \${otpCode}
-        </div>
-        <p style="font-size:12px;color:#64748B;margin-bottom:0;">⏱ Kode aktif selama 10 menit. Jangan berikan kepada siapa pun.</p>
-      </div>
-    </body>
-    </html>
-  `;
-
-  try {
-    const resendRes = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + apiKey,
-        'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0'
-      },
-      body: JSON.stringify({
-        from: fromEmail,
-        to: [cleanEmail],
-        subject: `Kode Masuk OTP: ${otpCode} — BERBIRRU.COM`,
-        html: `
-          <div style="max-width:440px;margin:0 auto;background:#FFF;border:3px solid #0B192C;border-radius:14px;padding:24px;box-shadow:4px 4px 0 #0B192C;font-family:sans-serif;">
-            <h2 style="color:#1D61E7;margin-top:0;">BERBIRRU.COM</h2>
-            <p style="font-size:14px;color:#334155;">Gunakan 6 digit kode OTP di bawah ini untuk masuk ke akun Anda:</p>
-            <div style="background:#FDE047;border:2.5px solid #0B192C;border-radius:10px;padding:12px;text-align:center;font-size:32px;font-weight:900;letter-spacing:6px;margin:18px 0;color:#0B192C;">
-              ${otpCode}
-            </div>
-            <p style="font-size:12px;color:#64748B;margin-bottom:0;">⏱ Kode aktif selama 10 menit. Jangan berikan kepada siapa pun.</p>
-          </div>
-        `
-      })
-    });
-
-    if (!resendRes.ok) {
-      const errTxt = await resendRes.text();
-      console.error('Resend API Error:', errTxt);
-      return c.json({ error: 'Gagal mengirim kode OTP saat ini. Coba lagi beberapa saat lagi.' }, 502);
-    }
-  } catch (err: any) {
-    console.error('OTP fetch error:', err?.message);
+  // Buat OTP (tersimpan sebagai hash) + kirim via helper bersama.
+  const sent = await issueOtp(c.env, user.id, cleanEmail);
+  if (!sent.ok) {
     return c.json({ error: 'Gagal mengirim kode OTP saat ini. Coba lagi beberapa saat lagi.' }, 502);
   }
 
@@ -504,6 +512,8 @@ app.post('/api/auth/verify-otp', async (c) => {
 
   // OTP Valid -> Hapus session OTP sementara, ganti dengan Session Cookie 30 hari
   await c.env.DB.prepare('DELETE FROM sessions WHERE id = ?').bind(session.id).run();
+  // OTP = bukti kepemilikan inbox → akun resmi aktif (Strix #23).
+  await c.env.DB.prepare('UPDATE users SET email_verified = 1 WHERE id = ?').bind(user.id).run();
   const sessionToken = crypto.randomUUID();
   await c.env.DB.prepare(
     'INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, datetime("now", "+30 days"))'
@@ -585,6 +595,14 @@ app.get('/api/users/:pen_name/posts', async (c) => {
   const tab = c.req.query('tab') || 'original';
   const targetUser: any = await c.env.DB.prepare('SELECT id, pen_name FROM users WHERE pen_name = ? LIMIT 1').bind(penName).first();
   if (!targetUser) return c.json({ error: 'Penulis tidak ditemukan' }, 404);
+
+  // Tab privat (temuan Strix #22, IDOR): likes/simpanan hanya boleh dibaca sendiri.
+  if (tab === 'likes' || tab === 'saved') {
+    const me = await getAuthUser(c);
+    if (!me || me.id !== targetUser.id) {
+      return c.json({ error: 'Hanya penulis yang bersangkutan yang boleh melihat tab ini.' }, 403);
+    }
+  }
 
   let query = '';
   const binds: any[] = [];
@@ -757,20 +775,27 @@ app.post('/api/posts', async (c) => {
   const cleanTitle = title ? String(title).trim().slice(0, 200) : null;
 
   const postId = crypto.randomUUID();
-  await c.env.DB.prepare(
-    'INSERT INTO posts (id, author_id, title, content, parent_id) VALUES (?, ?, ?, ?, ?)'
-  ).bind(postId, user.id, cleanTitle, cleanContent, parent_id ? String(parent_id) : null).run();
 
-  if (parent_id) {
-    await c.env.DB.prepare('UPDATE posts SET chains_count = chains_count + 1 WHERE id = ?').bind(parent_id).run();
-    
-    // Auto-create Notif for Chain connection
-    const parentPost = await c.env.DB.prepare('SELECT author_id FROM posts WHERE id = ?').bind(parent_id).first();
-    if (parentPost && (parentPost as any).author_id !== user.id) {
-      const notifId = crypto.randomUUID();
-      await c.env.DB.prepare('INSERT INTO notifications (id, user_id, actor_id, type, post_id) VALUES (?, ?, ?, ?, ?)').bind(notifId, (parentPost as any).author_id, user.id, 'chain', postId).run();
+  // Validasi parent_id (temuan Strix #29, HIGH): hanya UUID post yang benar-benar ada
+  // yang boleh tersimpan — nilai mentah tidak pernah menyentuh konteks HTML/JS.
+  const rawParent = parent_id ? String(parent_id) : '';
+  let parentId: string | null = null;
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawParent)) {
+    const parentRow: any = await c.env.DB.prepare('SELECT author_id FROM posts WHERE id = ?').bind(rawParent).first();
+    if (parentRow) {
+      parentId = rawParent;
+      await c.env.DB.prepare('UPDATE posts SET chains_count = chains_count + 1 WHERE id = ?').bind(parentId).run();
+      // Auto-create Notif for Chain connection
+      if (parentRow.author_id !== user.id) {
+        const notifId = crypto.randomUUID();
+        await c.env.DB.prepare('INSERT INTO notifications (id, user_id, actor_id, type, post_id) VALUES (?, ?, ?, ?, ?)').bind(notifId, parentRow.author_id, user.id, 'chain', postId).run();
+      }
     }
   }
+
+  await c.env.DB.prepare(
+    'INSERT INTO posts (id, author_id, title, content, parent_id) VALUES (?, ?, ?, ?, ?)'
+  ).bind(postId, user.id, cleanTitle, cleanContent, parentId).run();
 
   return c.json({ ok: true, post: { id: postId, author_pen_name: user.pen_name } }, 201);
 });
@@ -806,21 +831,31 @@ app.post('/api/posts/:id/like', async (c) => {
   if (!user) return c.json({ error: 'Silakan masuk terlebih dahulu' }, 401);
   const postId = c.req.param('id');
 
+  // Pembatas laju interaksi (temuan Strix #24): cegah banjir notifikasi.
+  if (await hitRate(c.env.DB, `engage:${user.id}`, 60, 60)) {
+    return c.json({ error: 'Terlalu banyak interaksi. Tunggu sebentar.' }, 429);
+  }
+
+  const post: any = await c.env.DB.prepare('SELECT author_id FROM posts WHERE id = ?').bind(postId).first();
+  if (!post) return c.json({ error: 'Warkah tidak ditemukan' }, 404);
+
   const existing = await c.env.DB.prepare('SELECT 1 FROM likes WHERE user_id = ? AND post_id = ?').bind(user.id, postId).first();
   if (existing) {
     await c.env.DB.prepare('DELETE FROM likes WHERE user_id = ? AND post_id = ?').bind(user.id, postId).run();
     await c.env.DB.prepare('UPDATE posts SET likes_count = MAX(0, likes_count - 1) WHERE id = ?').bind(postId).run();
+    // Tarik notifikasi "suka" yang sudah terlanjur terkirim (stale notification).
+    await c.env.DB.prepare("DELETE FROM notifications WHERE user_id = ? AND actor_id = ? AND type = 'like' AND post_id = ?").bind(post.author_id, user.id, postId).run();
     const count = await c.env.DB.prepare('SELECT likes_count FROM posts WHERE id = ?').bind(postId).first('likes_count') || 0;
     return c.json({ liked: false, likes_count: count });
   } else {
     await c.env.DB.prepare('INSERT INTO likes (user_id, post_id) VALUES (?, ?)').bind(user.id, postId).run();
     await c.env.DB.prepare('UPDATE posts SET likes_count = likes_count + 1 WHERE id = ?').bind(postId).run();
-    
-    // Auto-create Notif to Post Author
-    const post = await c.env.DB.prepare('SELECT author_id FROM posts WHERE id = ?').bind(postId).first();
-    if (post && (post as any).author_id !== user.id) {
+
+    // Dedup: satu notifikasi per (penerima, pelaku, jenis, pos) — toggle berulang tidak menumpuk.
+    const dup = await c.env.DB.prepare('SELECT 1 FROM notifications WHERE user_id = ? AND actor_id = ? AND type = ? AND post_id = ? LIMIT 1').bind(post.author_id, user.id, 'like', postId).first();
+    if (!dup && post.author_id !== user.id) {
       const notifId = crypto.randomUUID();
-      await c.env.DB.prepare('INSERT INTO notifications (id, user_id, actor_id, type, post_id) VALUES (?, ?, ?, ?, ?)').bind(notifId, (post as any).author_id, user.id, 'like', postId).run();
+      await c.env.DB.prepare('INSERT INTO notifications (id, user_id, actor_id, type, post_id) VALUES (?, ?, ?, ?, ?)').bind(notifId, post.author_id, user.id, 'like', postId).run();
     }
 
     const count = await c.env.DB.prepare('SELECT likes_count FROM posts WHERE id = ?').bind(postId).first('likes_count') || 0;
@@ -833,21 +868,28 @@ app.post('/api/posts/:id/bookmark', async (c) => {
   if (!user) return c.json({ error: 'Silakan masuk terlebih dahulu' }, 401);
   const postId = c.req.param('id');
 
+  if (await hitRate(c.env.DB, `engage:${user.id}`, 60, 60)) {
+    return c.json({ error: 'Terlalu banyak interaksi. Tunggu sebentar.' }, 429);
+  }
+
+  const post: any = await c.env.DB.prepare('SELECT author_id FROM posts WHERE id = ?').bind(postId).first();
+  if (!post) return c.json({ error: 'Warkah tidak ditemukan' }, 404);
+
   const existing = await c.env.DB.prepare('SELECT 1 FROM bookmarks WHERE user_id = ? AND post_id = ?').bind(user.id, postId).first();
   if (existing) {
     await c.env.DB.prepare('DELETE FROM bookmarks WHERE user_id = ? AND post_id = ?').bind(user.id, postId).run();
     await c.env.DB.prepare('UPDATE posts SET saves_count = MAX(0, saves_count - 1) WHERE id = ?').bind(postId).run();
+    await c.env.DB.prepare("DELETE FROM notifications WHERE user_id = ? AND actor_id = ? AND type = 'save' AND post_id = ?").bind(post.author_id, user.id, postId).run();
     const count = await c.env.DB.prepare('SELECT saves_count FROM posts WHERE id = ?').bind(postId).first('saves_count') || 0;
     return c.json({ bookmarked: false, saves_count: count });
   } else {
     await c.env.DB.prepare('INSERT INTO bookmarks (user_id, post_id) VALUES (?, ?)').bind(user.id, postId).run();
     await c.env.DB.prepare('UPDATE posts SET saves_count = saves_count + 1 WHERE id = ?').bind(postId).run();
-    
-    // Auto-create Notif to Post Author
-    const post = await c.env.DB.prepare('SELECT author_id FROM posts WHERE id = ?').bind(postId).first();
-    if (post && (post as any).author_id !== user.id) {
+
+    const dup = await c.env.DB.prepare('SELECT 1 FROM notifications WHERE user_id = ? AND actor_id = ? AND type = ? AND post_id = ? LIMIT 1').bind(post.author_id, user.id, 'save', postId).first();
+    if (!dup && post.author_id !== user.id) {
       const notifId = crypto.randomUUID();
-      await c.env.DB.prepare('INSERT INTO notifications (id, user_id, actor_id, type, post_id) VALUES (?, ?, ?, ?, ?)').bind(notifId, (post as any).author_id, user.id, 'save', postId).run();
+      await c.env.DB.prepare('INSERT INTO notifications (id, user_id, actor_id, type, post_id) VALUES (?, ?, ?, ?, ?)').bind(notifId, post.author_id, user.id, 'save', postId).run();
     }
 
     const count = await c.env.DB.prepare('SELECT saves_count FROM posts WHERE id = ?').bind(postId).first('saves_count') || 0;

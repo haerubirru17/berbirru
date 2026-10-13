@@ -369,6 +369,10 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
         <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Bio / Catatan Pribadi</label>
         <textarea id="editBio" style="width:100%;height:60px;padding:8px;border:2px solid #0B192C;border-radius:8px;font-weight:600;"></textarea>
       </div>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Kata Sandi Baru <span style="color:#64748B;font-weight:600;">(opsional)</span></label>
+        <input type="password" id="editPassword" autocomplete="new-password" placeholder="Kosongkan bila tidak diganti" style="width:100%;padding:8px;border:2px solid #0B192C;border-radius:8px;font-weight:700;">
+      </div>
       <div style="display:flex;justify-content:flex-end;gap:8px;">
         <button onclick="toggleEditModal(false)" style="padding:6px 12px;border:2px solid #0B192C;border-radius:6px;font-weight:800;background:#FFF;cursor:pointer;">Batal</button>
         <button onclick="saveProfile()" style="padding:6px 14px;border:2px solid #0B192C;border-radius:6px;font-weight:900;background:#1D61E7;color:#FFF;cursor:pointer;">Simpan</button>
@@ -378,8 +382,10 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     <!-- Underline Tab Navigation (Reddit Style) -->
     <div class="profile-tabs-reddit">
       <div class="tab-reddit-item active" onclick="switchProfileTab('original', this)">Karya</div>
+      ${isMe ? `
       <div class="tab-reddit-item" onclick="switchProfileTab('likes', this)">Disukai</div>
       <div class="tab-reddit-item" onclick="switchProfileTab('saved', this)">Tersimpan</div>
+      ` : ''}
       <div class="tab-reddit-item" onclick="switchProfileTab('chains', this)">Estafet</div>
     </div>
 
@@ -435,6 +441,19 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Gagal menyimpan profil');
+
+        // Reset kata sandi hanya bila diisi — jalan masuk akun lama (Strix #31).
+        const newPassword = document.getElementById('editPassword').value;
+        if (newPassword) {
+          const cp = await fetch('/api/auth/change-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: newPassword })
+          });
+          const cpData = await cp.json().catch(() => ({}));
+          if (!cp.ok) throw new Error(cpData.error || 'Gagal mengganti kata sandi');
+        }
+
         toggleEditModal(false);
         window.location.href = '/u/' + encodeURIComponent(data.user.pen_name);
       } catch (err) {

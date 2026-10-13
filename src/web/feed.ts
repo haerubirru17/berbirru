@@ -475,7 +475,7 @@ export function renderFeedPage(user: any = null): string {
             \${formatTimestamp(p.created_at)}
           </div>
 
-          \${p.parent_id ? \`
+          \${/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(String(p.parent_id || '')) ? \`
             <div class="thread-parent-connector" onclick="scrollToPost('\${p.parent_id}')">
               <svg class="ico" style="color:#1D61E7;" viewBox="0 0 24 24"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>
               <span>Menyambung warkah <b>@\${escapeHtml(p.parent_author)}</b>: <i>"\${escapeHtml(stripHtml(p.parent_content).slice(0, 45) + '...')}"</i></span>
@@ -511,7 +511,7 @@ export function renderFeedPage(user: any = null): string {
                 </button>
               \` : ''}
             </div>
-            <button class="chain-btn" onclick="openStudioModal('\${p.id}', '\${escapeHtml(p.title || p.pen_name).replace(/'/g, '’')}')">
+            <button class="chain-btn" data-title="\${escapeHtml(p.title || p.pen_name)}" onclick="openStudioModal('\${p.id}', this.dataset.title)">
               <svg class="ico" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
               <span>\${p.chains_count ? p.chains_count + ' Sambungan' : 'Sambung Bait'}</span>
             </button>
