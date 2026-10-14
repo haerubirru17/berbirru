@@ -51,15 +51,18 @@ export function sanitizeRich(input: unknown): string {
   }
 
   // 2. Filter tag: hanya allowlist yang lolos; atribut selain font-class dibuang.
-  s = s.replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)((?:"[^"]*"|'[^']*'|[^'">])*)>/g, (m, name, attrs) => {
+  // `[^>]*` menjadikan filter total — tag apa pun (termasuk kutip tak seimbang,
+  // vektor vuln-0010) pasti habis di sini; tak ada sisa '<' yang lolos ke step-3.
+  s = s.replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)([^>]*)>/g, (m, name, attrsRaw) => {
     const t = String(name).toLowerCase();
     const closing = m.startsWith('</');
     if (!ALLOWED_TAGS.includes(t)) return '';
     if (t === 'br') return '<br>';
     if (t === 'span') {
       if (closing) return '</span>';
-      const mm = /class\s*=\s*["']([^"']*)["']/i.exec(String(attrs));
-      const cls = (mm ? mm[1] : '').split(/\s+/).filter((x) => FONT_CLASSES.includes(x));
+      const raw = String(attrsRaw ?? '');
+      const mm = /class\s*=\s*(?:"([^"]*)"|'([^']*)')/i.exec(raw);
+      const cls = ((mm ? (mm[1] ?? mm[2]) : '').split(/\s+/)).filter((x) => FONT_CLASSES.includes(x));
       return cls.length ? `<span class="${cls.join(' ')}">` : '<span>';
     }
     return closing ? `</${t}>` : `<${t}>`;

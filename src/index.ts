@@ -5,6 +5,11 @@ import { hashPassword, verifyPassword, passwordIssue } from './lib/password';
 import { sanitizeRich, escapeHtml, stripTags } from './lib/sanitize';
 import { turnstileGate } from './lib/turnstile-gate';
 import { renderLandingPage } from './web/landing';
+
+// Anti-enumerasi (vuln-0003): hash PBKDF2 dummy untuk verifikasi timing di
+// email tak terdaftar — jalur ini menjalankan kerja PBKDF2 yang sama dengan
+// akun nyata, lalu tetap menolak (hash placeholder tak akan pernah cocok).
+const DUMMY_PBKDF2_HASH = 'pbkdf2$sha256$10000$ZHVtbXlzYWx0MTIzNA==$RkFLRUhBU0hGWVdXMV teaserPLACEHOLDERONLY';
 import { renderLoginPage } from './web/login';
 import { renderFeedPage } from './web/feed';
 import { renderProfilePage } from './web/profile';
@@ -196,6 +201,12 @@ app.get('/u/:pen_name', async (c) => {
     return c.redirect('/login');
   }
 
+  // Charset gate (vuln-0009): pen_name sah hanya [a-z0-9._-] — param tak pernah
+  // menyentuh HTML/JS tanpa lolos gerbang ini (reflected XSS terctegah di akar).
+  if (!/^[a-z0-9._-]+$/.test(penNameParam)) {
+    return c.text('Penulis tidak ditemukan', 404);
+  }
+
   if (penNameParam === 'saya') {
     return c.redirect('/u/' + user.pen_name);
   }
@@ -326,7 +337,10 @@ app.post('/api/auth/register', async (c) => {
     return c.json({ error: 'Nama pena sudah dipakai penulis lain.' }, 400);
   }
 
-  const pwdHash = await hashPassword(password);
+  // vuln-0002 Strix: sandi TIDAK PERNAH ditulis sebelum kepemilikan inbox terbukti.
+  // Pendaftar kedua untuk email yang sama hanya memicu OTP ulang; siapa pun yang
+  // menyelesaikan OTP-lah yang menentukan identitas & sandi di langkah verifikasi.
+  // (Registrasi tidak lagi menjadi vektor pembajakan akun pending.)
   let userId: string;
 
   if (byEmail) {
@@ -334,14 +348,11 @@ app.post('/api/auth/register', async (c) => {
       // Sudah aktif dan terbukti miliknya → tidak ada yang diubah, jawabannya tetap seragam.
       return c.json(UNIFORM);
     }
-    // Akun belum aktif: yang membuktikan kepemilikan inbox-lah yang berhak → sandi diset ulang
-    // sehingga pendaftar terdahulu tidak meninggalkan kredensial di akun orang lain.
+    // Akun pending: kirim OTP ulang saja — data terdaftar pertama tetap dipakai.
     userId = byEmail.id;
-    const keepPenName = byName && byName.id === byEmail.id ? cleanPenName : (byName ? byEmail.pen_name : cleanPenName);
-    await c.env.DB.prepare('UPDATE users SET password_hash = ?, pen_name = ?, city = ?, bio = ?, email_verified = 0 WHERE id = ?')
-      .bind(pwdHash, keepPenName, city ? String(city).trim() : 'Nusantara', 'Goresan perenungan rasa dan bait kata.', userId).run();
   } else {
     userId = crypto.randomUUID();
+    const pwdHash = await hashPassword(password);
     await c.env.DB.prepare(
       'INSERT INTO users (id, email, password_hash, pen_name, city, bio, email_verified) VALUES (?, ?, ?, ?, ?, ?, 0)'
     ).bind(userId, cleanEmail, pwdHash, cleanPenName, city ? String(city).trim() : 'Nusantara', 'Goresan perenungan rasa dan bait kata.').run();
@@ -374,7 +385,12 @@ app.post('/api/auth/login', async (c) => {
   // Pesan seragam untuk email tak terdaftar & sandi salah → cegah enumerasi (vuln-0003).
   const BAD_CRED = { error: 'Email atau kata sandi tidak sesuai.' };
 
-  if (!user) return c.json(BAD_CRED, 401);
+  if (!user) {
+    // Anti-enumerasi (vuln-0003): email tak terdaftar tetap menjalani verifikasi
+    // PBKDF2 ke dummy hash — timing identik dengan jalur "sandi salah".
+    await verifyPassword(password, DUMMY_PBKDF2_HASH);
+    return c.json(BAD_CRED, 401);
+  }
 
   const check = await verifyPassword(password, user.password_hash);
   if (!check.ok) {
@@ -421,7 +437,14 @@ app.post('/api/auth/change-password', async (c) => {
   const user = await getAuthUser(c);
   if (!user) return c.json({ error: 'Silakan masuk terlebih dahulu' }, 401);
 
-  const { password } = await c.req.json().catch(() => ({}));
+  const { password, current_password } = await c.req.json().catch(() => ({}));
+
+  // Step-up (vuln-0008): ubah sandi wajib bukti sandi lama — sesi bukan otoritas tunggal.
+  const cur: any = await c.env.DB.prepare('SELECT password_hash FROM users WHERE id = ?').bind(user.id).first();
+  if (!current_password || !cur || !(await verifyPassword(current_password, cur.password_hash)).ok) {
+    return c.json({ error: 'Kata sandi saat ini salah.' }, 403);
+  }
+
   const pwdErr = passwordIssue(password, user.email, user.pen_name);
   if (pwdErr) return c.json({ error: pwdErr }, 400);
 
@@ -430,6 +453,13 @@ app.post('/api/auth/change-password', async (c) => {
   }
 
   await c.env.DB.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(await hashPassword(password), user.id).run();
+
+  // Cabut semua sesi LAIN (vuln-0001): rotasi sandi mengakhiri sesi curian;
+  // sesi yang melakukan rotasi tetap hidup. Filter NOT LIKE menjaga baris OTP pending.
+  await c.env.DB.prepare(
+    "DELETE FROM sessions WHERE user_id = ? AND token <> ? AND token NOT LIKE 'otp_%'"
+  ).bind(user.id, getCookie(c, 'berbirru_session')).run();
+
   return c.json({ ok: true });
 });
 
@@ -487,7 +517,7 @@ app.post('/api/auth/verify-otp', async (c) => {
   const ip = c.req.header('cf-connecting-ip') || 'unknown';
 
   // Anti brute-force OTP (vuln-0005): batas per-IP dan per-akun.
-  if (await hitRate(c.env.DB, `votp:ip:${ip}`, 10, 600) || await hitRate(c.env.DB, `votp:${cleanEmail}`, 10, 600)) {
+  if (await hitRate(c.env.DB, `votp:ip:${ip}`, 10, 600) || await hitRate(c.env.DB, `votp:em:${cleanEmail}`, 10, 600)) {
     return c.json({ error: 'Terlalu banyak percobaan kode. Tunggu beberapa menit lalu coba lagi.' }, 429);
   }
 
@@ -842,14 +872,14 @@ app.post('/api/posts/:id/like', async (c) => {
   const existing = await c.env.DB.prepare('SELECT 1 FROM likes WHERE user_id = ? AND post_id = ?').bind(user.id, postId).first();
   if (existing) {
     await c.env.DB.prepare('DELETE FROM likes WHERE user_id = ? AND post_id = ?').bind(user.id, postId).run();
-    await c.env.DB.prepare('UPDATE posts SET likes_count = MAX(0, likes_count - 1) WHERE id = ?').bind(postId).run();
+    await c.env.DB.prepare('UPDATE posts SET likes_count = (SELECT COUNT(*) FROM likes WHERE post_id = ?) WHERE id = ?').bind(postId, postId).run();
     // Tarik notifikasi "suka" yang sudah terlanjur terkirim (stale notification).
     await c.env.DB.prepare("DELETE FROM notifications WHERE user_id = ? AND actor_id = ? AND type = 'like' AND post_id = ?").bind(post.author_id, user.id, postId).run();
     const count = await c.env.DB.prepare('SELECT likes_count FROM posts WHERE id = ?').bind(postId).first('likes_count') || 0;
     return c.json({ liked: false, likes_count: count });
   } else {
     await c.env.DB.prepare('INSERT INTO likes (user_id, post_id) VALUES (?, ?)').bind(user.id, postId).run();
-    await c.env.DB.prepare('UPDATE posts SET likes_count = likes_count + 1 WHERE id = ?').bind(postId).run();
+    await c.env.DB.prepare('UPDATE posts SET likes_count = (SELECT COUNT(*) FROM likes WHERE post_id = ?) WHERE id = ?').bind(postId, postId).run();
 
     // Dedup: satu notifikasi per (penerima, pelaku, jenis, pos) — toggle berulang tidak menumpuk.
     const dup = await c.env.DB.prepare('SELECT 1 FROM notifications WHERE user_id = ? AND actor_id = ? AND type = ? AND post_id = ? LIMIT 1').bind(post.author_id, user.id, 'like', postId).first();
@@ -878,13 +908,13 @@ app.post('/api/posts/:id/bookmark', async (c) => {
   const existing = await c.env.DB.prepare('SELECT 1 FROM bookmarks WHERE user_id = ? AND post_id = ?').bind(user.id, postId).first();
   if (existing) {
     await c.env.DB.prepare('DELETE FROM bookmarks WHERE user_id = ? AND post_id = ?').bind(user.id, postId).run();
-    await c.env.DB.prepare('UPDATE posts SET saves_count = MAX(0, saves_count - 1) WHERE id = ?').bind(postId).run();
+    await c.env.DB.prepare('UPDATE posts SET saves_count = (SELECT COUNT(*) FROM bookmarks WHERE post_id = ?) WHERE id = ?').bind(postId, postId).run();
     await c.env.DB.prepare("DELETE FROM notifications WHERE user_id = ? AND actor_id = ? AND type = 'save' AND post_id = ?").bind(post.author_id, user.id, postId).run();
     const count = await c.env.DB.prepare('SELECT saves_count FROM posts WHERE id = ?').bind(postId).first('saves_count') || 0;
     return c.json({ bookmarked: false, saves_count: count });
   } else {
     await c.env.DB.prepare('INSERT INTO bookmarks (user_id, post_id) VALUES (?, ?)').bind(user.id, postId).run();
-    await c.env.DB.prepare('UPDATE posts SET saves_count = saves_count + 1 WHERE id = ?').bind(postId).run();
+    await c.env.DB.prepare('UPDATE posts SET saves_count = (SELECT COUNT(*) FROM bookmarks WHERE post_id = ?) WHERE id = ?').bind(postId, postId).run();
 
     const dup = await c.env.DB.prepare('SELECT 1 FROM notifications WHERE user_id = ? AND actor_id = ? AND type = ? AND post_id = ? LIMIT 1').bind(post.author_id, user.id, 'save', postId).first();
     if (!dup && post.author_id !== user.id) {

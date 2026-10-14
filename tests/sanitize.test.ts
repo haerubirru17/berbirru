@@ -14,6 +14,9 @@ const xss = [
   '<body onload=alert(1)>',
   '<input autofocus onfocus=alert(1)>',
   '<style>@import url(//evil.com)</style>',
+  // PoC Strix vuln-0010: kutip tak seimbang meloloskan tag lewat regex lama.
+  '<b " autofocus tabindex=1 onfocus=alert(1)>',
+  '<b "onfocus=alert(1) autofocus>x</b>',
 ];
 for (const p of xss) {
   const out = sanitizeRich(p);
