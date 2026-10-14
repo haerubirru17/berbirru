@@ -87,8 +87,13 @@ Mengadopsi taksonomi resmi **Cloudflare Security Audit Harness**, seluruh lapisa
      tanpa dependency biner), meski secara teori lebih kuat.
 2. **Manajemen Sesi:**
    - Token acak kriptografis 2× `crypto.randomUUID()` (≈244 bit entropy),
-     disimpan di tabel `sessions` D1; masa berlaku 30 hari, maksimal 5 sesi
-     per user.
+     masa berlaku 30 hari, maksimal 5 sesi per user.
+   - **Hash-at-rest (vuln-0005):** DB menyimpan **SHA-256 token** di kolom
+     `token_hash` — token plaintext hanya hidup di cookie, tidak pernah
+     ditulis ke D1. Lookup sesi memakai hash; bocornya DB tidak langsung
+     memberi sesi valid. (Migrasi `0003`, sesi lama dicabut semua — setuju
+     owner 14 Okt 2026.) Baris OTP pending tetap memakai kolom `token`
+     (`otp_<hash>`); `token_hash`-nya NULL.
    - Cookie: `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/`.
      `Lax` (bukan `Strict`) dipilih agar navigasi dari tautan eksternal/email
      tetap membawa sesi; endpoint pengubah data tetap diproteksi pemeriksaan
