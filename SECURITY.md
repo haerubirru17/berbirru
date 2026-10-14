@@ -146,3 +146,20 @@ sebelum diperbaiki. Semua temuan aplikasi (bukan CVE toolchain) telah ditutup:
 miniflare → undici/ws/sharp/busboy). Rantai itu tidak ikut ter-bundle ke Worker produksi —
 satunya dependensi runtime adalah `hono`. Upgrade `wrangler@^4` direkomendasikan saat jendela
 pemeliharaan.
+
+---
+
+## 6. Hasil Audit Putaran 3 (Strix Deep ke repo terbaru — 14 Okt 2026)
+
+Laporan penetrasi putaran ketiga (6 temuan: 1 HIGH, 4 MEDIUM, 1 INFO) diuji ulang terhadap
+source berjalan; 5 temuan aplikasi diperbaiki, semuanya terverifikasi E2E di runtime lokal:
+
+| # | Temuan | Penanganan | Bukti E2E |
+| :-- | :-- | :-- | :-- |
+| vuln-0003 (HIGH 8.1) | `verify-otp` tanpa gerbang Turnstile + tanpa batas 5 sesi | `requireHuman(...,'votp',...)` fail-closed + prune 5 sesi seperti login | verify tanpa token → `403`; dengan token → `200` |
+| vuln-0004 (MED 6.8) | Pre-hijack: sandi pendaftar pertama tetap hidup setelah aktivasi OTP pendaftar kedua | field `new_password` opsional di verify-otp; kalau tak diisi, hash lama dihancurkan (`otp-disabled:<random>`) saat aktivasi akun pending | login P1 setelah aktivasi → `401` (dulu `200`) |
+| vuln-0005 (MED 5.3) | siteverify tak melakukan binding hostname | tolak kecuali `data.hostname === APP_DOMAIN`; test-key dev dikecualikan | header logging mismatch; fail-closed |
+| vuln-0001 (MED 5.4) | `POST /api/posts`, `DELETE /api/posts/:id`, `PATCH /api/users/me` tanpa rate limit | bucket per-penulis `post:` / `profile:` 20/60 dtk | 20× `201` lalu `429` |
+| vuln-0007 (MED 4.3) | Tabel `rate_limits` tumbuh tanpa akhir | GC probabilistik 2% per panggilan `hitRate` menghapus baris expired | — |
+| — | Bug fungsional: notif chain `INSERT` sebelum post (FK gagal, reply lintas-penulis `500`) | notif dibuat **setelah** `INSERT` post | reply lintas-penulis tak lagi `500` |
+| vuln-0006 (INFO) | Oracle keberadaan akun lewat sisi pengiriman | diterima sebagai sisa desain anti-enumerasi (body seragam); didokumentasikan | — |

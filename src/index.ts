@@ -33,7 +33,13 @@ export interface Env {
 }
 
 // Helper verifikasi Cloudflare Turnstile token
-async function verifyTurnstile(token: string, secretKey: string, remoteIp?: string): Promise<boolean> {
+const TURNSTILE_TEST_KEYS = new Set([
+  '1x0000000000000000000000000000000AA',
+  '2x0000000000000000000000000000000AA',
+  '3x0000000000000000000000000000000AA',
+]);
+
+async function verifyTurnstile(token: string, secretKey: string, remoteIp?: string, expectedDomain?: string): Promise<boolean> {
   // Fail-CLOSED: secret wajib terpasang di produksi. Kalau hilang → tolak + log,
   // jangan pernah diam-diam meloloskan semua orang (temuan vuln-0002 Strix).
   if (!secretKey) {
@@ -52,7 +58,17 @@ async function verifyTurnstile(token: string, secretKey: string, remoteIp?: stri
       body: formData
     });
     const data: any = await res.json();
-    return !!data.success;
+    if (!data.success) return false;
+    // Binding konteks (vuln-0005 GLM): token yang dicetak di properti web lain
+    // ditolak — siteverify harus mengembalikan hostname domain aplikasi ini.
+    // ponytail: kunci uji Cloudflare (dev) tidak melalui hostname asli → dikecualikan.
+    const dom = String(expectedDomain || '').replace(/^https?:\/\//, '').trim();
+    if (dom && !TURNSTILE_TEST_KEYS.has(secretKey.trim()) &&
+        data.hostname !== dom && data.hostname !== 'www.' + dom) {
+      console.error('Turnstile hostname mismatch:', data.hostname, '(diharapkan:', dom + ')');
+      return false;
+    }
+    return true;
   } catch (err) {
     console.error('Turnstile verification error:', err);
     return false;
@@ -73,6 +89,11 @@ async function hitRate(db: D1Database, key: string, limit: number, windowSec: nu
        expires_at = CASE WHEN rate_limits.expires_at < datetime('now') THEN datetime('now', '+' || ? || ' seconds') ELSE rate_limits.expires_at END
      RETURNING count`
   ).bind(key, windowSec, windowSec).first();
+  // GC probabilistik (vuln-0007 GLM): 2% panggilan membersihkan baris expired —
+  // tanpa ini tabel tumbuh tanpa batas (786 baris/klien dalam uji Strix).
+  if (Math.random() < 0.02) {
+    await db.prepare("DELETE FROM rate_limits WHERE expires_at < datetime('now')").run();
+  }
   return ((row && row.count) || 0) > limit;
 }
 
@@ -90,7 +111,7 @@ async function requireHuman(
   const ip = c.req.header('cf-connecting-ip') || 'unknown';
   const hasToken = !!String(token || '').trim();
   // Jangan panggil siteverify kalau secret belum diset (percuma + spam log).
-  const tokenValid = secret && hasToken ? await verifyTurnstile(token, secret, ip) : false;
+  const tokenValid = secret && hasToken ? await verifyTurnstile(token, secret, ip, c.env.APP_DOMAIN) : false;
 
   const decision = turnstileGate({ hasSecret: !!secret, hasToken, tokenValid, allowFallback: !!fallback });
 
@@ -515,10 +536,16 @@ app.post('/api/auth/send-otp', async (c) => {
 });
 
 app.post('/api/auth/verify-otp', async (c) => {
-  const { email, otp } = await c.req.json().catch(() => ({}));
+  const { email, otp, turnstile_token, new_password } = await c.req.json().catch(() => ({}));
   if (!email || !otp) return c.json({ error: 'Email dan Kode OTP wajib diisi' }, 400);
   const cleanEmail = String(email).trim().toLowerCase();
   const ip = c.req.header('cf-connecting-ip') || 'unknown';
+
+  // Gerbang Turnstile (vuln-0003 GLM, HIGH): satu-satunya jalur auth tanpa gate —
+  // OTP yang dicuri/ dipancing tak boleh bisa ditukar sesi oleh skrip tanpa browser.
+  // ponytail: tanpa fallback adblocker di path ini — aset yang dilindungi justru OTP.
+  const humanErr = await requireHuman(c, turnstile_token || '', 'votp', 10, 600);
+  if (humanErr) return c.json({ error: humanErr }, 403);
 
   // Anti brute-force OTP (vuln-0005): batas per-IP dan per-akun.
   if (await hitRate(c.env.DB, `votp:ip:${ip}`, 10, 600) || await hitRate(c.env.DB, `votp:em:${cleanEmail}`, 10, 600)) {
@@ -544,10 +571,36 @@ app.post('/api/auth/verify-otp', async (c) => {
   }
   const session = row;
 
+  // Rotasi kredensial saat aktivasi (vuln-0004 GLM, pre-hijack): siapa pun yang
+  // menyelesaikan OTP menentukan sandi akun — sandi pendaftar PERTAMA (yang tak
+  // terbukti punya inbox) divalidasi ulang/ diganti di sini, bukan dibiarkan hidup.
+  let pwdFinal: string | null = null;
+  if (new_password) {
+    const pwdErr = passwordIssue(new_password, cleanEmail, user.pen_name);
+    if (pwdErr) return c.json({ error: pwdErr }, 400);
+    pwdFinal = await hashPassword(new_password);
+  }
+  const wasPending = await c.env.DB.prepare('SELECT email_verified FROM users WHERE id = ?').bind(user.id).first();
+
   // OTP Valid -> Hapus session OTP sementara, ganti dengan Session Cookie 30 hari
   await c.env.DB.prepare('DELETE FROM sessions WHERE id = ?').bind(session.id).run();
   // OTP = bukti kepemilikan inbox → akun resmi aktif (Strix #23).
-  await c.env.DB.prepare('UPDATE users SET email_verified = 1 WHERE id = ?').bind(user.id).run();
+  if (pwdFinal) {
+    await c.env.DB.prepare('UPDATE users SET email_verified = 1, password_hash = ? WHERE id = ?').bind(pwdFinal, user.id).run();
+  } else if (wasPending && wasPending.email_verified === 0) {
+    // Aktivasi pertama tanpa new_password: sandi pendaftar pertama TAK pernah
+    // terbukti milik pemilik inbox → hancurkan (pre-hijack P1 tak bisa login lagi).
+    // ponytail: hash acak one-way; pemilik inbox set sandi baru via tab "Kode OTP" + change-password.
+    await c.env.DB.prepare("UPDATE users SET email_verified = 1, password_hash = ' otp-disabled:' || hex(randomblob(32)) WHERE id = ?").bind(user.id).run();
+  } else {
+    await c.env.DB.prepare('UPDATE users SET email_verified = 1 WHERE id = ?').bind(user.id).run();
+  }
+
+  // Batas 5 sesi paralel (vuln-0006) — terapkan juga di jalur verifikasi OTP.
+  await c.env.DB.prepare(
+    'DELETE FROM sessions WHERE user_id = ? AND token_hash IS NOT NULL AND id NOT IN (SELECT id FROM sessions WHERE user_id = ? AND token_hash IS NOT NULL ORDER BY created_at DESC LIMIT 4)'
+  ).bind(user.id, user.id).run();
+
   const sessionToken = crypto.randomUUID();
   await c.env.DB.prepare(
     'INSERT INTO sessions (id, user_id, token_hash, expires_at) VALUES (?, ?, ?, datetime("now", "+30 days"))'
@@ -581,6 +634,12 @@ app.post('/api/auth/logout-all', async (c) => {
 app.patch('/api/users/me', async (c) => {
   const user = await getAuthUser(c);
   if (!user) return c.json({ error: 'Silakan masuk terlebih dahulu' }, 401);
+
+  // Rate limit per-akun (vuln-0001 GLM): 20 perubahan profil/menit.
+  if (await hitRate(c.env.DB, `profile:${user.id}`, 20, 60)) {
+    return c.json({ error: 'Terlalu banyak perubahan profil. Tunggu sebentar.' }, 429);
+  }
+
   const { pen_name, city, bio } = await c.req.json().catch(() => ({}));
 
   let cleanPenName = user.pen_name;
@@ -796,6 +855,12 @@ app.post('/api/posts', async (c) => {
   const user = await getAuthUser(c);
   if (!user) return c.json({ error: 'Silakan masuk untuk menerbitkan warkah.' }, 401);
 
+  // Rate limit per-penulis (vuln-0001 GLM): 20 unggahan/menit — tanpa ini 120
+  // post terbit dalam 0,4 detik (uji Strix) dan kuota tulis D1 bisa dikuras.
+  if (await hitRate(c.env.DB, `post:${user.id}`, 20, 60)) {
+    return c.json({ error: 'Terlalu banyak unggahan. Tunggu sebentar.' }, 429);
+  }
+
   const { title, content, parent_id } = await c.req.json().catch(() => ({}));
 
   // Sanitasi di titik masuk API (temuan vuln-0008): konten kaya dibersihkan dengan
@@ -819,17 +884,22 @@ app.post('/api/posts', async (c) => {
     if (parentRow) {
       parentId = rawParent;
       await c.env.DB.prepare('UPDATE posts SET chains_count = chains_count + 1 WHERE id = ?').bind(parentId).run();
-      // Auto-create Notif for Chain connection
-      if (parentRow.author_id !== user.id) {
-        const notifId = crypto.randomUUID();
-        await c.env.DB.prepare('INSERT INTO notifications (id, user_id, actor_id, type, post_id) VALUES (?, ?, ?, ?, ?)').bind(notifId, parentRow.author_id, user.id, 'chain', postId).run();
-      }
     }
   }
 
   await c.env.DB.prepare(
     'INSERT INTO posts (id, author_id, title, content, parent_id) VALUES (?, ?, ?, ?, ?)'
   ).bind(postId, user.id, cleanTitle, cleanContent, parentId).run();
+
+  // Notif chain dibuat SETELAH post ada (bug fungsional GLM: dulu INSERT sebelum
+  // post → FK melanggar, tiap reply lintas-penulis 500 + flood jadi mungkin).
+  if (parentId) {
+    const parentRow: any = await c.env.DB.prepare('SELECT author_id FROM posts WHERE id = ?').bind(parentId).first();
+    if (parentRow && parentRow.author_id !== user.id) {
+      const notifId = crypto.randomUUID();
+      await c.env.DB.prepare('INSERT INTO notifications (id, user_id, actor_id, type, post_id) VALUES (?, ?, ?, ?, ?)').bind(notifId, parentRow.author_id, user.id, 'chain', postId).run();
+    }
+  }
 
   return c.json({ ok: true, post: { id: postId, author_pen_name: user.pen_name } }, 201);
 });
@@ -839,6 +909,11 @@ app.delete('/api/posts/:id', async (c) => {
   const user = await getAuthUser(c);
   if (!user) return c.json({ error: 'Silakan masuk terlebih dahulu' }, 401);
   const postId = c.req.param('id');
+
+  // Bucket sama dengan POST /api/posts — delete massal otomatis tak lolos kuota.
+  if (await hitRate(c.env.DB, `post:${user.id}`, 20, 60)) {
+    return c.json({ error: 'Terlalu banyak operasi. Tunggu sebentar.' }, 429);
+  }
 
   const post: any = await c.env.DB.prepare('SELECT author_id, parent_id FROM posts WHERE id = ?').bind(postId).first();
   if (!post) return c.json({ error: 'Postingan tidak ditemukan' }, 404);
