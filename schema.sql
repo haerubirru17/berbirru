@@ -13,17 +13,20 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. Sessions Table
+-- 2. Sessions Table (vuln-0005: sesi disimpan sebagai SHA-256 di token_hash; token plaintext tak tersimpan.
+--    Baris OTP pending tetap memakai kolom token dengan prefix otp_<hash>.)
 CREATE TABLE IF NOT EXISTS sessions (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
   token TEXT UNIQUE NOT NULL,
+  token_hash TEXT,
   ip_address TEXT,
   user_agent TEXT,
   expires_at TIMESTAMP NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+CREATE INDEX IF NOT EXISTS idx_sessions_token_hash ON sessions(token_hash);
 
 -- 3. Adaptive OTP Security Table
 CREATE TABLE IF NOT EXISTS otps (

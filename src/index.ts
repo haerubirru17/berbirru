@@ -7,9 +7,14 @@ import { turnstileGate } from './lib/turnstile-gate';
 import { renderLandingPage } from './web/landing';
 
 // Anti-enumerasi (vuln-0003): hash PBKDF2 dummy untuk verifikasi timing di
-// email tak terdaftar — jalur ini menjalankan kerja PBKDF2 yang sama dengan
-// akun nyata, lalu tetap menolak (hash placeholder tak akan pernah cocok).
+// email tak terdaftar — kerja PBKDF2 sama dengan akun nyata, lalu tetap menolak.
 const DUMMY_PBKDF2_HASH = 'pbkdf2$sha256$10000$ZHVtbXlzYWx0MTIzNA==$RkFLRUhBU0hGWVdXMV teaserPLACEHOLDERONLY';
+
+// vuln-0005: token sesi kini disimpan sebagai SHA-256 (token_hash); plaintext tak pernah menyentuh DB.
+async function sha256hex(s: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
 import { renderLoginPage } from './web/login';
 import { renderFeedPage } from './web/feed';
 import { renderProfilePage } from './web/profile';
@@ -169,10 +174,11 @@ async function getAuthUser(c: any): Promise<{ id: string; email: string; pen_nam
   const token = getCookie(c, 'berbirru_session');
   if (!token) return null;
   const session: any = await c.env.DB.prepare(
-    // Baris OTP pending (`otp_<hash>`) BUKAN sesi: tanpa filter ini, cookie berisi
-    // hash OTP lolos sebagai sesi valid (temuan Strix #28).
-    'SELECT u.id, u.email, u.pen_name, u.city, u.bio FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token = ? AND s.token NOT LIKE \'otp_%\' AND s.expires_at > datetime("now") LIMIT 1'
-  ).bind(token).first();
+    // Baris OTP pending (`otp_<hash>`, token_hash NULL) BUKAN sesi: tanpa filter ini,
+    // cookie berisi hash OTP lolos sebagai sesi valid (temuan Strix #28).
+    // vuln-0005: lookup via SHA-256(token) — plaintext token tak tersimpan di DB.
+    'SELECT u.id, u.email, u.pen_name, u.city, u.bio FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token_hash = ? AND s.expires_at > datetime("now") LIMIT 1'
+  ).bind(await sha256hex(token)).first();
   return session || null;
 }
 
@@ -414,15 +420,13 @@ app.post('/api/auth/login', async (c) => {
 
   // Batas jumlah sesi paralel per akun (temuan vuln-0006): simpan 5 sesi terbaru saja.
   await c.env.DB.prepare(
-    `DELETE FROM sessions WHERE user_id = ? AND token NOT LIKE 'otp_%' AND id NOT IN (
-       SELECT id FROM sessions WHERE user_id = ? AND token NOT LIKE 'otp_%' ORDER BY created_at DESC LIMIT 4
-     )`
+    'DELETE FROM sessions WHERE user_id = ? AND token_hash IS NOT NULL AND id NOT IN (SELECT id FROM sessions WHERE user_id = ? AND token_hash IS NOT NULL ORDER BY created_at DESC LIMIT 4)'
   ).bind(user.id, user.id).run();
 
   const token = crypto.randomUUID() + '-' + crypto.randomUUID();
   await c.env.DB.prepare(
-    'INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, datetime("now", "+30 days"))'
-  ).bind(crypto.randomUUID(), user.id, token).run();
+    'INSERT INTO sessions (id, user_id, token_hash, expires_at) VALUES (?, ?, ?, datetime("now", "+30 days"))'
+  ).bind(crypto.randomUUID(), user.id, await sha256hex(token)).run();
 
   setCookie(c, 'berbirru_session', token, { path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 60 * 60 * 24 * 30 });
   return c.json({ ok: true, user: { id: user.id, pen_name: user.pen_name } });
@@ -455,10 +459,10 @@ app.post('/api/auth/change-password', async (c) => {
   await c.env.DB.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(await hashPassword(password), user.id).run();
 
   // Cabut semua sesi LAIN (vuln-0001): rotasi sandi mengakhiri sesi curian;
-  // sesi yang melakukan rotasi tetap hidup. Filter NOT LIKE menjaga baris OTP pending.
+  // sesi yang melakukan rotasi tetap hidup. token_hash IS NOT NULL menjaga baris OTP pending.
   await c.env.DB.prepare(
-    "DELETE FROM sessions WHERE user_id = ? AND token <> ? AND token NOT LIKE 'otp_%'"
-  ).bind(user.id, getCookie(c, 'berbirru_session')).run();
+    'DELETE FROM sessions WHERE user_id = ? AND token_hash IS NOT NULL AND token_hash <> ?'
+  ).bind(user.id, await sha256hex(getCookie(c, 'berbirru_session') || '')).run();
 
   return c.json({ ok: true });
 });
@@ -546,8 +550,8 @@ app.post('/api/auth/verify-otp', async (c) => {
   await c.env.DB.prepare('UPDATE users SET email_verified = 1 WHERE id = ?').bind(user.id).run();
   const sessionToken = crypto.randomUUID();
   await c.env.DB.prepare(
-    'INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, datetime("now", "+30 days"))'
-  ).bind(crypto.randomUUID(), user.id, sessionToken).run();
+    'INSERT INTO sessions (id, user_id, token_hash, expires_at) VALUES (?, ?, ?, datetime("now", "+30 days"))'
+  ).bind(crypto.randomUUID(), user.id, await sha256hex(sessionToken)).run();
 
   setCookie(c, 'berbirru_session', sessionToken, { path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 60 * 60 * 24 * 30 });
   return c.json({ ok: true, user: { id: user.id, pen_name: user.pen_name } });
@@ -556,7 +560,7 @@ app.post('/api/auth/verify-otp', async (c) => {
 app.post('/api/auth/logout', async (c) => {
   const token = getCookie(c, 'berbirru_session');
   if (token) {
-    await c.env.DB.prepare('DELETE FROM sessions WHERE token = ?').bind(token).run();
+    await c.env.DB.prepare('DELETE FROM sessions WHERE token_hash = ?').bind(await sha256hex(token)).run();
   }
   deleteCookie(c, 'berbirru_session');
   return c.json({ ok: true });
@@ -569,7 +573,7 @@ app.post('/api/auth/logout-all', async (c) => {
   if (!user) return c.json({ error: 'Silakan masuk terlebih dahulu' }, 401);
   const token = getCookie(c, 'berbirru_session') || '';
   // Sesi lain + OTP yang masih menggantung ikut dimatikan.
-  await c.env.DB.prepare('DELETE FROM sessions WHERE user_id = ? AND token != ?').bind(user.id, token).run();
+  await c.env.DB.prepare('DELETE FROM sessions WHERE user_id = ? AND token_hash IS NOT NULL AND token_hash != ?').bind(user.id, await sha256hex(token)).run();
   return c.json({ ok: true });
 });
 
