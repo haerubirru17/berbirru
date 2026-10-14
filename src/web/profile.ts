@@ -371,7 +371,11 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       </div>
       <div style="margin-bottom:12px;">
         <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Kata Sandi Baru <span style="color:#64748B;font-weight:600;">(opsional)</span></label>
-        <input type="password" id="editPassword" autocomplete="new-password" placeholder="Kosongkan bila tidak diganti" style="width:100%;padding:8px;border:2px solid #0B192C;border-radius:8px;font-weight:700;">
+        <input type="password" id="editPassword" autocomplete="new-password" placeholder="Kosongkan bila tidak diganti" oninput="document.getElementById('currentPasswordRow').style.display=this.value?'block':'none'" style="width:100%;padding:8px;border:2px solid #0B192C;border-radius:8px;font-weight:700;">
+      </div>
+      <div style="margin-bottom:12px;display:none;" id="currentPasswordRow">
+        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Kata Sandi Saat Ini <span style="color:#64748B;font-weight:600;">(wajib bila ganti sandi)</span></label>
+        <input type="password" id="editCurrentPassword" autocomplete="current-password" placeholder="Sandi yang kamu pakai sekarang" style="width:100%;padding:8px;border:2px solid #0B192C;border-radius:8px;font-weight:700;">
       </div>
       <div style="display:flex;justify-content:flex-end;gap:8px;">
         <button onclick="toggleEditModal(false)" style="padding:6px 12px;border:2px solid #0B192C;border-radius:6px;font-weight:800;background:#FFF;cursor:pointer;">Batal</button>
@@ -425,6 +429,8 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
         document.getElementById('editPenName').value = currentUserData.pen_name;
         document.getElementById('editCity').value = currentUserData.city || 'Nusantara';
         document.getElementById('editBio').value = currentUserData.bio || '';
+        document.getElementById('editPassword').value = '';
+        document.getElementById('editCurrentPassword').value = '';
       }
     }
 
@@ -442,13 +448,17 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Gagal menyimpan profil');
 
-        // Reset kata sandi hanya bila diisi — jalan masuk akun lama (Strix #31).
+        // Reset kata sandi hanya bila diisi — wajib sandi saat ini (step-up, Strix #31/#vuln-0008).
         const newPassword = document.getElementById('editPassword').value;
         if (newPassword) {
+          const currentPassword = document.getElementById('editCurrentPassword').value;
+          if (!currentPassword) {
+            throw new Error('Isi kata sandi saat ini untuk mengganti sandi.');
+          }
           const cp = await fetch('/api/auth/change-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password: newPassword })
+            body: JSON.stringify({ password: newPassword, current_password: currentPassword })
           });
           const cpData = await cp.json().catch(() => ({}));
           if (!cp.ok) throw new Error(cpData.error || 'Gagal mengganti kata sandi');
