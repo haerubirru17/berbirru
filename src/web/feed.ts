@@ -337,6 +337,7 @@ export function renderFeedPage(user: any = null): string {
     }
 
     .ico { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .act-btn.del-btn { flex-shrink: 0; color: var(--accent-red, #EF4444); padding: 4px 6px; }
   </style>
 </head>
 <body>
@@ -551,13 +552,12 @@ export function renderFeedPage(user: any = null): string {
                 <svg class="ico" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
                 <span>\${p.saves_count || 0} Simpan</span>
               </button>
-              \${isUserLoggedIn && p.author_id === '${user?.id || ''}' ? \`
-                <button class="act-btn" onclick="deleteFeedPost('\${p.id}')" style="color:#EF4444;" title="Hapus">
-                  <svg class="ico" viewBox="0 0 24 24"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-                  <span>Hapus</span>
-                </button>
-              \` : ''}
             </div>
+            \${isUserLoggedIn && p.author_id === '${user?.id || ''}' ? \`
+              <button class="act-btn del-btn" onclick="deleteFeedPost('\${p.id}')" title="Hapus warkah">
+                <svg class="ico" viewBox="0 0 24 24"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+              </button>
+            \` : \`<span style="flex-shrink:0;width:6px;"></span>\`}
             <button class="chain-btn" data-title="\${escapeHtml(p.title || p.pen_name)}" onclick="openStudioModal('\${p.id}', this.dataset.title)">
               <svg class="ico" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
               <span>\${p.chains_count ? p.chains_count + ' Sambungan' : 'Sambung Bait'}</span>
