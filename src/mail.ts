@@ -90,7 +90,7 @@ export async function sendOtpEmail(toEmail: string, otpCode: string, env: any = 
       body: JSON.stringify({
         from: fromEmail,
         to: [toEmail],
-        subject: `Kode Masuk OTP: ${otpCode} — BERBIRRU.COM`,
+        subject: `Kode Masuk OTP — BERBIRRU.COM`,
         html: htmlContent
       })
     });
