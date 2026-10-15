@@ -541,11 +541,6 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
               </div>
               <div style="display:flex;align-items:center;gap:8px;">
                 \${formatTimestamp(p.created_at)}
-                ${isMe ? `
-                  <button onclick="deletePost('\${p.id}')" title="Hapus Warkah" style="background:transparent;border:none;cursor:pointer;color:#EF4444;display:flex;align-items:center;padding:2px;" aria-label="Hapus Warkah">
-                    <svg style="width:15px;height:15px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-                  </button>
-                ` : ''}
               </div>
             </div>
             <div class="thread-body">
@@ -554,6 +549,11 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
             </div>
             <div class="thread-footer">
               <span style="font-size:11.5px;font-weight:800;color:#1D61E7;">\${p.likes_count || 0} Terpaut · \${p.saves_count || 0} Simpan · \${p.chains_count || 0} Sambungan</span>
+              ${isMe ? `
+                <button onclick="deletePost('\${p.id}')" title="Hapus Warkah" style="background:transparent;border:none;cursor:pointer;color:#EF4444;display:flex;align-items:center;padding:4px;flex-shrink:0;" aria-label="Hapus Warkah">
+                  <svg style="width:15px;height:15px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                </button>
+              ` : ''}
             </div>
           </div>
         \`).join('');
