@@ -110,8 +110,8 @@ export function renderFeedPage(user: any = null): string {
     .thread-avatar-clip {
       position: absolute; left: 10px; top: -14px; width: 48px; height: 50px;
       background: var(--blue-primary); color: #FFFFFF; border: var(--border-thick);
-      border-radius: 0px; display: grid; place-items: center; font-family: 'Space Grotesk', sans-serif;
-      font-size: 23px; font-weight: 900; box-shadow: none;
+      border-radius: 0px; display: grid; place-items: center; font-family: 'Newsreader', serif;
+      font-size: 24px; font-weight: 700; box-shadow: none;
       transform: rotate(-2deg); z-index: 5;
     }
     /* SVG Paperclip / Jepitan Kertas Metalik */
@@ -127,7 +127,6 @@ export function renderFeedPage(user: any = null): string {
     /* Timestamp 2 Baris Sejajar: Jam di atas, Tanggal di bawah */
     .thread-timestamp-stack {
       display: flex; flex-direction: column; align-items: flex-end; line-height: 1.25;
-      font-family: 'JetBrains Mono', monospace;
     }
     .time-main { font-size: 11px; font-weight: 800; color: var(--ink); }
     .date-sub { font-size: 9.5px; font-weight: 700; color: #64748B; }
@@ -140,9 +139,9 @@ export function renderFeedPage(user: any = null): string {
     }
     .thread-parent-connector:hover { background: var(--bg-blue-subtle); }
 
-    .thread-body { padding: 16px 14px 12px; }
-    .thread-title { font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 800; color: var(--ink); margin-bottom: 8px; line-height: 1.3; }
-    .thread-text { font-size: 14.5px; font-weight: 600; line-height: 1.65; color: #0F172A; }
+    .thread-body { padding: 14px 14px 12px; flex: 1; display: flex; flex-direction: column; }
+    .thread-title { font-family: 'Newsreader', serif; font-size: 17px; font-weight: 600; color: var(--ink); margin-bottom: 6px; line-height: 1.3; }
+    .thread-text { font-size: 14px; font-weight: 600; line-height: 1.6; color: #0F172A; flex: 1; }
     .thread-text-wrap { position: relative; }
     .thread-text-collapsed {
       max-height: 110px;
@@ -159,9 +158,9 @@ export function renderFeedPage(user: any = null): string {
       background: #F8FAFC;
       border-left: 3.5px solid var(--ink);
       padding: 10px 14px;
-      margin: 10px 0;
+      margin: 8px 0;
       font-style: italic;
-      border-radius: 4px;
+      border-radius: 0px;
       color: #334155;
     }
     
@@ -170,15 +169,17 @@ export function renderFeedPage(user: any = null): string {
     .font-mono { font-family: 'JetBrains Mono', monospace !important; background: #E0EEFD; padding: 1px 5px; border-radius: 4px; font-size: 13.5px; }
 
     .thread-footer {
-      padding: 8px 12px; background: #FFFFFF; display: flex; justify-content: space-between; align-items: center;
-      border-top: var(--border-thin); border-radius: 0px; gap: 6px; flex-wrap: wrap; overflow: hidden;
+      padding: 8px 10px; background: #FFFFFF; display: flex; justify-content: space-between; align-items: center;
+      border-top: var(--border-thin); border-radius: 0px; gap: 6px; flex-wrap: nowrap; overflow: hidden; /* ATURAN OWNER: love+simpan+sambungan selalu 1 baris */
     }
-    .actions-left { display: flex; gap: 6px; }
+    .actions-left { display: flex; gap: 4px; flex-shrink: 1; min-width: 0; }
     .act-btn {
       background: var(--bg-main); border: var(--border-thin); border-radius: var(--radius-sm);
-      padding: 5px 10px; font-size: 11.5px; font-weight: 800; cursor: pointer; display: inline-flex;
-      align-items: center; gap: 5px; box-shadow: 1.5px 1.5px 0 var(--shadow-ink);
+      padding: 4px 7px; font-size: 11px; font-weight: 800; cursor: pointer; display: inline-flex;
+      align-items: center; gap: 3px; min-width: 0; overflow: hidden; /* menyusut dulu sebelum menggusur sambungan */
     }
+    .act-btn span { overflow: hidden; text-overflow: ellipsis; }
+    .act-btn svg, .act-btn .ico { flex-shrink: 0; }
     .act-btn.active {
       background: #EF4444;
       color: #FFFFFF;
@@ -193,8 +194,8 @@ export function renderFeedPage(user: any = null): string {
     .act-btn.saved svg { fill: #FFFFFF; stroke: #FFFFFF; }
     .chain-btn {
       background: var(--accent-yellow); color: var(--ink); border: var(--border-thin);
-      border-radius: var(--radius-sm); padding: 5px 12px; font-size: 11.5px; font-weight: 900;
-      cursor: pointer; display: inline-flex; align-items: center; gap: 5px; box-shadow: 1.5px 1.5px 0 var(--shadow-ink);
+      border-radius: var(--radius-sm); padding: 4px 8px; font-size: 11px; font-weight: 900;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; /* sambungan tak pernah menyusut/turun baris */
     }
 
     /* FULLSCREEN BILIK WARKAH COMPOSER (MODERN SEAMLESS CANVAS) */
