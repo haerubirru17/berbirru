@@ -17,6 +17,7 @@ async function sha256hex(s: string): Promise<string> {
 }
 import { renderLoginPage } from './web/login';
 import { renderFeedPage } from './web/feed';
+import { renderSearchPage } from './web/search';
 import { renderProfilePage } from './web/profile';
 import { renderNotificationsPage } from './web/notifications';
 import { sendOtpEmail } from './mail';
@@ -226,6 +227,11 @@ app.get('/login', async (c) => {
 app.get('/feed', async (c) => {
   const user = await getAuthUser(c);
   return c.html(renderFeedPage(user));
+});
+
+app.get('/search', async (c) => {
+  const user = await getAuthUser(c);
+  return c.html(renderSearchPage(user));
 });
 
 app.get('/u/:pen_name', async (c) => {

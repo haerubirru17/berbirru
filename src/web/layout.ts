@@ -9,7 +9,7 @@ export function renderBottomNav(activeTab: 'feed' | 'search' | 'compose' | 'noti
         <span>Beranda</span>
       </a>
 
-      <a href="/feed?tab=search" class="nav-item ${activeTab === 'search' ? 'active' : ''}">
+      <a href="/search" class="nav-item ${activeTab === 'search' ? 'active' : ''}">
         <!-- Lucide Search -->
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
         <span>Telusuri</span>

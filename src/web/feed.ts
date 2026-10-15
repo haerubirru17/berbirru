@@ -57,17 +57,6 @@ export function renderFeedPage(user: any = null): string {
       .top-nav .nav-btn { display: none !important; }
       .top-nav { justify-content: center; margin-bottom: 18px; }
     }
-    .search-box { display: flex; gap: 8px; margin-bottom: 14px; }
-    .search-input {
-      flex: 1; font: inherit; font-size: 13px; font-weight: 700; padding: 10px 14px;
-      border: var(--border-med); border-radius: var(--radius-sm); background: #FFFFFF; color: var(--ink);
-      outline: none; box-shadow: var(--shadow-hard-sm);
-    }
-    .search-btn {
-      background: var(--blue-primary); color: #FFFFFF; border: var(--border-med);
-      border-radius: var(--radius-sm); padding: 0 14px; font-size: 12px; font-weight: 900;
-      box-shadow: var(--shadow-hard-sm); cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
-    }
     .feed-mode-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 16px; }
     .mode-tab {
       background: var(--bg-card); border: var(--border-med); border-radius: var(--radius-sm);
@@ -379,13 +368,6 @@ export function renderFeedPage(user: any = null): string {
     </div>
     </div>
 
-    <div class="search-box">
-      <input type="text" id="searchInput" class="search-input" placeholder="Telusuri bait puisi, kata kunci, atau @nama_pena...">
-      <button class="search-btn" onclick="handleSearch()">
-        <svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      </button>
-    </div>
-
     <div class="log-feed" id="feedContainer"></div>
   </div>
 
@@ -432,7 +414,6 @@ export function renderFeedPage(user: any = null): string {
 
   <script>
     let currentMode = 'viral';
-    let searchQuery = '';
     let currentChainParentId = null;
     let currentFontClass = 'font-sans';
     const isUserLoggedIn = ${Boolean(user)};
@@ -463,9 +444,7 @@ export function renderFeedPage(user: any = null): string {
       const container = document.getElementById('feedContainer');
       container.innerHTML = SKELETON_HTML;
       try {
-        const url = searchQuery
-          ? '/api/posts?q=' + encodeURIComponent(searchQuery)
-          : '/api/posts?mode=' + currentMode;
+        const url = '/api/posts?mode=' + currentMode;
         const res = await fetch(url);
         const data = await res.json();
 
@@ -689,15 +668,9 @@ export function renderFeedPage(user: any = null): string {
     }
 
     function switchFeed(mode, el) {
-      searchQuery = '';
       currentMode = mode;
       document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
       el.classList.add('active');
-      loadFeed();
-    }
-
-    function handleSearch() {
-      searchQuery = document.getElementById('searchInput').value.trim();
       loadFeed();
     }
 
@@ -734,14 +707,6 @@ export function renderFeedPage(user: any = null): string {
         alert(data.following ? 'Berhasil mengikuti @' + penName : 'Batal mengikuti @' + penName);
       } catch (err) {
         console.error(err);
-      }
-    }
-
-    function focusSearchInput() {
-      const el = document.getElementById('searchInput');
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        el.focus();
       }
     }
 
