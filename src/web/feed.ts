@@ -94,7 +94,7 @@ export function renderFeedPage(user: any = null): string {
     .trigger-pen-btn { background: var(--accent-yellow); border: var(--border-thin); border-radius: 8px; padding: 6px 10px; font-size: 11px; font-weight: 900; display: inline-flex; align-items: center; gap: 4px; box-shadow: 1.5px 1.5px 0 var(--shadow-ink); }
 
     /* Card Feed Threads-Style dengan Overlap Avatar & Paperclip Efek */
-    .log-feed { display: flex; flex-direction: column; gap: 22px; }
+    .log-feed { display: flex; flex-direction: column; gap: 18px; }
     .thread-card {
       background: var(--bg-card); border: var(--border-thick); border-radius: 0px;
       box-shadow: var(--shadow-hard-lg); overflow: visible; position: relative; margin-top: 14px;
