@@ -302,6 +302,34 @@ export function renderFeedPage(user: any = null): string {
     .btn-create-floating svg { width: 20px; height: 20px; stroke: #0B192C; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .btn-create-floating:active { transform: translate(1.5px, 1.5px); box-shadow: none; }
 
+    /* Sticky Feed Header: logo + tabs nempel saat scroll */
+    .feed-sticky { position: sticky; top: -20px; z-index: 50; background: var(--paper, #FBF8F3);
+      margin: -20px -16px 0; padding: 26px 16px 0; border-bottom: 2px solid var(--ink);
+      box-shadow: 0 4px 14px rgba(11,25,44,.14); }
+    .feed-sticky .top-nav { margin-bottom: 12px; }
+
+    /* Skeleton Loading */
+    .skeleton-card { background: var(--bg-card); border: var(--border-thick); box-shadow: var(--shadow-hard-lg);
+      position: relative; margin-top: 14px; overflow: hidden; }
+    .sk-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bg-blue-subtle);
+      border-bottom: var(--border-thin); }
+    .sk-avatar { width: 40px; height: 40px; background: #C7DDF7; flex-shrink: 0; }
+    .sk-lines { flex: 1; }
+    .sk-line { height: 10px; background: #C7DDF7; margin: 6px 0; border-radius: 3px; }
+    .sk-line.w60 { width: 60%; } .sk-line.w40 { width: 40%; }
+    .sk-body { padding: 16px 14px; }
+    .sk-line.tall { height: 14px; width: 45%; margin-bottom: 10px; }
+    .sk-line.full { width: 100%; } .sk-line.w90 { width: 90%; } .sk-line.w75 { width: 75%; }
+    .sk-footer { display: flex; justify-content: space-between; padding: 10px 14px; border-top: var(--border-thin); }
+    .sk-pill { width: 72px; height: 24px; background: #EEF2F7; border: var(--border-thin); border-radius: 10px; }
+    .sk-pill.yellow { background: #FEF3C0; width: 96px; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
+    .sk-line, .sk-avatar, .sk-pill { animation: pulse 1.3s ease-in-out infinite; }
+    .skeleton-card:nth-of-type(even) .sk-line, .skeleton-card:nth-of-type(even) .sk-avatar,
+    .skeleton-card:nth-of-type(even) .sk-pill { animation-delay: .35s; }
+    .fade-in { animation: fadein .35s ease; }
+    @keyframes fadein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
     .bell-wrap { position: relative; }
     .notif-dot {
       position: absolute; top: -2px; right: -3px; width: 8px; height: 8px;
@@ -313,6 +341,7 @@ export function renderFeedPage(user: any = null): string {
 </head>
 <body>
   <div class="container">
+    <div class="feed-sticky">
     <div class="top-nav">
       <a href="/" class="brand-wrap">
         <div class="brand-badge">
@@ -334,13 +363,6 @@ export function renderFeedPage(user: any = null): string {
       `}
     </div>
 
-    <div class="search-box">
-      <input type="text" id="searchInput" class="search-input" placeholder="Telusuri bait puisi, kata kunci, atau @nama_pena...">
-      <button class="search-btn" onclick="handleSearch()">
-        <svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      </button>
-    </div>
-
     <div class="feed-mode-tabs">
       <div class="mode-tab active" onclick="switchFeed('viral', this)">
         <svg class="ico" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
@@ -354,6 +376,14 @@ export function renderFeedPage(user: any = null): string {
         <svg class="ico" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         <span>Diikuti</span>
       </div>
+    </div>
+    </div>
+
+    <div class="search-box">
+      <input type="text" id="searchInput" class="search-input" placeholder="Telusuri bait puisi, kata kunci, atau @nama_pena...">
+      <button class="search-btn" onclick="handleSearch()">
+        <svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
     </div>
 
     <div class="log-feed" id="feedContainer"></div>
@@ -415,15 +445,30 @@ export function renderFeedPage(user: any = null): string {
       return '<div class="thread-timestamp-stack"><span class="time-main">' + timePart + ' WIB</span><span class="date-sub">' + datePart + '</span></div>';
     }
 
+    const SKELETON_HTML = \`
+      <div class="skeleton-card">
+        <div class="sk-row"><div class="sk-avatar"></div>
+          <div class="sk-lines"><div class="sk-line w40"></div><div class="sk-line w60"></div></div></div>
+        <div class="sk-body"><div class="sk-line tall"></div><div class="sk-line full"></div><div class="sk-line w90"></div><div class="sk-line w75"></div></div>
+        <div class="sk-footer"><div style="display:flex;gap:6px"><div class="sk-pill"></div><div class="sk-pill"></div></div><div class="sk-pill yellow"></div></div>
+      </div>
+      <div class="skeleton-card">
+        <div class="sk-row"><div class="sk-avatar"></div>
+          <div class="sk-lines"><div class="sk-line w40"></div><div class="sk-line w60"></div></div></div>
+        <div class="sk-body"><div class="sk-line tall"></div><div class="sk-line full"></div><div class="sk-line w90"></div></div>
+        <div class="sk-footer"><div style="display:flex;gap:6px"><div class="sk-pill"></div><div class="sk-pill"></div></div><div class="sk-pill yellow"></div></div>
+      </div>\`;
+
     async function loadFeed() {
+      const container = document.getElementById('feedContainer');
+      container.innerHTML = SKELETON_HTML;
       try {
-        const url = searchQuery 
+        const url = searchQuery
           ? '/api/posts?q=' + encodeURIComponent(searchQuery)
           : '/api/posts?mode=' + currentMode;
         const res = await fetch(url);
         const data = await res.json();
-        const container = document.getElementById('feedContainer');
-        
+
         if (data.message && currentMode === 'following') {
           container.innerHTML = '<div style="background:#FFF;padding:24px;border:3px solid #0B192C;border-radius:16px;text-align:center;font-weight:700;box-shadow:4px 4px 0 #1E293B;">' + data.message + ' <br><br><a href="/login" style="display:inline-block;padding:8px 16px;background:#1D61E7;color:#FFF;border-radius:8px;text-decoration:none;font-weight:900;">Masuk Sekarang</a></div>';
           return;
@@ -433,7 +478,8 @@ export function renderFeedPage(user: any = null): string {
           container.innerHTML = '<div style="background:#FFF;padding:24px;border:3px solid #0B192C;border-radius:16px;text-align:center;font-weight:700;box-shadow:4px 4px 0 #1E293B;">Belum ada warkah di feed ini. Jadilah yang pertama menggoreskan bait!</div>';
           return;
         }
-        container.innerHTML = data.posts.map(p => renderPostCard(p)).join('');
+        container.innerHTML = data.posts.map(p => renderPostCard(p)
+          .replace('class="thread-card"', 'class="thread-card fade-in"')).join('');
       } catch (err) {
         console.error(err);
       }
