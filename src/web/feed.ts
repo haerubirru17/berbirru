@@ -171,7 +171,7 @@ export function renderFeedPage(user: any = null): string {
 
     .thread-footer {
       padding: 8px 12px; background: #FFFFFF; display: flex; justify-content: space-between; align-items: center;
-      border-top: var(--border-thin); border-radius: 0px;
+      border-top: var(--border-thin); border-radius: 0px; gap: 6px; flex-wrap: wrap; overflow: hidden;
     }
     .actions-left { display: flex; gap: 6px; }
     .act-btn {
