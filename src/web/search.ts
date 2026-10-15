@@ -45,6 +45,23 @@ export function renderSearchPage(user: any = null): string {
     }
     .search-btn:active { transform: translate(1.5px, 1.5px); box-shadow: none; }
     .search-hint { font-size: 11.5px; color: #64748B; margin-top: 8px; font-weight: 600; }
+    /* Saran akun instan (autocomplete) */
+    .suggest-wrap { position: relative; }
+    .suggest-list {
+      position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 200;
+      background: var(--bg-card); border: var(--border-med); border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-hard); overflow: hidden; display: none;
+    }
+    .suggest-list.show { display: block; }
+    .suggest-item {
+      display: flex; align-items: center; gap: 10px; padding: 9px 12px; cursor: pointer;
+      text-decoration: none; color: var(--ink); border-bottom: 1px solid #E2E8F0;
+    }
+    .suggest-item:last-child { border-bottom: none; }
+    .suggest-item:active { background: var(--bg-blue-subtle); }
+    .suggest-item .chip-avatar { width: 32px; height: 32px; border-radius: 10px; font-size: 13px; }
+    .suggest-item .chip-pen { font-weight: 800; font-size: 13px; }
+    .suggest-item .chip-city { font-size: 11px; }
     .result-section-title { font-size: 11.5px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; color: #64748B; margin: 18px 0 8px; }
     .user-chip {
       display: flex; align-items: center; gap: 10px; background: var(--bg-card);
@@ -118,11 +135,12 @@ export function renderSearchPage(user: any = null): string {
   <div class="container">
     <div class="search-hero">
       <h1 class="search-title">Telusuri 🔍</h1>
-      <div class="search-box">
+      <div class="search-box suggest-wrap">
         <input type="text" id="searchInput" class="search-input" placeholder="Cari @nama_pena atau kata kunci..." autocomplete="off">
         <button class="search-btn" onclick="doSearch()">
           <svg class="ico" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;stroke-width:2.5;fill:none;stroke-linecap:round;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         </button>
+        <div id="suggestList" class="suggest-list"></div>
       </div>
       <p class="search-hint">Cari penulis dengan @ di depan · warkah dengan kata kunci</p>
       <button onclick="doSearch()" id="searchEnterHook" style="display:none;">​</button>
@@ -210,6 +228,42 @@ export function renderSearchPage(user: any = null): string {
     }
 
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
+
+    // Saran akun instan: 1-2 huruf pun langsung muncul (debounce 250ms)
+    let suggestTimer = null;
+    let suggestSeq = 0;
+    function hideSuggest() {
+      document.getElementById('suggestList').classList.remove('show');
+    }
+    input.addEventListener('input', () => {
+      clearTimeout(suggestTimer);
+      const q = input.value.trim().replace(/^@+/, '');
+      if (q.length < 1) { hideSuggest(); return; }
+      suggestTimer = setTimeout(showSuggest, 250);
+    });
+    input.addEventListener('blur', () => { setTimeout(hideSuggest, 180); });
+
+    async function showSuggest() {
+      const q = input.value.trim().replace(/^@+/, '').toLowerCase().replace(/[^a-z0-9_.]/g, '');
+      const list = document.getElementById('suggestList');
+      if (!q) { hideSuggest(); return; }
+      const seq = ++suggestSeq;
+      try {
+        const res = await fetch('/api/users/suggest?q=' + encodeURIComponent(q));
+        const data = await res.json();
+        if (seq !== suggestSeq) return; // jawaban basi, abaikan
+        const users = data.users || [];
+        if (!users.length) { hideSuggest(); return; }
+        list.innerHTML = users.map(u =>
+          '<a class="suggest-item" href="/u/' + encodeURIComponent(u.pen_name) + '">'
+          + '<div class="chip-avatar" style="background:' + avatarColor(u.pen_name) + ';">' + escapeHtml((u.pen_name[0] || 'D').toUpperCase()) + '</div>'
+          + '<div class="chip-meta"><div class="chip-pen">@' + escapeHtml(u.pen_name) + '</div>'
+          + (u.city ? '<div class="chip-city">' + escapeHtml(u.city) + '</div>' : '')
+          + '</div></a>'
+        ).join('');
+        list.classList.add('show');
+      } catch (err) { hideSuggest(); }
+    }
   </script>
 </body>
 </html>`;

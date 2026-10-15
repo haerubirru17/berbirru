@@ -690,6 +690,15 @@ app.patch('/api/users/me', async (c) => {
   return c.json({ ok: true, user: { id: user.id, pen_name: cleanPenName, city: cleanCity, bio: cleanBio } });
 });
 
+app.get('/api/users/suggest', async (c) => {
+  const q = (c.req.query('q') || '').replace(/^@+/g, '').toLowerCase().replace(/[^a-z0-9_.]/g, '');
+  if (!q) return c.json({ users: [] });
+  const result = await c.env.DB.prepare(
+    'SELECT pen_name, city FROM users WHERE pen_name LIKE ? ORDER BY pen_name LIMIT 8'
+  ).bind(q + '%').all();
+  return c.json({ users: result.results || [] });
+});
+
 app.get('/api/users/:pen_name', async (c) => {
   const penName = c.req.param('pen_name').replace(/^@/, '').toLowerCase();
   const user: any = await c.env.DB.prepare('SELECT id, pen_name, city, bio, created_at FROM users WHERE pen_name = ? LIMIT 1').bind(penName).first();
