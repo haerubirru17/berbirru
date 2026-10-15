@@ -44,7 +44,6 @@ export function renderSearchPage(user: any = null): string {
       box-shadow: var(--shadow-hard-sm); cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
     }
     .search-btn:active { transform: translate(1.5px, 1.5px); box-shadow: none; }
-    .search-hint { font-size: 11.5px; color: #64748B; margin-top: 8px; font-weight: 600; }
     /* Saran akun instan (autocomplete) */
     .suggest-wrap { position: relative; }
     .suggest-list {
@@ -134,7 +133,9 @@ export function renderSearchPage(user: any = null): string {
 <body>
   <div class="container">
     <div class="search-hero">
-      <h1 class="search-title">Telusuri 🔍</h1>
+      <h1 class="search-title">Telusuri
+        <svg viewBox="0 0 24 24" style="width:19px;height:19px;stroke:var(--blue-primary);stroke-width:2.6;fill:none;stroke-linecap:round;vertical-align:-3px;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </h1>
       <div class="search-box suggest-wrap">
         <input type="text" id="searchInput" class="search-input" placeholder="Cari @nama_pena atau kata kunci..." autocomplete="off">
         <button class="search-btn" onclick="doSearch()">
@@ -142,7 +143,6 @@ export function renderSearchPage(user: any = null): string {
         </button>
         <div id="suggestList" class="suggest-list"></div>
       </div>
-      <p class="search-hint">Cari penulis dengan @ di depan · warkah dengan kata kunci</p>
       <button onclick="doSearch()" id="searchEnterHook" style="display:none;">​</button>
     </div>
 
