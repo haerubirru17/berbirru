@@ -163,3 +163,21 @@ source berjalan; 5 temuan aplikasi diperbaiki, semuanya terverifikasi E2E di run
 | vuln-0007 (MED 4.3) | Tabel `rate_limits` tumbuh tanpa akhir | GC probabilistik 2% per panggilan `hitRate` menghapus baris expired | — |
 | — | Bug fungsional: notif chain `INSERT` sebelum post (FK gagal, reply lintas-penulis `500`) | notif dibuat **setelah** `INSERT` post | reply lintas-penulis tak lagi `500` |
 | vuln-0006 (INFO) | Oracle keberadaan akun lewat sisi pengiriman | diterima sebagai sisa desain anti-enumerasi (body seragam); didokumentasikan | — |
+
+## 7. Hasil Audit Putaran 4 (Strix white-box 4 agen — 15 Okt 2026)
+
+Laporan putaran keempat (23 hal): seluruh 6 fix putaran-3 **lolos re-attack** (429 brute-force,
+403 gate, sandi dihancurkan, OTP single-use). Ditemukan 2 regresi dari patch sendiri + 5 temuan
+baru; semuanya diperbaiki dan diverifikasi E2E di runtime lokal sebelum deploy:
+
+| # | Temuan | Severitas | Penanganan | Bukti E2E |
+| :-- | :-- | :-- | :-- | :-- |
+| vuln-0006 | Regresi patch putaran-3: `new_password` di verify-otp juga berlaku untuk akun **sudah terverifikasi** → pemegang OTP login bisa mengganti sandi korban tanpa sandi lama (silent takeover) | HIGH 7.4 | `new_password` kini **hanya** dihormati untuk akun pending aktivasi (`email_verified=0`); akun verified → `400`; kebijakan sandi dicek sebelum klaim OTP agar sandi lemah tak membakar kode | verify + `new_password` di akun verified → `400 "Kata sandi sudah terpasang"`; login sandi pemilik tetap `200` |
+| vuln-0007 | Check-then-delete OTP tidak atomik → 2 request paralel dengan kode sama mint 2 sesi + balapan state sandi | MED 4.8 | klaim atomik: `DELETE … AND token LIKE 'otp\_%'` + wajib `meta.changes === 1` sebagai hakim; yang kalah race → `400` | 8 verify konkuren 1 kode → tepat **1×200** + 7×400; sesi 30-hari ter-mint = 1 |
+| vuln-0001 | `POST /follow` tanpa rate limit → pengurasan kuota tulis D1 | MED | bucket `engage:` per-penulis 60/60 dtk (pola sama like/bookmark) | spray 60+ follow → `429` |
+| vuln-0002 | Klaim docs "4KB" tak pernah diimplement; post 2MB membuat feed bengkak & `500` | MED | cap **50.000 karakter** (keputusan owner — platform penulis esai/cerpen panjang), ditegakkan sebelum & sesudah sanitasi; docs dikoreksi ke "Max 50KB" | 50.000 → `201`; 50.001 → `400` |
+| vuln-0003 | `?tab=Saved` (huruf besar) lolos guard privat | INFO | `tab` di-`toLowerCase()` | anon `tab=Saved` & `tab=saved` → `403` |
+| vuln-0004 | SECURITY.md mengklaim CSP + X-Frame-Options padahal header tak ada | INFO | `Content-Security-Policy: frame-ancestors 'none'` + `X-Frame-Options: DENY` pada semua respons; klaim docs dikoreksi (nonce-CSP = roadmap) | kedua header tayang di respons live |
+| vuln-0005 | Race like/bookmark konkuren → `500` (UNIQUE constraint) | LOW | `INSERT OR IGNORE` + `meta.changes === 0` diperlakukan sebagai sudah-like (idempoten) | like ganda → `200 liked:true` lalu `200 liked:false`, nol `500` |
+| — | Permintaan sial saat GC `rate_limits` ikut `500` | rekomendasi | GC dibungkus try/catch | — |
+
