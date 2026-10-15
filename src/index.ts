@@ -91,8 +91,11 @@ async function hitRate(db: D1Database, key: string, limit: number, windowSec: nu
   ).bind(key, windowSec, windowSec).first();
   // GC probabilistik (vuln-0007 GLM): 2% panggilan membersihkan baris expired —
   // tanpa ini tabel tumbuh tanpa batas (786 baris/klien dalam uji Strix).
+  // try/catch (rekomendasi putaran-4): request sial tak boleh 500 gara-gara GC.
   if (Math.random() < 0.02) {
-    await db.prepare("DELETE FROM rate_limits WHERE expires_at < datetime('now')").run();
+    try {
+      await db.prepare("DELETE FROM rate_limits WHERE expires_at < datetime('now')").run();
+    } catch { /* GC gagal → abaikan; keputusan rate-limit sudah dihitung. */ }
   }
   return ((row && row.count) || 0) > limit;
 }
@@ -188,6 +191,11 @@ app.use('*', async (c, next) => {
   await next();
   c.header('X-Content-Type-Options', 'nosniff');
   c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+  // Anti-clickjacking (vuln-0004 putaran-4): SECURITY.md mengklaim ini sejak lama
+  // tapi tak pernah dikirim. ponytail: full nonce-CSP ditunda — risiko merusak
+  // inline script lama; dicatat docs sebagai roadmap.
+  c.header('Content-Security-Policy', "frame-ancestors 'none'");
+  c.header('X-Frame-Options', 'DENY');
 });
 
 // ---- AUTH HELPERS ----
@@ -574,18 +582,30 @@ app.post('/api/auth/verify-otp', async (c) => {
   // Rotasi kredensial saat aktivasi (vuln-0004 GLM, pre-hijack): siapa pun yang
   // menyelesaikan OTP menentukan sandi akun — sandi pendaftar PERTAMA (yang tak
   // terbukti punya inbox) divalidasi ulang/ diganti di sini, bukan dibiarkan hidup.
-  let pwdFinal: string | null = null;
+  // vuln-0006 putaran-4 (HIGH): new_password HANYA sah untuk aktivasi (email_verified=0).
+  // Akun terverifikasi punya sandi pemilik terbukti → verifikasi OTP login TIDAK
+  // berwenang menggantinya (beda dengan change-password yang minta sandi lama).
   if (new_password) {
     const pwdErr = passwordIssue(new_password, cleanEmail, user.pen_name);
     if (pwdErr) return c.json({ error: pwdErr }, 400);
-    pwdFinal = await hashPassword(new_password);
   }
-  const wasPending = await c.env.DB.prepare('SELECT email_verified FROM users WHERE id = ?').bind(user.id).first();
+  const wasPending: any = await c.env.DB.prepare('SELECT email_verified FROM users WHERE id = ?').bind(user.id).first();
 
-  // OTP Valid -> Hapus session OTP sementara, ganti dengan Session Cookie 30 hari
-  await c.env.DB.prepare('DELETE FROM sessions WHERE id = ?').bind(session.id).run();
+  // Klaim OTP ATMOST-ONCE (vuln-0007 putaran-4): check-then-delete lama punya jeda
+  // → dua verify konkuren sama-sama lolos & mint 2 sesi dari 1 kode. Sekarang
+  // penghapusan dilengkapi syarat token dan dijadikan HAKIM: hanya request yang
+  // klaimnya succeeds (meta.changes === 1) yang boleh lanjut.
+  const claim = await c.env.DB.prepare("DELETE FROM sessions WHERE id = ? AND token LIKE 'otp\\_%' ESCAPE '\\'").bind(session.id).run();
+  if (!claim.meta.changes) {
+    return c.json(BAD_OTP, 400);
+  }
+
   // OTP = bukti kepemilikan inbox → akun resmi aktif (Strix #23).
-  if (pwdFinal) {
+  if (new_password) {
+    if (!wasPending || wasPending.email_verified !== 0) {
+      return c.json({ error: 'Kata sandi sudah terpasang — gunakan tab Masuk.' }, 400);
+    }
+    const pwdFinal = await hashPassword(new_password);
     await c.env.DB.prepare('UPDATE users SET email_verified = 1, password_hash = ? WHERE id = ?').bind(pwdFinal, user.id).run();
   } else if (wasPending && wasPending.email_verified === 0) {
     // Aktivasi pertama tanpa new_password: sandi pendaftar pertama TAK pernah
@@ -685,7 +705,7 @@ app.get('/api/users/:pen_name', async (c) => {
 
 app.get('/api/users/:pen_name/posts', async (c) => {
   const penName = c.req.param('pen_name').replace(/^@/, '').toLowerCase();
-  const tab = c.req.query('tab') || 'original';
+  const tab = (c.req.query('tab') || 'original').toLowerCase();
   const targetUser: any = await c.env.DB.prepare('SELECT id, pen_name FROM users WHERE pen_name = ? LIMIT 1').bind(penName).first();
   if (!targetUser) return c.json({ error: 'Penulis tidak ditemukan' }, 404);
 
@@ -863,10 +883,21 @@ app.post('/api/posts', async (c) => {
 
   const { title, content, parent_id } = await c.req.json().catch(() => ({}));
 
+  // Batas ukuran konten (vuln-0002 putaran-4): klaim lama "4KB" tak pernah
+  // diimplement. Keputusan owner 15 Okt 2026: 50.000 karakter (platform untuk
+  // penulis esai/cerpen panjang). Cek SEBELUM sanitasi → input raksasa tak
+  // pernah menyentuh sanitizeRich (anti CPU DoS) maupun D1.
+  if (typeof content === 'string' && content.length > 50_000) {
+    return c.json({ error: 'Warkah maksimal 50.000 karakter.' }, 400);
+  }
+
   // Sanitasi di titik masuk API (temuan vuln-0008): konten kaya dibersihkan dengan
   // allowlist (format editor tetap), judul di-escape jadi teks biasa. Semua sink
   // render (feed, profil, notifikasi) otomatis aman dari satu titik ini.
   const cleanContent = sanitizeRich(content).trim();
+  if (cleanContent.length > 50_000) {
+    return c.json({ error: 'Warkah maksimal 50.000 karakter.' }, 400);
+  }
   if (!cleanContent || stripTags(cleanContent).trim() === '') {
     return c.json({ error: 'Isi warkah tidak boleh kosong.' }, 400);
   }
@@ -957,7 +988,13 @@ app.post('/api/posts/:id/like', async (c) => {
     const count = await c.env.DB.prepare('SELECT likes_count FROM posts WHERE id = ?').bind(postId).first('likes_count') || 0;
     return c.json({ liked: false, likes_count: count });
   } else {
-    await c.env.DB.prepare('INSERT INTO likes (user_id, post_id) VALUES (?, ?)').bind(user.id, postId).run();
+    // INSERT OR IGNORE (vuln-0005 putaran-4): like konkuren dulu meledak 500
+    // (UNIQUE constraint). Kalau kalah race → perlakukan sebagai already-liked.
+    const ins = await c.env.DB.prepare('INSERT OR IGNORE INTO likes (user_id, post_id) VALUES (?, ?)').bind(user.id, postId).run();
+    if (!ins.meta.changes) {
+      const count = await c.env.DB.prepare('SELECT likes_count FROM posts WHERE id = ?').bind(postId).first('likes_count') || 0;
+      return c.json({ liked: true, likes_count: count });
+    }
     await c.env.DB.prepare('UPDATE posts SET likes_count = (SELECT COUNT(*) FROM likes WHERE post_id = ?) WHERE id = ?').bind(postId, postId).run();
 
     // Dedup: satu notifikasi per (penerima, pelaku, jenis, pos) — toggle berulang tidak menumpuk.
@@ -992,7 +1029,13 @@ app.post('/api/posts/:id/bookmark', async (c) => {
     const count = await c.env.DB.prepare('SELECT saves_count FROM posts WHERE id = ?').bind(postId).first('saves_count') || 0;
     return c.json({ bookmarked: false, saves_count: count });
   } else {
-    await c.env.DB.prepare('INSERT INTO bookmarks (user_id, post_id) VALUES (?, ?)').bind(user.id, postId).run();
+    // INSERT OR IGNORE (vuln-0005 putaran-4): pola sama dengan like — kalah race
+    // konkuren bukan 500, melainkan already-bookmarked.
+    const ins = await c.env.DB.prepare('INSERT OR IGNORE INTO bookmarks (user_id, post_id) VALUES (?, ?)').bind(user.id, postId).run();
+    if (!ins.meta.changes) {
+      const count = await c.env.DB.prepare('SELECT saves_count FROM posts WHERE id = ?').bind(postId).first('saves_count') || 0;
+      return c.json({ bookmarked: true, saves_count: count });
+    }
     await c.env.DB.prepare('UPDATE posts SET saves_count = (SELECT COUNT(*) FROM bookmarks WHERE post_id = ?) WHERE id = ?').bind(postId, postId).run();
 
     const dup = await c.env.DB.prepare('SELECT 1 FROM notifications WHERE user_id = ? AND actor_id = ? AND type = ? AND post_id = ? LIMIT 1').bind(post.author_id, user.id, 'save', postId).first();
@@ -1009,6 +1052,13 @@ app.post('/api/posts/:id/bookmark', async (c) => {
 app.post('/api/users/:pen_name/follow', async (c) => {
   const user = await getAuthUser(c);
   if (!user) return c.json({ error: 'Silakan masuk terlebih dahulu' }, 401);
+
+  // Pembatas laju interaksi (vuln-0001 putaran-4): follow lama tanpa limit —
+  // toggle tanpa henti menguras kuota tulis D1 harian. Samakan dengan like/bookmark.
+  if (await hitRate(c.env.DB, `engage:${user.id}`, 60, 60)) {
+    return c.json({ error: 'Terlalu banyak interaksi. Tunggu sebentar.' }, 429);
+  }
+
   const penName = c.req.param('pen_name').replace(/^@/, '').toLowerCase();
   const target: any = await c.env.DB.prepare('SELECT id FROM users WHERE pen_name = ? LIMIT 1').bind(penName).first();
   if (!target) return c.json({ error: 'Penulis tidak ditemukan' }, 404);

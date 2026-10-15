@@ -48,9 +48,9 @@ Mengadopsi taksonomi resmi **Cloudflare Security Audit Harness**, seluruh lapisa
 │    └── Ephemeral Storage Lifecycle (D1 Auto-Purge OTP & Temp Data)     │
 ├────────────────────────────────────────────────────────────────────────┤
 │ 3. CLIENT-SIDE DOM & CSP (CLIENT-SIDE.md)                              │
-│    ├── Dynamic Nonce-based Content-Security-Policy (No unsafe-inline)  │
 │    ├── Anti-Clickjacking: X-Frame-Options: DENY, frame-ancestors 'none'│
 │    └── Strict HTML Entity Encoding on all User-Generated Inputs       │
+│    (Dynamic Nonce-based CSP: ROADMAP, belum diimplementasi)            │
 ├────────────────────────────────────────────────────────────────────────┤
 │ 4. DATA ISOLATION & ACCESS CONTROL (DATA-ISOLATION-AND-LIFECYCLE.md)   │
 │    ├── Zero-Raw SQL (100% Parameterized Prepared Statements in D1)     │
@@ -59,7 +59,7 @@ Mengadopsi taksonomi resmi **Cloudflare Security Audit Harness**, seluruh lapisa
 ├────────────────────────────────────────────────────────────────────────┤
 │ 5. RESOURCE EXHAUSTION & DoS (RESOURCE-EXHAUSTION-AND-AVAILABILITY.md) │
 │    ├── IP & User-based Rate Limiting (Cloudflare KV Edge Buckets)      │
-│    ├── Payload Size Enforcements (Max 4KB per warkah post)             │
+│    ├── Payload Size Enforcements (Max 50KB per warkah post)            │
 │    └── Unmetered Edge DDoS Layer 3/4/7 Absorption via Cloudflare Proxy │
 ├────────────────────────────────────────────────────────────────────────┤
 │ 6. SUPPLY CHAIN & CODE INTEGRITY (SUPPLY-CHAIN-AND-RELEASE.md)         │
