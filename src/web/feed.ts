@@ -1,6 +1,7 @@
 import { renderBottomNav } from './layout';
+import { SIBIRU_CSS, SIBIRU_MARKUP, SIBIRU_ENGINE_BOOT, SIBIRU_RUN } from './sibiru';
 
-export function renderFeedPage(user: any = null): string {
+export function renderFeedPage(user: any = null, sibiru = false): string {
   return `<!DOCTYPE html>
 <html lang="id">
 <head>
@@ -14,6 +15,7 @@ export function renderFeedPage(user: any = null): string {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800;900&family=Space+Grotesk:wght@600;700;800&family=JetBrains+Mono:wght@600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
+  ${sibiru ? SIBIRU_CSS : ''}
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -329,6 +331,7 @@ export function renderFeedPage(user: any = null): string {
   </style>
 </head>
 <body>
+  ${sibiru ? SIBIRU_MARKUP : ''}
   <div class="container">
     <div class="feed-sticky">
     <div class="top-nav">
@@ -722,6 +725,7 @@ export function renderFeedPage(user: any = null): string {
     loadFeed();
     checkUnreadNotifs();
   </script>
+  ${sibiru ? `<script>${SIBIRU_ENGINE_BOOT}</script><script>${SIBIRU_RUN}</script>` : ''}
 </body>
 </html>`;
 }

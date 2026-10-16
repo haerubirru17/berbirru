@@ -226,7 +226,8 @@ app.get('/login', async (c) => {
 
 app.get('/feed', async (c) => {
   const user = await getAuthUser(c);
-  return c.html(renderFeedPage(user));
+  const sibiru = c.req.query('selamat') === '1' && Boolean(user);
+  return c.html(renderFeedPage(user, sibiru));
 });
 
 app.get('/search', async (c) => {
