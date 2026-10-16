@@ -208,7 +208,7 @@ async function getAuthUser(c: any): Promise<{ id: string; email: string; pen_nam
     // Baris OTP pending (`otp_<hash>`, token_hash NULL) BUKAN sesi: tanpa filter ini,
     // cookie berisi hash OTP lolos sebagai sesi valid (temuan Strix #28).
     // vuln-0005: lookup via SHA-256(token) — plaintext token tak tersimpan di DB.
-    'SELECT u.id, u.email, u.pen_name, u.city, u.avatar_key, u.bio FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token_hash = ? AND s.expires_at > datetime("now") LIMIT 1'
+    'SELECT u.id, u.email, u.pen_name, u.city, u.avatar_key, u.cover_key, u.bio FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token_hash = ? AND s.expires_at > datetime("now") LIMIT 1'
   ).bind(await sha256hex(token)).first();
   return session || null;
 }
@@ -702,7 +702,7 @@ app.get('/api/users/suggest', async (c) => {
 
 app.get('/api/users/:pen_name', async (c) => {
   const penName = c.req.param('pen_name').replace(/^@/, '').toLowerCase();
-  const user: any = await c.env.DB.prepare('SELECT id, pen_name, city, bio, avatar_key, created_at FROM users WHERE pen_name = ? LIMIT 1').bind(penName).first();
+  const user: any = await c.env.DB.prepare('SELECT id, pen_name, city, bio, avatar_key, cover_key, created_at FROM users WHERE pen_name = ? LIMIT 1').bind(penName).first();
   if (!user) return c.json({ error: 'Penulis tidak ditemukan' }, 404);
 
   const postsCount = await c.env.DB.prepare('SELECT COUNT(*) as c FROM posts WHERE author_id = ?').bind(user.id).first('c') || 0;
@@ -719,27 +719,33 @@ app.get('/api/users/:pen_name', async (c) => {
   });
 });
 
-// ---- AVATAR (R2) ----
-// batas 256KB setelah kompres client (WebP 256px <= ~80KB realistis). ponytail: cap tetap, naikkan jika perlu.
-const AVATAR_MAX = 256 * 1024;
-const AVATAR_TYPES: Record<string, string> = {
+// ---- MEDIA PROFIL (R2): avatar & cover ----
+// batas setelah kompres client. ponytail: cap tetap, naikkan jika perlu.
+const MEDIA_SPEC: Record<string, { max: number; col: string; dir: string }> = {
+  avatar: { max: 256 * 1024, col: 'avatar_key', dir: 'avatar' },
+  cover:  { max: 512 * 1024, col: 'cover_key',  dir: 'cover' }
+};
+const MEDIA_TYPES: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
   'image/webp': 'webp'
 };
 
-app.put('/api/me/avatar', async (c) => {
+app.put('/api/me/media/:kind', async (c) => {
   const me = await getAuthUser(c);
   if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
 
+  const spec = MEDIA_SPEC[c.req.param('kind')];
+  if (!spec) return c.json({ error: 'Jenis media tak dikenal' }, 404);
+
   const ct = (c.req.header('Content-Type') || '').split(';')[0].trim().toLowerCase();
-  const ext = AVATAR_TYPES[ct];
+  const ext = MEDIA_TYPES[ct];
   if (!ext) return c.json({ error: 'Hanya JPEG/PNG/WebP' }, 415);
   if (!c.env.MEDIA) return c.json({ error: 'Media belum siap' }, 503);
 
   const buf = await c.req.arrayBuffer();
   if (!buf || buf.byteLength === 0) return c.json({ error: 'Berkas kosong' }, 400);
-  if (buf.byteLength > AVATAR_MAX) return c.json({ error: 'Gambar terlalu besar (maks 256KB setelah kompresi otomatis)' }, 413);
+  if (buf.byteLength > spec.max) return c.json({ error: `Gambar terlalu besar (maks ${Math.round(spec.max / 1024)}KB setelah kompresi otomatis)` }, 413);
 
   // magic bytes sungguhan — Content-Type bisa bohong
   const b = new Uint8Array(buf);
@@ -749,23 +755,23 @@ app.put('/api/me/avatar', async (c) => {
   const sniffExt = isJpeg ? 'jpg' : isPng ? 'png' : isWebP ? 'webp' : null;
   if (!sniffExt || sniffExt !== ext) return c.json({ error: 'Isi berkas tidak cocok dengan tipenya' }, 415);
 
-  // key per-user: timpa avatar lama, tak menumpuk sampah di bucket
-  const key = `avatar/${me.id}.${ext}`;
+  // key per-user+jenis: timpa lama, tak menumpuk sampah di bucket
+  const key = `${spec.dir}/${me.id}.${ext}`;
   await c.env.MEDIA.put(key, buf, { httpMetadata: { contentType: ct } });
 
-  const old: any = await c.env.DB.prepare('SELECT avatar_key FROM users WHERE id = ?').bind(me.id).first();
-  await c.env.DB.prepare('UPDATE users SET avatar_key = ? WHERE id = ?').bind(key, me.id).run();
+  const old: any = await c.env.DB.prepare(`SELECT ${spec.col} AS k FROM users WHERE id = ?`).bind(me.id).first();
+  await c.env.DB.prepare(`UPDATE users SET ${spec.col} = ? WHERE id = ?`).bind(key, me.id).run();
 
   // buang objek lama kalau ekstensinya beda
-  if (old?.avatar_key && old.avatar_key !== key) {
-    await c.env.MEDIA.delete(old.avatar_key).catch(() => {});
+  if (old?.k && old.k !== key) {
+    await c.env.MEDIA.delete(old.k).catch(() => {});
   }
 
   // cache-bust via versi = epoch saat upload
-  return c.json({ ok: true, avatar_url: `/media/${key}?v=${Date.now()}` });
+  return c.json({ ok: true, url: `/media/${key}?v=${Date.now()}` });
 });
 
-app.get('/media/avatar/*', async (c) => {
+app.get('/media/*', async (c) => {
   const key = c.req.path.replace('/media/', '');
   if (!/^[a-z0-9_-]+\/[a-z0-9_-]+\.(jpg|png|webp)$/i.test(key)) return c.json({ error: 'Key tak valid' }, 400);
   if (!c.env.MEDIA) return c.json({ error: 'Media belum siap' }, 503);

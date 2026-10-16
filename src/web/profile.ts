@@ -267,7 +267,8 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
 
     <!-- Profile Card with Cover/Banner Header -->
     <div class="profile-card">
-      <div class="cover-banner">
+      <div class="cover-banner" ${isMe ? `onclick="if(!event.target.closest('.banner-floating-nav'))document.getElementById('coverInput').click()" style="cursor:pointer" title="Ganti foto sampul"` : ''}>
+      ${isMe ? '<input type="file" id="coverInput" data-kind="cover" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="pickMedia(this)">' : ''}
         <!-- Floating Navigation di dalam banner -->
         <div class="banner-floating-nav">
           <a href="/feed" class="nav-btn-glass">
@@ -314,7 +315,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
             <div class="avatar-box" id="avatarLetter" ${isMe ? 'onclick="document.getElementById(\'avatarInput\').click()" style="cursor:pointer" title="Ganti foto profil"' : ''}>
               ${(penName[0] || 'D').toUpperCase()}
             </div>
-            ${isMe ? '<input type="file" id="avatarInput" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="pickAvatar(this)">' : ''}
+            ${isMe ? '<input type="file" id="avatarInput" data-kind="avatar" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="pickMedia(this)">' : ''}
             ${!isMe ? `
               <button class="btn-follow-badge" onclick="followUser('${penName}')" aria-label="Ikuti Penulis" title="Ikuti Penulis">
                 <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
@@ -496,6 +497,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
           currentUserData = data.user;
           document.getElementById('penNameDisplay').textContent = '@' + data.user.pen_name;
           applyAvatar(data.user.avatar_key, data.user.pen_name);
+          applyCover(data.user.cover_key);
           document.getElementById('cityDisplay').textContent = data.user.city || 'Nusantara';
           document.getElementById('bioDisplay').textContent = '"' + (data.user.bio || 'Goresan perenungan rasa dan bait kata di Berbirru.') + '"';
           document.getElementById('countPosts').textContent = data.user.posts_count || 0;
@@ -515,7 +517,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       return '<div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.25;font-family:JetBrains Mono,monospace;"><span style="font-size:11px;font-weight:800;color:#0B192C;">' + timePart + ' WIB</span><span style="font-size:9.5px;font-weight:700;color:#64748B;">' + datePart + '</span></div>';
     }
 
-    // ---- AVATAR ----
+    // ---- MEDIA PROFIL (avatar & cover) ----
     function avatarKeyValid(key) {
       return new RegExp('^[a-z0-9_-]+/[a-z0-9_-]+[.](jpg|png|webp)$', 'i').test(String(key || ''));
     }
@@ -532,22 +534,33 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
         box.textContent = (penName[0] || 'D').toUpperCase();
       }
     }
+    function applyCover(key) {
+      const el = document.querySelector('.cover-banner');
+      if (!el) return;
+      if (avatarKeyValid(key)) {
+        el.style.background = 'linear-gradient(180deg, rgba(11,25,44,0.25), rgba(11,25,44,0.05)), url(/media/' + key + ')';
+        el.style.backgroundSize = 'cover';
+        el.style.backgroundPosition = 'center';
+      }
+    }
 
-    async function pickAvatar(input) {
+    async function pickMedia(input) {
+      const kind = input.dataset.kind || 'avatar';
       const file = input.files && input.files[0];
       if (!file) return;
       input.value = '';
       if (!new RegExp('^image/(jpeg|png|webp)$').test(file.type)) { alert('Pilih gambar JPG, PNG, atau WebP.'); return; }
       if (file.size > 15 * 1024 * 1024) { alert('Gambar terlalu besar (maks 15MB sebelum dikompres).'); return; }
       try {
-        const blob = await compressImage(file, 256);
-        const res = await fetch('/api/me/avatar', {
+        const size = kind === 'cover' ? 1080 : 256;
+        const blob = await compressImage(file, size, kind === 'cover');
+        const res = await fetch('/api/me/media/' + kind, {
           method: 'PUT',
           headers: { 'Content-Type': blob.type },
           body: blob
         });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) { alert(data.error || 'Gagal menyimpan avatar.'); return; }
+        if (!res.ok) { alert(data.error || 'Gagal menyimpan gambar.'); return; }
         await loadUserData();
         // refresh kartu feed di profil
         loadProfilePosts('original');
@@ -556,19 +569,32 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       }
     }
 
-    function compressImage(file, size) {
+    function compressImage(file, size, wide) {
       return new Promise((resolve, reject) => {
         const img = new Image();
         const url = URL.createObjectURL(file);
         img.onload = () => {
           URL.revokeObjectURL(url);
           const canvas = document.createElement('canvas');
-          canvas.width = size; canvas.height = size;
+          if (wide) {
+            // cover: lebar tetap, tinggi proporsional (dipangkas 16:9 maks)
+            canvas.width = size;
+            canvas.height = Math.min(Math.round(size * 9 / 16), Math.round(size * img.height / img.width));
+          } else {
+            canvas.width = size; canvas.height = size;
+          }
           const ctx = canvas.getContext('2d');
           if (!ctx) { reject(new Error('canvas')); return; }
-          // cover-crop ke kotak
-          const s = Math.min(img.width, img.height);
-          ctx.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size);
+          if (wide) {
+            // ambil bagian tengah vertikal selebar gambar
+            const th = Math.round(img.width * canvas.height / canvas.width);
+            const ty = Math.max(0, Math.round((img.height - th) / 2));
+            ctx.drawImage(img, 0, ty, img.width, th, 0, 0, canvas.width, canvas.height);
+          } else {
+            // cover-crop ke kotak
+            const s = Math.min(img.width, img.height);
+            ctx.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size);
+          }
           canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob')), 'image/webp', 0.85);
         };
         img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode')); };
@@ -576,7 +602,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       });
     }
 
-    window.pickAvatar = pickAvatar;
+    window.pickMedia = pickMedia;
 
     function escapeHtml(t) {
       return String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
