@@ -311,9 +311,10 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       <div class="profile-meta-wrap">
         <div class="avatar-action-row">
           <div class="avatar-wrapper">
-            <div class="avatar-box" id="avatarLetter">
+            <div class="avatar-box" id="avatarLetter" ${isMe ? 'onclick="document.getElementById(\'avatarInput\').click()" style="cursor:pointer" title="Ganti foto profil"' : ''}>
               ${(penName[0] || 'D').toUpperCase()}
             </div>
+            ${isMe ? '<input type="file" id="avatarInput" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="pickAvatar(this)">' : ''}
             ${!isMe ? `
               <button class="btn-follow-badge" onclick="followUser('${penName}')" aria-label="Ikuti Penulis" title="Ikuti Penulis">
                 <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
@@ -494,7 +495,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
         if (data.user) {
           currentUserData = data.user;
           document.getElementById('penNameDisplay').textContent = '@' + data.user.pen_name;
-          document.getElementById('avatarLetter').textContent = (data.user.pen_name[0] || 'D').toUpperCase();
+          applyAvatar(data.user.avatar_key, data.user.pen_name);
           document.getElementById('cityDisplay').textContent = data.user.city || 'Nusantara';
           document.getElementById('bioDisplay').textContent = '"' + (data.user.bio || 'Goresan perenungan rasa dan bait kata di Berbirru.') + '"';
           document.getElementById('countPosts').textContent = data.user.posts_count || 0;
@@ -514,6 +515,69 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       return '<div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.25;font-family:JetBrains Mono,monospace;"><span style="font-size:11px;font-weight:800;color:#0B192C;">' + timePart + ' WIB</span><span style="font-size:9.5px;font-weight:700;color:#64748B;">' + datePart + '</span></div>';
     }
 
+    // ---- AVATAR ----
+    function avatarKeyValid(key) {
+      return new RegExp('^[a-z0-9_-]+/[a-z0-9_-]+[.](jpg|png|webp)$', 'i').test(String(key || ''));
+    }
+    function applyAvatar(key, penName) {
+      const box = document.getElementById('avatarLetter');
+      if (!box) return;
+      if (avatarKeyValid(key)) {
+        box.textContent = '';
+        box.style.backgroundImage = 'url(/media/' + key + ')';
+        box.style.backgroundSize = 'cover';
+        box.style.backgroundPosition = 'center';
+        box.style.color = 'transparent';
+      } else {
+        box.textContent = (penName[0] || 'D').toUpperCase();
+      }
+    }
+
+    async function pickAvatar(input) {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      input.value = '';
+      if (!new RegExp('^image/(jpeg|png|webp)$').test(file.type)) { alert('Pilih gambar JPG, PNG, atau WebP.'); return; }
+      if (file.size > 15 * 1024 * 1024) { alert('Gambar terlalu besar (maks 15MB sebelum dikompres).'); return; }
+      try {
+        const blob = await compressImage(file, 256);
+        const res = await fetch('/api/me/avatar', {
+          method: 'PUT',
+          headers: { 'Content-Type': blob.type },
+          body: blob
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) { alert(data.error || 'Gagal menyimpan avatar.'); return; }
+        await loadUserData();
+        // refresh kartu feed di profil
+        loadProfilePosts('original');
+      } catch (e) {
+        alert('Gagal memproses gambar. Coba gambar lain.');
+      }
+    }
+
+    function compressImage(file, size) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          const canvas = document.createElement('canvas');
+          canvas.width = size; canvas.height = size;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) { reject(new Error('canvas')); return; }
+          // cover-crop ke kotak
+          const s = Math.min(img.width, img.height);
+          ctx.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size);
+          canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob')), 'image/webp', 0.85);
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode')); };
+        img.src = url;
+      });
+    }
+
+    window.pickAvatar = pickAvatar;
+
     function escapeHtml(t) {
       return String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
@@ -530,7 +594,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
         container.innerHTML = data.posts.map(p => \`
           <div class="thread-card">
             <div class="thread-header-soft">
-              <div class="thread-avatar-clip" style="background:\${getAvatarColor(p.pen_name)};">
+              <div class="thread-avatar-clip" style="background:\${getAvatarColor(p.pen_name)};\${p.avatar_key ? \`background-image:url(/media/\${p.avatar_key});background-size:cover;background-position:center;color:transparent;\` : ''}">
                 \${(p.pen_name[0] || 'D').toUpperCase()}
                 <svg class="paperclip-svg" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
               </div>
