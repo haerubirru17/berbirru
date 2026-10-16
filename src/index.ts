@@ -201,14 +201,14 @@ app.use('*', async (c, next) => {
 });
 
 // ---- AUTH HELPERS ----
-async function getAuthUser(c: any): Promise<{ id: string; email: string; pen_name: string; city: string; bio: string } | null> {
+async function getAuthUser(c: any): Promise<{ id: string; email: string; pen_name: string; city: string; avatar_key: string | null; cover_key: string | null; display_name: string | null; bio: string } | null> {
   const token = getCookie(c, 'berbirru_session');
   if (!token) return null;
   const session: any = await c.env.DB.prepare(
     // Baris OTP pending (`otp_<hash>`, token_hash NULL) BUKAN sesi: tanpa filter ini,
     // cookie berisi hash OTP lolos sebagai sesi valid (temuan Strix #28).
     // vuln-0005: lookup via SHA-256(token) — plaintext token tak tersimpan di DB.
-    'SELECT u.id, u.email, u.pen_name, u.city, u.avatar_key, u.cover_key, u.bio FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token_hash = ? AND s.expires_at > datetime("now") LIMIT 1'
+    'SELECT u.id, u.email, u.pen_name, u.city, u.avatar_key, u.cover_key, u.display_name, u.bio FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token_hash = ? AND s.expires_at > datetime("now") LIMIT 1'
   ).bind(await sha256hex(token)).first();
   return session || null;
 }
@@ -667,7 +667,7 @@ app.patch('/api/users/me', async (c) => {
     return c.json({ error: 'Terlalu banyak perubahan profil. Tunggu sebentar.' }, 429);
   }
 
-  const { pen_name, city, bio } = await c.req.json().catch(() => ({}));
+  const { pen_name, city, bio, display_name } = await c.req.json().catch(() => ({}));
 
   let cleanPenName = user.pen_name;
   if (pen_name && pen_name.trim() !== user.pen_name) {
@@ -683,12 +683,13 @@ app.patch('/api/users/me', async (c) => {
   // escapeHtml) — lihat feed.ts & profile.ts (vuln-0008).
   const cleanCity = city !== undefined ? String(city).trim().slice(0, 60) : user.city;
   const cleanBio = bio !== undefined ? String(bio).trim().slice(0, 300) : user.bio;
+  const cleanDisplayName = display_name !== undefined ? String(display_name).trim().slice(0, 40) : user.display_name;
 
   await c.env.DB.prepare(
-    'UPDATE users SET pen_name = ?, city = ?, bio = ? WHERE id = ?'
-  ).bind(cleanPenName, cleanCity, cleanBio, user.id).run();
+    'UPDATE users SET pen_name = ?, city = ?, bio = ?, display_name = ? WHERE id = ?'
+  ).bind(cleanPenName, cleanCity, cleanBio, cleanDisplayName, user.id).run();
 
-  return c.json({ ok: true, user: { id: user.id, pen_name: cleanPenName, city: cleanCity, bio: cleanBio } });
+  return c.json({ ok: true, user: { id: user.id, pen_name: cleanPenName, city: cleanCity, bio: cleanBio, display_name: cleanDisplayName } });
 });
 
 app.get('/api/users/suggest', async (c) => {
@@ -702,7 +703,7 @@ app.get('/api/users/suggest', async (c) => {
 
 app.get('/api/users/:pen_name', async (c) => {
   const penName = c.req.param('pen_name').replace(/^@/, '').toLowerCase();
-  const user: any = await c.env.DB.prepare('SELECT id, pen_name, city, bio, avatar_key, cover_key, created_at FROM users WHERE pen_name = ? LIMIT 1').bind(penName).first();
+  const user: any = await c.env.DB.prepare('SELECT id, pen_name, city, bio, avatar_key, cover_key, display_name, created_at FROM users WHERE pen_name = ? LIMIT 1').bind(penName).first();
   if (!user) return c.json({ error: 'Penulis tidak ditemukan' }, 404);
 
   const postsCount = await c.env.DB.prepare('SELECT COUNT(*) as c FROM posts WHERE author_id = ?').bind(user.id).first('c') || 0;

@@ -107,7 +107,15 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       padding: 4px 10px; border-radius: 99px; border: 1.5px solid var(--ink);
       box-shadow: 2px 2px 0 var(--shadow-ink); display: inline-flex; align-items: center; gap: 4px;
     }
-    .pen-name-group { display: flex; flex-direction: column; margin-bottom: 8px; }
+    .pen-name-group { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; }
+    .pen-name {
+      font-family: 'Space Grotesk', sans-serif; font-size: 21px; font-weight: 900; color: var(--ink);
+      letter-spacing: -0.5px; line-height: 1.15;
+    }
+    .display-name-main {
+      font-size: 12.5px; font-weight: 700; color: #64748B; letter-spacing: 0.2px;
+    }
+    .display-name-main::before { content: '• '; color: #94A3B8; }
     .bio-box {
       font-size: 13.5px; font-weight: 500; line-height: 1.5; color: #334155; margin-bottom: 14px;
     }
@@ -331,8 +339,8 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
         </div>
 
         <div class="pen-name-group">
-          <span class="display-name-main">${penName}</span>
           <span class="pen-name" id="penNameDisplay">@${penName}</span>
+          <span class="display-name-main" id="displayNameDisplay">${penName}</span>
         </div>
 
         <div class="bio-box" id="bioDisplay">
@@ -360,8 +368,12 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     <div class="edit-modal" id="editModal">
       <h3 style="font-family:'Space Grotesk';font-size:15px;font-weight:800;margin-bottom:10px;">Perbarui Profil Anda</h3>
       <div style="margin-bottom:10px;">
-        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Nama Pena</label>
+        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Nama Pena <span style="color:#64748B;font-weight:600;">(@handle, unik)</span></label>
         <input type="text" id="editPenName" style="width:100%;padding:8px;border:2px solid #0B192C;border-radius:8px;font-weight:700;">
+      </div>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Nama Tampilan <span style="color:#64748B;font-weight:600;">(opsional)</span></label>
+        <input type="text" id="editDisplayName" maxlength="40" placeholder="Kosongkan = pakai nama pena" style="width:100%;padding:8px;border:2px solid #0B192C;border-radius:8px;font-weight:700;">
       </div>
       <div style="margin-bottom:10px;">
         <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Kota / Asal</label>
@@ -429,6 +441,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
 
       if (show && currentUserData) {
         document.getElementById('editPenName').value = currentUserData.pen_name;
+        document.getElementById('editDisplayName').value = currentUserData.display_name || '';
         document.getElementById('editCity').value = currentUserData.city || 'Nusantara';
         document.getElementById('editBio').value = currentUserData.bio || '';
         document.getElementById('editPassword').value = '';
@@ -438,6 +451,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
 
     async function saveProfile() {
       const pen_name = document.getElementById('editPenName').value.trim();
+      const display_name = document.getElementById('editDisplayName').value.trim();
       const city = document.getElementById('editCity').value.trim();
       const bio = document.getElementById('editBio').value.trim();
 
@@ -445,7 +459,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
         const res = await fetch('/api/users/me', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pen_name, city, bio })
+          body: JSON.stringify({ pen_name, display_name, city, bio })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Gagal menyimpan profil');
@@ -496,6 +510,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
         if (data.user) {
           currentUserData = data.user;
           document.getElementById('penNameDisplay').textContent = '@' + data.user.pen_name;
+          document.getElementById('displayNameDisplay').textContent = data.user.display_name || data.user.pen_name;
           applyAvatar(data.user.avatar_key, data.user.pen_name);
           applyCover(data.user.cover_key);
           document.getElementById('cityDisplay').textContent = data.user.city || 'Nusantara';
@@ -538,7 +553,8 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       const el = document.querySelector('.cover-banner');
       if (!el) return;
       if (avatarKeyValid(key)) {
-        el.style.background = 'linear-gradient(180deg, rgba(11,25,44,0.25), rgba(11,25,44,0.05)), url(/media/' + key + ')';
+        // foto + ramp gradient: gelap tipis di atas (kontras nav), fade warna kartu di bawah (nyatu kartu)
+        el.style.background = 'linear-gradient(180deg, rgba(11,25,44,0.30) 0%, rgba(11,25,44,0.05) 30%, rgba(255,255,255,0) 55%, #FFFFFF 100%), url(/media/' + key + ')';
         el.style.backgroundSize = 'cover';
         el.style.backgroundPosition = 'center';
       }
