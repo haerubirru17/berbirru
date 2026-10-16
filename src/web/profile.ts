@@ -107,7 +107,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       padding: 4px 10px; border-radius: 99px; border: 1.5px solid var(--ink);
       box-shadow: 2px 2px 0 var(--shadow-ink); display: inline-flex; align-items: center; gap: 4px;
     }
-    .pen-name-group { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; }
+    .pen-name-group { display: flex; flex-direction: row; flex-wrap: wrap; align-items: baseline; column-gap: 7px; row-gap: 2px; margin-bottom: 8px; }
     .pen-name {
       font-family: 'Space Grotesk', sans-serif; font-size: 21px; font-weight: 900; color: var(--ink);
       letter-spacing: -0.5px; line-height: 1.15;
@@ -380,8 +380,8 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
         <input type="text" id="editCity" style="width:100%;padding:8px;border:2px solid #0B192C;border-radius:8px;font-weight:700;">
       </div>
       <div style="margin-bottom:12px;">
-        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Bio / Catatan Pribadi</label>
-        <textarea id="editBio" style="width:100%;height:60px;padding:8px;border:2px solid #0B192C;border-radius:8px;font-weight:600;"></textarea>
+        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Bio / Catatan Pribadi <span id="bioCount" style="color:#64748B;font-weight:600;float:right;"></span></label>
+        <textarea id="editBio" maxlength="300" oninput="document.getElementById('bioCount').textContent=this.value.length + '/300';" style="width:100%;height:60px;padding:8px;border:2px solid #0B192C;border-radius:8px;font-weight:600;"></textarea>
       </div>
       <div style="margin-bottom:12px;">
         <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Kata Sandi Baru <span style="color:#64748B;font-weight:600;">(opsional)</span></label>
@@ -444,6 +444,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
         document.getElementById('editDisplayName').value = currentUserData.display_name || '';
         document.getElementById('editCity').value = currentUserData.city || 'Nusantara';
         document.getElementById('editBio').value = currentUserData.bio || '';
+        document.getElementById('bioCount').textContent = (currentUserData.bio || '').length + '/300';
         document.getElementById('editPassword').value = '';
         document.getElementById('editCurrentPassword').value = '';
       }
