@@ -1,4 +1,5 @@
 import { renderBottomNav } from './layout';
+import { NOTIFY_HTML } from './notify';
 
 export function renderProfilePage(penName: string, isMe = false, currentUser: any = null): string {
   return `<!DOCTYPE html>
@@ -284,7 +285,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
                 <svg style="width:14px;height:14px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                 <span>Edit Profil</span>
               </div>
-              <div class="settings-item" onclick="alert('BERBIRRU — Platform sastra & kolaborasi warkah di edge.'); toggleSettingsMenu(false);">
+              <div class="settings-item" onclick="bbToast('BERBIRRU — Platform sastra & kolaborasi warkah di edge.', 'info'); toggleSettingsMenu(false);">
                 <svg style="width:14px;height:14px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
                 <span>Informasi Akun</span>
               </div>
@@ -294,12 +295,12 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
                 <span>Keluar Akun</span>
               </div>
             ` : `
-              <div class="settings-item" onclick="navigator.clipboard.writeText(location.href); alert('Tautan profil disalin!'); toggleSettingsMenu(false);">
+              <div class="settings-item" onclick="navigator.clipboard.writeText(location.href); bbToast('Tautan profil disalin!', 'success'); toggleSettingsMenu(false);">
                 <svg style="width:14px;height:14px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                 <span>Salin Tautan</span>
               </div>
               <div class="settings-divider"></div>
-              <div class="settings-item danger" onclick="alert('Laporan diterima untuk ditinjau.'); toggleSettingsMenu(false);">
+              <div class="settings-item danger" onclick="bbToast('Laporan diterima untuk ditinjau.', 'success'); toggleSettingsMenu(false);">
                 <svg style="width:14px;height:14px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>
                 <span>Laporkan Akun</span>
               </div>
@@ -467,12 +468,13 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
         toggleEditModal(false);
         window.location.href = '/u/' + encodeURIComponent(data.user.pen_name);
       } catch (err) {
-        alert(err.message);
+        bbToast(err.message || 'Gagal menyimpan profil.', 'error');
       }
     }
 
     async function handleLogout() {
-      if (!confirm('Apakah Anda yakin ingin keluar dari akun?')) return;
+      const ok = await bbConfirm('Apakah Anda yakin ingin keluar dari akun?', { title: 'Keluar akun?', danger: true, confirmText: 'Ya, keluar' });
+      if (!ok) return;
       await fetch('/api/auth/logout', { method: 'POST' });
       window.location.href = '/login';
     }
@@ -513,6 +515,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       const timePart = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' }).replace(':', '.');
       return '<div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.25;font-family:JetBrains Mono,monospace;"><span style="font-size:11px;font-weight:800;color:#0B192C;">' + timePart + ' WIB</span><span style="font-size:9.5px;font-weight:700;color:#64748B;">' + datePart + '</span></div>';
     }
+
 
     function escapeHtml(t) {
       return String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -569,7 +572,8 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     }
 
     async function deletePost(postId) {
-      if (!confirm('Hapus warkah ini secara permanen?')) return;
+      const ok = await bbConfirm('Warkah yang dihapus tidak dapat dikembalikan.', { title: 'Hapus warkah ini?', danger: true, confirmText: 'Ya, hapus' });
+      if (!ok) return;
       try {
         const res = await fetch('/api/posts/' + postId, { method: 'DELETE' });
         const data = await res.json();
@@ -577,13 +581,14 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
         loadProfilePosts('original');
         loadUserData();
       } catch (err) {
-        alert(err.message);
+        bbToast(err.message || 'Gagal menghapus.', 'error');
       }
     }
 
     loadUserData();
     loadProfilePosts('original');
   </script>
+  ${NOTIFY_HTML}
 </body>
 </html>`;
 }

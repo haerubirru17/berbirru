@@ -13,6 +13,7 @@ export const NOTIFY_HTML = `
   .swal2-styled.swal2-confirm, .swal2-styled.swal2-deny, .swal2-styled.swal2-cancel { border: 2px solid #0B192C !important; border-radius: 8px !important; font-weight: 800 !important; font-size: 13px !important; box-shadow: 2px 2px 0 #0B192C !important; transition: transform 0.06s, box-shadow 0.06s; }
   .swal2-styled.swal2-confirm:active, .swal2-styled.swal2-deny:active, .swal2-styled.swal2-cancel:active { transform: translate(2px,2px); box-shadow: 0 0 0 #0B192C !important; }
   .swal2-styled.swal2-confirm { background: #1D61E7 !important; color: #FFF !important; }
+  .swal2-styled.swal2-confirm.swal-btn-danger { background: #DC2626 !important; }
   .swal2-styled.swal2-deny, .swal2-styled.swal2-cancel { background: #FFF !important; color: #0B192C !important; }
   .swal2-toast { border: 2px solid #0B192C !important; border-radius: 10px !important; box-shadow: 3px 3px 0 rgba(11,25,44,0.9) !important; background: #FFF !important; margin-bottom: 70px !important; }
   .swal2-timer-progress-bar { background: #1D61E7 !important; }
@@ -37,7 +38,7 @@ export const NOTIFY_HTML = `
       });
     });
   }
-  function bbConfirm(_title, text, opts) {
+  function bbConfirm(text, opts) {
     opts = opts || {};
     return new Promise(function (resolve) {
       _swalReady(function () {
@@ -49,6 +50,7 @@ export const NOTIFY_HTML = `
           confirmButtonText: opts.confirmText || 'Ya, lanjutkan',
           cancelButtonText: opts.cancelText || 'Batal',
           confirmButtonColor: opts.danger ? '#DC2626' : '#1D61E7',
+          customClass: { confirmButton: opts.danger ? 'swal-btn-danger' : '' },
           focusCancel: true,
           reverseButtons: true
         }).then(function (r) { resolve(!!r.isConfirmed); });

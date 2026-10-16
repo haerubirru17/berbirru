@@ -1,3 +1,5 @@
+import { NOTIFY_HTML } from './notify';
+
 export function renderLoginPage(turnstileSiteKey = ''): string {
   return `<!DOCTYPE html>
 <html lang="id">
@@ -267,7 +269,7 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
 
     async function handleSendOtp() {
       const email = document.getElementById('otpEmailInput').value.trim();
-      if (!email) return alert('Email wajib diisi!');
+      if (!email) return bbToast('Email wajib diisi!', 'warning');
 
       const turnstileToken = getTurnstileToken('turnstileOtpWidget');
       const btn = document.getElementById('btnSendOtp');
@@ -286,10 +288,10 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
         document.getElementById('otpSentEmail').textContent = email;
         document.getElementById('otpStep1').style.display = 'none';
         document.getElementById('otpStep2').style.display = 'block';
-        alert(data.message || 'Kode OTP berhasil dikirim!');
+        bbToast(data.message || 'Kode OTP berhasil dikirim!', 'success');
       } catch (err) {
         resetTurnstile();
-        alert(err.message);
+        bbToast(err.message || 'Terjadi kesalahan.', 'error');
       } finally {
         btn.disabled = false;
         btn.querySelector('span').textContent = 'Kirim Kode OTP';
@@ -299,7 +301,7 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
     async function handleVerifyOtp() {
       const email = document.getElementById('otpEmailInput').value.trim();
       const otp = document.getElementById('otpCodeInput').value.trim();
-      if (!otp || otp.length !== 6) return alert('Masukkan 6 digit kode OTP!');
+      if (!otp || otp.length !== 6) return bbToast('Masukkan 6 digit kode OTP!', 'warning');
 
       const turnstileToken = getTurnstileToken('turnstileOtpWidget');
       const newPwd = (document.getElementById('otpNewPassword') || {}).value || '';
@@ -321,7 +323,7 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
         resetTurnstile();
         window.location.href = '/feed';
       } catch (err) {
-        alert(err.message);
+        bbToast(err.message || 'Terjadi kesalahan.', 'error');
       } finally {
         btn.disabled = false;
         btn.querySelector('span').textContent = 'Verifikasi & Masuk';
@@ -356,17 +358,18 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
           document.getElementById('otpSentEmail').textContent = data.email || email;
           document.getElementById('otpStep1').style.display = 'none';
           document.getElementById('otpStep2').style.display = 'block';
-          alert(data.message || 'Kami sudah mengirim kode verifikasi ke emailmu.');
+          bbToast(data.message || 'Kami sudah mengirim kode verifikasi ke emailmu.', 'success');
           return;
         }
 
         window.location.href = '/feed';
       } catch (err) {
         resetTurnstile();
-        alert(err.message);
+        bbToast(err.message || 'Terjadi kesalahan.', 'error');
       }
     }
   </script>
+  ${NOTIFY_HTML}
 </body>
 </html>`;
 }
