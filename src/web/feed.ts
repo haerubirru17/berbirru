@@ -1,4 +1,5 @@
 import { renderBottomNav } from './layout';
+import { NOTIFY_HTML } from './notify';
 
 export function renderFeedPage(user: any = null): string {
   return `<!DOCTYPE html>
@@ -704,7 +705,7 @@ export function renderFeedPage(user: any = null): string {
         const res = await fetch('/api/users/' + encodeURIComponent(penName) + '/follow', { method: 'POST' });
         const data = await res.json();
         if (data.error) return alert(data.error);
-        alert(data.following ? 'Berhasil mengikuti @' + penName : 'Batal mengikuti @' + penName);
+        bbToast(data.following ? 'Berhasil mengikuti @' + penName : 'Batal mengikuti @' + penName, data.following ? 'success' : 'info');
       } catch (err) {
         console.error(err);
       }
@@ -722,6 +723,7 @@ export function renderFeedPage(user: any = null): string {
     loadFeed();
     checkUnreadNotifs();
   </script>
+  ${NOTIFY_HTML}
 </body>
 </html>`;
 }

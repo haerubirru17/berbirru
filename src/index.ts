@@ -22,6 +22,7 @@ import { renderProfilePage } from './web/profile';
 import { renderNotificationsPage } from './web/notifications';
 import { sendOtpEmail } from './mail';
 import { OG_IMAGE_BASE64 } from './assets';
+import { VENDOR_SWEETALERT2_JS, VENDOR_SWEETALERT2_CSS } from './vendor';
 
 export interface Env {
   DB: D1Database;
@@ -284,6 +285,29 @@ app.get('/og-image.png', (c) => {
       'Content-Type': 'image/jpeg',
       'Content-Length': binary.length.toString(),
       'Cache-Control': 'public, max-age=86400',
+    },
+  });
+});
+
+// Vendor JS (SweetAlert2) — file statis ter-commit, immutable cache: js lib tak pernah berubah tanpa deploy.
+app.get('/vendor/sweetalert2.js', (c) => {
+  const js = VENDOR_SWEETALERT2_JS;
+  return new Response(js, {
+    headers: {
+      'Content-Type': 'application/javascript; charset=utf-8',
+      'Content-Length': js.length.toString(),
+      'Cache-Control': 'public, max-age=31536000, immutable',
+    },
+  });
+});
+
+app.get('/vendor/sweetalert2.css', (c) => {
+  const css = VENDOR_SWEETALERT2_CSS;
+  return new Response(css, {
+    headers: {
+      'Content-Type': 'text/css; charset=utf-8',
+      'Content-Length': css.length.toString(),
+      'Cache-Control': 'public, max-age=31536000, immutable',
     },
   });
 });
