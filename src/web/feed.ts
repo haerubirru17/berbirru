@@ -560,14 +560,14 @@ export function renderFeedPage(user: any = null): string {
     function scrollToPost(id) {
       const el = document.getElementById('post-' + id);
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      else alert('Warkah induk dimuat di bagian sebelumnya.');
+      else bbToast('Warkah induk dimuat di bagian sebelumnya.', 'info');
     }
 
     function openStudioModal(parentId = null, parentName = '') {
       if (!isUserLoggedIn) {
-        if (confirm('Anda perlu masuk terlebih dahulu untuk menggoreskan warkah. Buka halaman masuk?')) {
-          window.location.href = '/login';
-        }
+        bbConfirm('Anda perlu masuk terlebih dahulu untuk menggoreskan warkah. Buka halaman masuk?').then(function (ok) {
+          if (ok) window.location.href = '/login';
+        });
         return;
       }
       currentChainParentId = parentId;
@@ -651,7 +651,7 @@ export function renderFeedPage(user: any = null): string {
     async function submitStudioWarkah() {
       const title = document.getElementById('studioTitle').value.trim();
       const content = document.getElementById('editorCanvas').innerHTML.trim();
-      if (!content || stripHtml(content).trim() === '') return alert('Tuliskan isi warkah terlebih dahulu.');
+      if (!content || stripHtml(content).trim() === '') return bbToast('Tuliskan isi warkah terlebih dahulu.', 'warning');
 
       try {
         const res = await fetch('/api/posts', {
@@ -664,7 +664,7 @@ export function renderFeedPage(user: any = null): string {
         closeStudioModal();
         loadFeed();
       } catch (err) {
-        alert(err.message);
+        bbToast(err.message || 'Terjadi kesalahan.', 'error');
       }
     }
 
@@ -704,7 +704,7 @@ export function renderFeedPage(user: any = null): string {
       try {
         const res = await fetch('/api/users/' + encodeURIComponent(penName) + '/follow', { method: 'POST' });
         const data = await res.json();
-        if (data.error) return alert(data.error);
+        if (data.error) return bbToast(data.error, 'error');
         bbToast(data.following ? 'Berhasil mengikuti @' + penName : 'Batal mengikuti @' + penName, data.following ? 'success' : 'info');
       } catch (err) {
         console.error(err);
