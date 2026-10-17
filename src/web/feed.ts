@@ -128,8 +128,12 @@ export function renderFeedPage(user: any = null): string {
       display: flex; align-items: center; gap: 6px;
     }
     .thread-parent-connector:hover { background: var(--bg-blue-subtle); }
-    /* Chip sambungan di baris aksi (mantan bar pemakan-ruang) */
-    .chain-toggle { color: var(--blue-primary); }
+    /* Bar expand sambungan ala TikTok (default lipat) */
+    .chain-bar {
+      border-top: 1.5px dashed #CBD5E1; background: #F8FAFC; padding: 8px 12px;
+      font-size: 11.5px; font-weight: 800; color: var(--blue-primary); cursor: pointer; text-align: center;
+    }
+    .chain-bar:active { background: var(--bg-blue-subtle); }
     .chain-inline { padding: 9px 12px 4px; background: #FBFDFF; border-top: 1.5px solid #E2E8F0; }
     .mini-bait { position: relative; background: #F4F8FE; border: 1.5px solid #C9D6E8; border-radius: 9px; padding: 7px 9px; margin-bottom: 7px; }
     .mini-who { font-size: 10.5px; font-weight: 900; color: var(--blue-primary); margin-bottom: 3px; }
@@ -536,12 +540,10 @@ export function renderFeedPage(user: any = null): string {
                 <svg class="ico" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                 <span>\${p.likes_count || 0} Terpaut</span>
               </button>
-              \${p.chains_count > 0 ? \`
-              <button class="act-btn chain-toggle" id="chainbtn-\${p.id}" onclick="event.stopPropagation(); toggleChain('\${p.id}')" aria-label="Lihat sambungan">
-                <svg class="ico" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                <span id="chainlbl-\${p.id}">\u26d3 \${p.chains_count} \u25be</span>
+              <button class="act-btn \${isSavedClass}" onclick="bookmarkPost('\${p.id}', this)">
+                <svg class="ico" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                <span>\${p.saves_count || 0} Simpan</span>
               </button>
-              \` : ''}
             </div>
             <button class="chain-btn" data-title="\${escapeHtml(p.title || p.pen_name)}" onclick="openStudioModal('\${p.id}', this.dataset.title)">
               <svg class="ico" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
@@ -549,6 +551,9 @@ export function renderFeedPage(user: any = null): string {
             </button>
           </div>
           \${p.chains_count > 0 ? \`
+            <div class="chain-bar" id="chainbar-\${p.id}" onclick="toggleChain('\${p.id}')">
+              <span id="chainbar-label-\${p.id}">\u26d3 \${p.chains_count} sambungan \u2014 ketuk untuk lihat \u25bc</span>
+            </div>
             <div class="chain-inline" id="chainbox-\${p.id}" style="display:none"></div>
           \` : ''}
         </div>
@@ -583,22 +588,22 @@ export function renderFeedPage(user: any = null): string {
 
     async function toggleChain(postId) {
       const box = document.getElementById('chainbox-' + postId);
-      const lbl = document.getElementById('chainlbl-' + postId);
+      const lbl = document.getElementById('chainbar-label-' + postId);
       if (!box || !lbl) return;
       if (chainState.get(postId) === 'open') {
         box.style.display = 'none';
         chainState.set(postId, 'closed');
-        lbl.textContent = '\u26d3 \u25be';
+        lbl.textContent = '\u26d3 sambungan \u2014 ketuk untuk lihat \u25bc';
         return;
       }
       if (chainCache.has(postId)) {
         box.innerHTML = chainCache.get(postId);
         box.style.display = 'block';
         chainState.set(postId, 'open');
-        lbl.textContent = '\u26d3 \u25be';
+        lbl.textContent = 'Sembunyikan sambungan \u25b2';
         return;
       }
-      lbl.textContent = '\u26d3 \u2026';
+      lbl.textContent = 'Memuat sambungan...';
       try {
         const res = await fetch('/api/posts/' + postId + '/chains');
         const data = await res.json();
@@ -613,9 +618,9 @@ export function renderFeedPage(user: any = null): string {
         box.innerHTML = html;
         box.style.display = 'block';
         chainState.set(postId, 'open');
-        lbl.textContent = '\u26d3 \u25be';
+        lbl.textContent = 'Sembunyikan sambungan \u25b2';
       } catch (e) {
-        lbl.textContent = '\u26d3 \u2715';
+        lbl.textContent = 'Gagal memuat. Ketuk ulang.';
       }
     }
     window.toggleChain = toggleChain;
