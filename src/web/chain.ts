@@ -109,6 +109,15 @@ export function renderChainPage(opts: {
     .cta { display: flex; align-items: center; justify-content: center; gap: 7px; background: #FFD834; border: 2.5px solid #0B192C; border-radius: 11px; box-shadow: 3px 3px 0 #1E293B; padding: 11px; text-align: center; font-weight: 900; font-size: 13.5px; text-decoration: none; color: #0B192C; }
     .cta:active { transform: translate(2px, 2px); box-shadow: none; }
     .ico { width: 16px; height: 16px; stroke: #0B192C; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    /* Kotak jawab cepat ala Threads — sambung tanpa meninggalkan lembar */
+    .reply-box { background: #FFF; border: 2.5px solid #22314A; border-radius: 13px; box-shadow: 3px 3px 0 #C9D6E8; padding: 11px 12px; margin-top: 14px; }
+    .reply-hint { font-size: 11.5px; font-weight: 700; color: #5A6B85; margin-bottom: 7px; }
+    #quickReply { width: 100%; border: 2px solid #C9D6E8; border-radius: 9px; background: #F8FBFF; padding: 9px 10px; font-family: 'Newsreader', serif; font-size: 14px; line-height: 1.5; resize: vertical; min-height: 84px; }
+    #quickReply:focus { outline: none; border-color: var(--blue-primary); }
+    .reply-foot { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 7px; }
+    #replyMsg { font-size: 11px; font-weight: 700; color: #B42318; }
+    .reply-send { background: var(--accent-yellow); border: 2.5px solid #0B192C; border-radius: 9px; box-shadow: 2px 2px 0 #1E293B; padding: 8px 16px; font-weight: 900; font-size: 12.5px; font-family: inherit; cursor: pointer; }
+    .reply-send:active { transform: translate(2px, 2px); box-shadow: none; }
   </style>
 </head>
 <body>
@@ -142,11 +151,39 @@ export function renderChainPage(opts: {
       ${childrenHtml || '<div style="font-size:12.5px;font-weight:600;color:#64748B;padding:6px 0;">Belum ada yang menyambung bait ini.</div>'}
     </div>
 
-    <a class="cta" href="/feed?sambung=${esc(root.id)}&oleh=${esc(rootAuthor)}">
-      <svg class="ico" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
-      Sambung Bait Ini
-    </a>
-  </div>
+    ${user ? `
+    <div class="reply-box">
+      <div class="reply-hint">Balas sebagai @${esc(user.pen_name)} — sambunganmu langsung menempel di bait ini</div>
+      <textarea id="quickReply" placeholder="Tulis bait sambunganmu di sini..."></textarea>
+      <div class="reply-foot">
+        <span id="replyMsg"></span>
+        <button class="reply-send" onclick="submitReply()">Sambungkan</button>
+      </div>
+    </div>
+    ` : `<a class="cta" href="/login">Masuk untuk menyambung bait ini</a>`}
+
+    <script>
+      window.submitReply = async function() {
+        const ta = document.getElementById('quickReply');
+        const msg = document.getElementById('replyMsg');
+        const content = (ta.value || '').trim();
+        if (!content) { msg.textContent = 'Tulis dulu bait sambungannya.'; return; }
+        const btn = document.querySelector('.reply-send');
+        btn.disabled = true; msg.textContent = '';
+        try {
+          const res = await fetch('/api/posts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: content, parent_id: '${root.id}' })
+          });
+          if (!res.ok) { const e = await res.json().catch(function(){return {};}); throw new Error(e.error || 'Gagal menyambungkan.'); }
+          location.reload();
+        } catch (e) {
+          msg.textContent = e.message || 'Gagal. Coba lagi.';
+          btn.disabled = false;
+        }
+      };
+    </script>
 
   ${renderBottomNav('feed', user, false)}
 </body>
