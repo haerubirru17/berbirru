@@ -187,7 +187,12 @@ app.use('*', async (c, next) => {
   const method = c.req.method.toUpperCase();
   if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {
     const origin = c.req.header('origin');
-    if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+    // dev: request ke host lokal (wrangler dev) boleh bawa origin localhost.
+    // produksi: host selalu berbirru.com → origin localhost asing tetap ditolak.
+    const reqHost = new URL(c.req.url).hostname;
+    const devHost = reqHost === 'localhost' || reqHost === '127.0.0.1';
+    const okLocal = devHost && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin || '');
+    if (origin && !okLocal && !ALLOWED_ORIGINS.includes(origin)) {
       return c.json({ error: 'Permintaan dari situs lain ditolak.' }, 403);
     }
   }
@@ -734,12 +739,20 @@ app.get('/api/users/:pen_name', async (c) => {
   const likesCount = await c.env.DB.prepare('SELECT COALESCE(SUM(likes_count), 0) as s FROM posts WHERE author_id = ?').bind(user.id).first('s') || 0;
   const savesCount = await c.env.DB.prepare('SELECT COALESCE(SUM(saves_count), 0) as s FROM posts WHERE author_id = ?').bind(user.id).first('s') || 0;
 
+  // status follow viewer — buat toggle tombol di profil (anonim/akun sendiri = false)
+  let isFollowing = false;
+  const viewer = await getAuthUser(c);
+  if (viewer && viewer.id !== user.id) {
+    isFollowing = Boolean(await c.env.DB.prepare('SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?').bind(viewer.id, user.id).first());
+  }
+
   return c.json({
     user: {
       ...user,
       posts_count: postsCount,
       likes_count: likesCount,
-      saves_count: savesCount
+      saves_count: savesCount,
+      is_following: isFollowing
     }
   });
 });

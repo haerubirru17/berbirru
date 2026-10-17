@@ -112,6 +112,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     }
     .btn-follow-badge svg { width: 14px; height: 14px; stroke: #0B192C; stroke-width: 3; fill: none; }
     .btn-follow-badge:active { transform: scale(0.92); box-shadow: none; }
+    .btn-follow-badge.is-following { background: var(--blue-primary); box-shadow: 2px 2px 0 var(--shadow-ink); }
     .profile-right-actions {
       display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
     }
@@ -367,7 +368,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
               <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
             </div>` : ''}
             ${!isMe ? `
-              <button class="btn-follow-badge" onclick="followUser('${penName}')" aria-label="Ikuti Penulis" title="Ikuti Penulis">
+              <button class="btn-follow-badge" id="btnFollow" onclick="toggleFollow('${penName}')" aria-label="Ikuti Penulis" title="Ikuti Penulis">
                 <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
               </button>
             ` : ''}
@@ -577,6 +578,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
           document.getElementById('countPosts').textContent = data.user.posts_count || 0;
           document.getElementById('countLikes').textContent = data.user.likes_count || 0;
           document.getElementById('countSaved').textContent = data.user.saves_count || 0;
+          setFollowBtn(!!data.user.is_following);
         }
       } catch (err) {
         console.error(err);
@@ -772,6 +774,29 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       }
     }
 
+    // ---- FOLLOW (profil orang lain) ----
+    // tanda "+" kuning = belum ikut; centang biru = sedang ikut. Klik = toggle (API sama dgn feed)
+    function setFollowBtn(on) {
+      const b = document.getElementById('btnFollow');
+      if (!b) return;
+      b.classList.toggle('is-following', on);
+      b.title = on ? 'Berhenti ikuti' : 'Ikuti Penulis';
+      b.innerHTML = on
+        ? '<svg viewBox="0 0 24 24" style="stroke:#FFF"><path d="M20 6L9 17l-5-5"/></svg>'
+        : '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
+    }
+    async function toggleFollow(penName) {
+      try {
+        const res = await fetch('/api/users/' + encodeURIComponent(penName) + '/follow', { method: 'POST' });
+        const data = await res.json();
+        if (data.error) return bbToast(data.error, 'error');
+        setFollowBtn(!!data.following);
+        bbToast(data.following ? 'Berhasil mengikuti @' + penName : 'Batal mengikuti @' + penName, data.following ? 'success' : 'info');
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
     function escapeHtml(t) {
       return String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
@@ -847,6 +872,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     window.switchProfileTab = switchProfileTab;
     window.deletePost = deletePost;
     window.toggleSettingsMenu = toggleSettingsMenu;
+    window.toggleFollow = toggleFollow;
 
     loadUserData();
     loadProfilePosts('original');
