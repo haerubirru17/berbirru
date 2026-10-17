@@ -128,12 +128,6 @@ export function renderFeedPage(user: any = null): string {
       display: flex; align-items: center; gap: 6px;
     }
     .thread-parent-connector:hover { background: var(--bg-blue-subtle); }
-    /* Bar expand sambungan ala TikTok (default lipat) */
-    .chain-bar {
-      border-top: 1.5px dashed #CBD5E1; background: #F8FAFC; padding: 8px 12px;
-      font-size: 11.5px; font-weight: 800; color: var(--blue-primary); cursor: pointer; text-align: center;
-    }
-    .chain-bar:active { background: var(--bg-blue-subtle); }
     .chain-inline { padding: 9px 12px 4px; background: #FBFDFF; border-top: 1.5px solid #E2E8F0; }
     .mini-bait { position: relative; background: #F4F8FE; border: 1.5px solid #C9D6E8; border-radius: 9px; padding: 7px 9px; margin-bottom: 7px; }
     .mini-who { font-size: 10.5px; font-weight: 900; color: var(--blue-primary); margin-bottom: 3px; }
@@ -195,11 +189,11 @@ export function renderFeedPage(user: any = null): string {
       border-color: var(--ink);
     }
     .act-btn.saved svg { fill: #FFFFFF; stroke: #FFFFFF; }
-    .chain-btn {
-      background: var(--accent-yellow); color: var(--ink); border: var(--border-thin);
-      border-radius: var(--radius-sm); padding: 4px 8px; font-size: 11px; font-weight: 900;
-      cursor: pointer; display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; /* sambungan tak pernah menyusut/turun baris */
-    }
+    /* V1 split-button: badan = tulis sambung, segmen panah = buka/tutup daftar */
+    .chain-split { display: inline-flex; align-items: stretch; background: var(--accent-yellow); border: var(--border-thin); border-radius: var(--radius-sm); box-shadow: 2px 2px 0 #1E293B; overflow: hidden; flex-shrink: 0; }
+    .chain-split:active { transform: translate(1px, 1px); box-shadow: none; }
+    .chain-btn { background: none; color: var(--ink); border: none; padding: 4px 8px; font-size: 11px; font-weight: 900; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; font-family: inherit; }
+    .chain-arrow { background: none; border: none; border-left: 2px solid rgba(11,25,44,.30); padding: 4px 8px; font-size: 11px; font-weight: 900; cursor: pointer; color: var(--ink); font-family: inherit; display: inline-flex; align-items: center; }
 
     /* FULLSCREEN BILIK WARKAH COMPOSER (MODERN SEAMLESS CANVAS) */
     .studio-overlay {
@@ -545,15 +539,15 @@ export function renderFeedPage(user: any = null): string {
                 <span>\${p.saves_count || 0} Simpan</span>
               </button>
             </div>
-            <button class="chain-btn" data-title="\${escapeHtml(p.title || p.pen_name)}" onclick="openStudioModal('\${p.id}', this.dataset.title)">
-              <svg class="ico" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-              <span>\${p.chains_count ? p.chains_count + ' Sambungan' : 'Sambung Bait'}</span>
-            </button>
+            <span class="chain-split">
+              <button class="chain-btn" data-title="\${escapeHtml(p.title || p.pen_name)}" onclick="openStudioModal('\${p.id}', this.dataset.title)">
+                <svg class="ico" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                <span>\${p.chains_count ? p.chains_count + ' Sambungan' : 'Sambung Bait'}</span>
+              </button>\${p.chains_count > 0 ? \`
+              <button class="chain-arrow" id="chainlbl-\${p.id}" onclick="toggleChain('\${p.id}')" aria-label="Buka sambungan">\u25be</button>\` : ''}
+            </span>
           </div>
           \${p.chains_count > 0 ? \`
-            <div class="chain-bar" id="chainbar-\${p.id}" onclick="toggleChain('\${p.id}')">
-              <span id="chainbar-label-\${p.id}">\u26d3 \${p.chains_count} sambungan \u2014 ketuk untuk lihat \u25bc</span>
-            </div>
             <div class="chain-inline" id="chainbox-\${p.id}" style="display:none"></div>
           \` : ''}
         </div>
@@ -588,22 +582,22 @@ export function renderFeedPage(user: any = null): string {
 
     async function toggleChain(postId) {
       const box = document.getElementById('chainbox-' + postId);
-      const lbl = document.getElementById('chainbar-label-' + postId);
+      const lbl = document.getElementById('chainlbl-' + postId);
       if (!box || !lbl) return;
       if (chainState.get(postId) === 'open') {
         box.style.display = 'none';
         chainState.set(postId, 'closed');
-        lbl.textContent = '\u26d3 sambungan \u2014 ketuk untuk lihat \u25bc';
+        lbl.textContent = '\u25be';
         return;
       }
       if (chainCache.has(postId)) {
         box.innerHTML = chainCache.get(postId);
         box.style.display = 'block';
         chainState.set(postId, 'open');
-        lbl.textContent = 'Sembunyikan sambungan \u25b2';
+        lbl.textContent = '\u25be';
         return;
       }
-      lbl.textContent = 'Memuat sambungan...';
+      lbl.textContent = '\u2026';
       try {
         const res = await fetch('/api/posts/' + postId + '/chains');
         const data = await res.json();
@@ -618,9 +612,9 @@ export function renderFeedPage(user: any = null): string {
         box.innerHTML = html;
         box.style.display = 'block';
         chainState.set(postId, 'open');
-        lbl.textContent = 'Sembunyikan sambungan \u25b2';
+        lbl.textContent = '\u25be';
       } catch (e) {
-        lbl.textContent = 'Gagal memuat. Ketuk ulang.';
+        lbl.textContent = '\u2715';
       }
     }
     window.toggleChain = toggleChain;
