@@ -128,6 +128,19 @@ export function renderFeedPage(user: any = null): string {
       display: flex; align-items: center; gap: 6px;
     }
     .thread-parent-connector:hover { background: var(--bg-blue-subtle); }
+    /* Bar expand sambungan ala TikTok (default lipat) */
+    .chain-bar {
+      border-top: 1.5px dashed #CBD5E1; background: #F8FAFC; padding: 8px 12px;
+      font-size: 11.5px; font-weight: 800; color: var(--blue-primary); cursor: pointer; text-align: center;
+    }
+    .chain-bar:active { background: var(--bg-blue-subtle); }
+    .chain-inline { padding: 9px 12px 4px; background: #FBFDFF; border-top: 1.5px solid #E2E8F0; }
+    .mini-bait { position: relative; background: #F4F8FE; border: 1.5px solid #C9D6E8; border-radius: 9px; padding: 7px 9px; margin-bottom: 7px; }
+    .mini-who { font-size: 10.5px; font-weight: 900; color: var(--blue-primary); margin-bottom: 3px; }
+    .mini-who a { color: var(--blue-primary); text-decoration: none; }
+    .mini-txt { font-size: 12px; line-height: 1.55; color: #3A4C68; }
+    .ctamini { text-align: center; font-size: 11.5px; font-weight: 900; margin: 4px 0 6px; }
+    .ctamini a { color: var(--ink); background: var(--accent-yellow); border: 1.5px solid var(--ink); border-radius: 8px; padding: 5px 10px; text-decoration: none; display: inline-block; }
 
     .thread-body { padding: 14px 14px 12px; flex: 1; display: flex; flex-direction: column; }
     .thread-title { font-family: 'Newsreader', serif; font-size: 17px; font-weight: 600; color: var(--ink); margin-bottom: 6px; line-height: 1.3; }
@@ -502,8 +515,8 @@ export function renderFeedPage(user: any = null): string {
             \${formatTimestamp(p.created_at)}
           </div>
 
-          \${/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(String(p.parent_id || '')) ? \`
-            <div class="thread-parent-connector" onclick="scrollToPost('\${p.parent_id}')">
+          \${/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(String(p.parent_id || '')) && p.parent_author ? \`
+            <div class="thread-parent-connector" onclick="window.location.href='/chain/\${p.parent_id}'">
               <svg class="ico" style="color:#1D61E7;" viewBox="0 0 24 24"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>
               <span>Menyambung warkah <b>@\${escapeHtml(p.parent_author)}</b>: <i>"\${escapeHtml(stripHtml(p.parent_content).slice(0, 45) + '...')}"</i></span>
             </div>
@@ -537,6 +550,12 @@ export function renderFeedPage(user: any = null): string {
               <span>\${p.chains_count ? p.chains_count + ' Sambungan' : 'Sambung Bait'}</span>
             </button>
           </div>
+          \${p.chains_count > 0 ? \`
+            <div class="chain-bar" id="chainbar-\${p.id}" onclick="toggleChain('\${p.id}')">
+              <span id="chainbar-label-\${p.id}">\u26d3 \${p.chains_count} sambungan \u2014 ketuk untuk lihat \u25bc</span>
+            </div>
+            <div class="chain-inline" id="chainbox-\${p.id}" style="display:none"></div>
+          \` : ''}
         </div>
       \`;
     }
@@ -562,6 +581,49 @@ export function renderFeedPage(user: any = null): string {
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       else bbToast('Warkah induk dimuat di bagian sebelumnya.', 'info');
     }
+
+    // ---- Expand/Collapse Sambungan ala TikTok ----
+    const chainState = new Map(); // postId -> 'open'|'closed'
+    const chainCache = new Map(); // postId -> html mini-bait
+
+    async function toggleChain(postId) {
+      const box = document.getElementById('chainbox-' + postId);
+      const lbl = document.getElementById('chainbar-label-' + postId);
+      if (!box || !lbl) return;
+      if (chainState.get(postId) === 'open') {
+        box.style.display = 'none';
+        chainState.set(postId, 'closed');
+        lbl.textContent = '\u26d3 sambungan \u2014 ketuk untuk lihat \u25bc';
+        return;
+      }
+      if (chainCache.has(postId)) {
+        box.innerHTML = chainCache.get(postId);
+        box.style.display = 'block';
+        chainState.set(postId, 'open');
+        lbl.textContent = 'Sembunyikan sambungan \u25b2';
+        return;
+      }
+      lbl.textContent = 'Memuat sambungan...';
+      try {
+        const res = await fetch('/api/posts/' + postId + '/chains');
+        const data = await res.json();
+        const html = (data.chains || []).map(function (b) {
+          return '<div class="mini-bait">'
+            + '<div class="mini-who"><a href="/u/' + escapeHtml(b.pen_name) + '">@' + escapeHtml(b.pen_name) + '</a> \u00b7 ' + escapeHtml(String(b.created_at || '').slice(0, 16).replace('T', ' ')) + '</div>'
+            + '<div class="mini-txt">' + escapeHtml(stripHtml(b.content).slice(0, 140)) + ((stripHtml(b.content).length > 140) ? '...' : '') + '</div>'
+            + '</div>';
+        }).join('')
+          + '<div class="ctamini"><a href="/chain/' + postId + '">\u26d3 Lembar Sambungan penuh \u2197</a></div>';
+        chainCache.set(postId, html);
+        box.innerHTML = html;
+        box.style.display = 'block';
+        chainState.set(postId, 'open');
+        lbl.textContent = 'Sembunyikan sambungan \u25b2';
+      } catch (e) {
+        lbl.textContent = 'Gagal memuat. Ketuk ulang.';
+      }
+    }
+    window.toggleChain = toggleChain;
 
     function openStudioModal(parentId = null, parentName = '') {
       if (!isUserLoggedIn) {

@@ -20,6 +20,7 @@ import { renderFeedPage } from './web/feed';
 import { renderSearchPage } from './web/search';
 import { renderProfilePage } from './web/profile';
 import { renderNotificationsPage } from './web/notifications';
+import { renderChainPage } from './web/chain';
 import { sendOtpEmail } from './mail';
 import { OG_IMAGE_BASE64 } from './assets';
 import { VENDOR_SWEETALERT2_JS, VENDOR_SWEETALERT2_CSS } from './vendor';
@@ -898,6 +899,39 @@ app.get('/notifications', async (c) => {
   return c.html(renderNotificationsPage(user));
 });
 
+// ---- LEMBAR SAMBUNGAN (SSR) ----
+// Buka post mana pun di rantai → seluruh lembar tampil. Induk mati → mode yatim
+// (bait tertua jadi tenggelam jadi "root" tampilan, tanpa badge status).
+app.get('/chain/:id', async (c) => {
+  const user = await getAuthUser(c);
+  const id = c.req.param('id');
+
+  const target: any = await c.env.DB.prepare(
+    'SELECT p.*, u.pen_name FROM posts p JOIN users u ON p.author_id = u.id WHERE p.id = ?'
+  ).bind(id).first();
+  if (!target) return c.redirect('/feed');
+
+  // Naik ke root rantai. Root mati (parent_id menunjuk mayat) → target jadi root, orphans=true.
+  let orphans = false;
+  let root: any = target;
+  let rootAuthor: string = target.pen_name;
+  if (target.parent_id) {
+    const parent: any = await c.env.DB.prepare(
+      'SELECT p.*, u.pen_name FROM posts p JOIN users u ON p.author_id = u.id WHERE p.id = ?'
+    ).bind(target.parent_id).first();
+    if (parent) { root = parent; rootAuthor = parent.pen_name; }
+    else { orphans = true; }
+  }
+
+  const { results } = await c.env.DB.prepare(
+    // saat yatim, anak-anak tetap menunjuk induk yang sudah dihapus — kueri pakai id mayat itu
+    `SELECT p.*, u.pen_name FROM posts p JOIN users u ON p.author_id = u.id
+     WHERE p.parent_id = ? ORDER BY p.created_at ASC LIMIT 50`
+  ).bind(orphans ? target.parent_id : root.id).all();
+
+  return c.html(renderChainPage({ user, root, rootAuthor, orphans, children: results || [] }));
+});
+
 // ---- POSTS & FEED API ----
 app.get('/api/notifications', async (c) => {
   const user = await getAuthUser(c);
@@ -995,6 +1029,16 @@ app.get('/api/posts', async (c) => {
   }
 
   return c.json({ mode, posts: posts.map(hardenPost) });
+});
+
+// Sambungan 1 post (untuk expand inline feed) — ringkas, ASC, tanpa isi penuh
+app.get('/api/posts/:id/chains', async (c) => {
+  const { results } = await c.env.DB.prepare(
+    `SELECT p.id, p.title, p.content, p.created_at, p.likes_count, p.chains_count, u.pen_name
+     FROM posts p JOIN users u ON p.author_id = u.id
+     WHERE p.parent_id = ? ORDER BY p.created_at ASC LIMIT 20`
+  ).bind(c.req.param('id')).all();
+  return c.json({ chains: (results || []).map(hardenPost) });
 });
 
 app.post('/api/posts', async (c) => {
