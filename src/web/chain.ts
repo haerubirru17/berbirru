@@ -56,9 +56,12 @@ export function renderChainPage(opts: {
     body { background: #EAF2FB; font-family: 'Plus Jakarta Sans', sans-serif; color: #0B192C; padding-bottom: 96px; }
     .wrap { max-width: 560px; margin: 0 auto; padding: 14px; }
     .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-    .brand { display: flex; align-items: center; gap: 7px; font-family: 'Space Grotesk'; font-weight: 900; font-size: 15px; letter-spacing: 0.5px; text-decoration: none; color: #0B192C; }
+    .brand { display: inline-flex; align-items: center; gap: 6px; background: var(--blue-primary); color: #FFF; padding: 6px 14px; border: 3px solid #0B192C; border-radius: 12px; text-decoration: none; font-family: 'Space Grotesk'; box-shadow: 2.5px 2.5px 0 #1E293B; }
+    .brand svg { width: 16px; height: 16px; stroke: #FFF; }
+    .brand b { font-size: 19px; font-weight: 800; letter-spacing: .5px; }
+    .brand .com { font-family: 'Space Grotesk'; font-size: 24px; font-weight: 900; color: var(--blue-primary); transform: rotate(2deg); margin-left: 2px; position: relative; z-index: 1; padding-bottom: 3px; }
+    .brand .com::after { content: ''; position: absolute; left: -20px; bottom: -1px; width: calc(100% + 24px); height: 6px; background: var(--accent-yellow); border-radius: 3px; z-index: -1; }
     .back { font-size: 12.5px; font-weight: 900; border: 2px solid #0B192C; background: #FFF; border-radius: 9px; padding: 6px 12px; box-shadow: 2px 2px 0 #1E293B; text-decoration: none; color: #0B192C; }
-    .badge-open { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 900; letter-spacing: 0.5px; color: #0F7B3D; background: #DDF5E4; border: 1.5px solid #0F7B3D; border-radius: 6px; padding: 3px 8px; white-space: nowrap; }
     .notice { background: #FFF8E6; border: 2px dashed #C79A2E; border-radius: 12px; padding: 11px 13px; font-size: 12.5px; font-weight: 600; color: #7A5A00; margin-bottom: 12px; line-height: 1.5; }
     .tcard { background: #FFF; border: 2.5px solid #22314A; border-radius: 13px; box-shadow: 3px 3px 0 #C9D6E8; padding: 12px 13px; margin-bottom: 12px; position: relative; }
     .tcard.root { background: #F4F8FE; }
@@ -124,8 +127,8 @@ export function renderChainPage(opts: {
   <div class="wrap">
     <div class="top">
       <a class="brand" href="/feed">
-        <svg class="ico" style="width:15px;height:15px;" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-        BERBIRRU
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        <b>BERBIRRU</b><span class="com">.com</span>
       </a>
       <a class="back" href="/feed">‹ Beranda</a>
     </div>
@@ -135,7 +138,6 @@ export function renderChainPage(opts: {
     <div class="tcard root">
       <div class="root-tag">
         <span>${orphans ? 'Bait Sambungan Tertua' : 'Bait Asli'}</span>
-        ${orphans ? '' : '<span class="badge-open">🔓 BUKA UNTUK SIAPAPUN</span>'}
       </div>
       <div class="tmini">
         <div class="tava">${rootAva}</div>
