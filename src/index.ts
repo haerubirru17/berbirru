@@ -738,6 +738,8 @@ app.get('/api/users/:pen_name', async (c) => {
   const postsCount = await c.env.DB.prepare('SELECT COUNT(*) as c FROM posts WHERE author_id = ?').bind(user.id).first('c') || 0;
   const likesCount = await c.env.DB.prepare('SELECT COALESCE(SUM(likes_count), 0) as s FROM posts WHERE author_id = ?').bind(user.id).first('s') || 0;
   const savesCount = await c.env.DB.prepare('SELECT COALESCE(SUM(saves_count), 0) as s FROM posts WHERE author_id = ?').bind(user.id).first('s') || 0;
+  const followersCount = await c.env.DB.prepare('SELECT COUNT(*) as c FROM follows WHERE following_id = ?').bind(user.id).first('c') || 0;
+  const followingCount = await c.env.DB.prepare('SELECT COUNT(*) as c FROM follows WHERE follower_id = ?').bind(user.id).first('c') || 0;
 
   // status follow viewer — buat toggle tombol di profil (anonim/akun sendiri = false)
   let isFollowing = false;
@@ -752,6 +754,8 @@ app.get('/api/users/:pen_name', async (c) => {
       posts_count: postsCount,
       likes_count: likesCount,
       saves_count: savesCount,
+      followers_count: followersCount,
+      following_count: followingCount,
       is_following: isFollowing
     }
   });

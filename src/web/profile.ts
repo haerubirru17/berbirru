@@ -403,6 +403,14 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
             <span class="stat-number" id="countSaved">0</span>
             <span class="stat-label">Tersimpan</span>
           </div>
+          <div class="stat-col">
+            <span class="stat-number" id="countFollowers">0</span>
+            <span class="stat-label">Pengikut</span>
+          </div>
+          <div class="stat-col">
+            <span class="stat-number" id="countFollowing">0</span>
+            <span class="stat-label">Mengikuti</span>
+          </div>
         </div>
       </div>
     </div>
@@ -578,6 +586,8 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
           document.getElementById('countPosts').textContent = data.user.posts_count || 0;
           document.getElementById('countLikes').textContent = data.user.likes_count || 0;
           document.getElementById('countSaved').textContent = data.user.saves_count || 0;
+          document.getElementById('countFollowers').textContent = data.user.followers_count || 0;
+          document.getElementById('countFollowing').textContent = data.user.following_count || 0;
           setFollowBtn(!!data.user.is_following);
         }
       } catch (err) {
