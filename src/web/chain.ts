@@ -46,6 +46,12 @@ export function renderChainPage(opts: {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800;900&family=Space+Grotesk:wght@600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg-main: #F0F6FE; --bg-card: #FFFFFF; --bg-blue-subtle: #E0EEFD;
+      --ink: #0B192C; --shadow-ink: #1E293B; --blue-primary: #1D61E7;
+      --blue-deep: #0F3E99; --blue-light: #60A5FA; --accent-yellow: #FDE047;
+      --border-thick: 3px solid var(--ink); --border-med: 2.5px solid var(--ink); --border-thin: 2px solid var(--ink);
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: #EAF2FB; font-family: 'Plus Jakarta Sans', sans-serif; color: #0B192C; padding-bottom: 96px; }
     .wrap { max-width: 560px; margin: 0 auto; padding: 14px; }
@@ -68,6 +74,37 @@ export function renderChainPage(opts: {
     .rail { position: relative; padding-left: 17px; margin-top: 14px; }
     .rail::before { content: ''; position: absolute; left: 5px; top: 6px; bottom: 30px; width: 2.5px; background: #B7D3F8; border-radius: 2px; }
     .rail .tcard .knob { position: absolute; left: -17px; top: 15px; width: 9px; height: 9px; background: #1D5FD6; border: 2px solid #0B192C; border-radius: 50%; }
+    /* 5-TAB DOCKED BOTTOM NAVBAR — kembar search/feed (renderBottomNav menyuntik HTML-nya,
+       CSS-nya harus ikut di setiap halaman yang memakai navbar) */
+    .bottom-navbar {
+      position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-top: 1.5px solid #0B192C; padding: 6px 12px calc(6px + env(safe-area-inset-bottom));
+      display: flex; justify-content: space-between; z-index: 1000; box-shadow: 0 -4px 20px rgba(11,25,44,0.08);
+    }
+    .navbar-inner {
+      width: 100%; max-width: 480px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; align-items: center;
+    }
+    .nav-item {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 3px; text-decoration: none; color: #64748B; padding: 5px 0; cursor: pointer;
+      transition: color 0.15s ease, transform 0.1s ease;
+    }
+    .nav-item span { font-size: 10.5px; font-weight: 700; letter-spacing: -0.01em; }
+    .nav-item svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .nav-item.active { color: var(--blue-primary); }
+    .nav-item.active span { color: var(--blue-primary); font-weight: 900; }
+    .nav-item.active svg { stroke: var(--blue-primary); stroke-width: 2.3; }
+    .nav-item-center { position: relative; top: -8px; }
+    .btn-create-floating {
+      width: 46px; height: 46px; background: var(--accent-yellow); color: var(--ink);
+      border: 2.5px solid var(--ink); border-radius: 14px; display: grid; place-items: center;
+      box-shadow: 2.5px 2.5px 0 var(--shadow-ink); transform: rotate(-2deg); transition: transform 0.05s ease;
+    }
+    .btn-create-floating svg { width: 20px; height: 20px; stroke: #0B192C; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .btn-create-floating:active { transform: translate(1.5px, 1.5px); box-shadow: none; }
+    .bell-wrap { position: relative; }
+    .notif-dot { position: absolute; top: -4px; right: -6px; width: 9px; height: 9px; background: #E11D48; border: 1.5px solid #FFF; border-radius: 50%; }
     .lbl { font-size: 11px; font-weight: 900; letter-spacing: 1px; color: #5A6B85; text-transform: uppercase; margin: 16px 2px 10px; }
     .cta { display: flex; align-items: center; justify-content: center; gap: 7px; background: #FFD834; border: 2.5px solid #0B192C; border-radius: 11px; box-shadow: 3px 3px 0 #1E293B; padding: 11px; text-align: center; font-weight: 900; font-size: 13.5px; text-decoration: none; color: #0B192C; }
     .cta:active { transform: translate(2px, 2px); box-shadow: none; }
