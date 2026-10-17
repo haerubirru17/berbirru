@@ -1193,9 +1193,15 @@ app.post('/api/users/:pen_name/follow', async (c) => {
   const existing = await c.env.DB.prepare('SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?').bind(user.id, target.id).first();
   if (existing) {
     await c.env.DB.prepare('DELETE FROM follows WHERE follower_id = ? AND following_id = ?').bind(user.id, target.id).run();
+    // buang notif follow lama — unfollow berarti "X mulai mengikuti" tak lagi benar
+    await c.env.DB.prepare("DELETE FROM notifications WHERE user_id = ? AND actor_id = ? AND type = 'follow'").bind(target.id, user.id).run();
     return c.json({ following: false });
   } else {
     await c.env.DB.prepare('INSERT INTO follows (follower_id, following_id) VALUES (?, ?)').bind(user.id, target.id).run();
+    const dup = await c.env.DB.prepare('SELECT 1 FROM notifications WHERE user_id = ? AND actor_id = ? AND type = ? LIMIT 1').bind(target.id, user.id, 'follow').first();
+    if (!dup) {
+      await c.env.DB.prepare('INSERT INTO notifications (id, user_id, actor_id, type) VALUES (?, ?, ?, ?)').bind(crypto.randomUUID(), target.id, user.id, 'follow').run();
+    }
     return c.json({ following: true });
   }
 });

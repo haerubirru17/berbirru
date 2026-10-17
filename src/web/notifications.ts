@@ -74,6 +74,12 @@ export function renderNotificationsPage(user: any = null): string {
 
     /* Avatar with Action Badge Clip */
     .notif-avatar-wrap { position: relative; flex-shrink: 0; }
+    .notif-avatar-stack { position: relative; flex-shrink: 0; display: flex; align-items: center; padding-left: 8px; }
+    .notif-avatar-stack .notif-avatar.mini {
+      width: 32px; height: 32px; font-size: 14px; border-radius: 10px;
+      box-shadow: 0 0 0 2px #FFF; position: relative;
+    }
+    .notif-avatar-stack .action-badge { position: absolute; right: -5px; bottom: -5px; z-index: 20; }
     .notif-avatar {
       width: 44px; height: 44px; background: var(--blue-primary); color: #FFFFFF;
       border: var(--border-med); border-radius: 12px; display: grid; place-items: center;
@@ -184,10 +190,36 @@ export function renderNotificationsPage(user: any = null): string {
           return;
         }
 
-        container.innerHTML = data.notifications.map(n => renderNotifCard(n)).join('');
+        container.innerHTML = groupNotifs(data.notifications).map(renderNotifCard).join('');
       } catch (err) {
         console.error(err);
       }
+    }
+
+    // Kelompokkan ala TikTok: like/save/chain digroup per (tipe+post_id),
+    // follow digroup per tipe — arena 1 baris: "A, B dan N lainnya ..."
+    // ponytail: grouping murni di render, struktur DB tetap 1 baris per aktor.
+    function groupNotifs(list) {
+      const groups = [];
+      const idx = new Map();
+      for (const n of list) {
+        const key = n.type === 'follow' ? 'follow' : n.type + ':' + (n.post_id || '');
+        if (idx.has(key)) {
+          groups[idx.get(key)].actors.push(n);
+        } else {
+          idx.set(key, groups.length);
+          groups.push({ type: n.type, post_id: n.post_id, post_title: n.post_title, post_content: n.post_content,
+            is_read: n.is_read, created_at: n.created_at, ids: [n.id], actors: [n] });
+        }
+      }
+      return groups.map(g => ({
+        id: g.ids[0], ids: g.ids, type: g.type, post_id: g.post_id,
+        post_title: g.post_title, post_content: g.post_content,
+        is_read: g.actors.some(a => !a.is_read),
+        created_at: g.created_at,
+        actor_pen_name: g.actors[0].actor_pen_name,
+        actors: g.actors
+      }));
     }
 
     function escapeHtml(t) {
@@ -197,11 +229,12 @@ export function renderNotificationsPage(user: any = null): string {
     function renderNotifCard(n) {
       let badgeHtml = '';
       let actionText = '';
-      let targetLink = n.post_id ? '/feed#post-' + n.post_id : '/u/' + n.actor_pen_name;
+      const multi = n.actors && n.actors.length > 1;
+      let targetLink = n.post_id ? '/feed#post-' + n.post_id : (multi ? '/notifications' : '/u/' + n.actor_pen_name);
 
       if (n.type === 'like') {
         badgeHtml = '<div class="action-badge badge-like"><svg style="width:9px;height:9px;fill:#FFF;stroke:#FFF;" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>';
-        actionText = 'terpaut pada warkahmu.';
+        actionText = multi ? 'menyukai warkahmu.' : 'terpaut pada warkahmu.';
       } else if (n.type === 'chain') {
         badgeHtml = '<div class="action-badge badge-chain"><svg style="width:9px;height:9px;stroke:#000;stroke-width:3;fill:none;" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>';
         actionText = 'menyambung bait warkahmu.';
@@ -210,22 +243,42 @@ export function renderNotificationsPage(user: any = null): string {
         actionText = 'menyimpan warkahmu ke pustaka.';
       } else if (n.type === 'follow') {
         badgeHtml = '<div class="action-badge badge-follow"><svg style="width:9px;height:9px;stroke:#FFF;stroke-width:3;fill:none;" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>';
-        actionText = 'mulai mengikuti goresan warkahmu.';
+        actionText = multi ? 'mulai mengikuti goresan warkahmu.' : 'mulai mengikuti goresan warkahmu.';
       }
 
-      return \`
-        <a href="\${targetLink}" class="notif-card \${n.is_read ? '' : 'unread'}" onclick="markOneRead('\${n.id}')">
-          <div class="notif-avatar-wrap">
-            <div class="notif-avatar">\${(n.actor_pen_name[0] || 'D').toUpperCase()}</div>
-            \${badgeHtml}
-          </div>
-          <div class="notif-content">
-            <div class="notif-text"><b>@\${escapeHtml(n.actor_pen_name)}</b> \${actionText}</div>
-            \${n.post_title ? \`<div class="notif-quote-preview">"\${escapeHtml(n.post_title)}"</div>\` : ''}
-            <div class="notif-time">\${escapeHtml(n.created_at)}</div>
-          </div>
-        </a>
-      \`;
+      // Teks aktor: "A" | "A dan B" | "A dan N lainnya" (maks 2 nama, sisanya dihitung)
+      let actorHtml = '';
+      if (multi) {
+        const names = n.actors.map(a => a.actor_pen_name);
+        const shown = names.slice(0, 2);
+        const rest = names.length - shown.length;
+        actorHtml = shown.map(s => '<b>@' + escapeHtml(s) + '</b>').join(' dan ') + (rest > 0 ? ' dan ' + rest + ' lainnya' : '');
+      } else {
+        actorHtml = '<b>@' + escapeHtml(n.actor_pen_name) + '</b>';
+      }
+
+      // Avatar: tunggal normal; multi = tumpuk 2-3 lingkaran kecil
+      let avatarHtml = '';
+      if (multi) {
+        const upTo = n.actors.slice(0, 3);
+        avatarHtml = '<div class="notif-avatar-stack">' + upTo.map((a, i) =>
+          '<div class="notif-avatar mini" style="margin-left:' + (i * -8) + 'px;z-index:' + (10 - i) + '">' + ((a.actor_pen_name[0] || 'D').toUpperCase()) + '</div>'
+        ).join('') + badgeHtml + '</div>';
+      } else {
+        avatarHtml = '<div class="notif-avatar-wrap"><div class="notif-avatar">' + ((n.actor_pen_name[0] || 'D').toUpperCase()) + '</div>' + badgeHtml + '</div>';
+      }
+
+      const allIds = (n.ids || [n.id]).join("','");
+      const onClick = "markOneRead('" + allIds + "')";
+
+      let card = '<a href="' + targetLink + '" class="notif-card ' + (n.is_read ? '' : 'unread') + '" onclick="' + onClick + '">';
+      card += avatarHtml;
+      card += '<div class="notif-content">';
+      card += '<div class="notif-text">' + actorHtml + ' ' + actionText + '</div>';
+      if (n.post_title) card += '<div class="notif-quote-preview">"' + escapeHtml(n.post_title) + '"</div>';
+      card += '<div class="notif-time">' + escapeHtml(n.created_at) + '</div>';
+      card += '</div></a>';
+      return card;
     }
 
     async function markAllRead() {
@@ -233,8 +286,11 @@ export function renderNotificationsPage(user: any = null): string {
       loadNotifications();
     }
 
-    async function markOneRead(id) {
-      await fetch('/api/notifications/' + id + '/read', { method: 'POST' });
+    async function markOneRead(ids) {
+      // ids: 'a' atau 'a','b','c' — grup dibaca semua sekaligus
+      const list = String(ids).split("','");
+      await Promise.all(list.map(id => fetch('/api/notifications/' + encodeURIComponent(id) + '/read', { method: 'POST' })));
+      loadNotifications();
     }
 
     loadNotifications();
