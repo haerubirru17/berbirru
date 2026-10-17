@@ -785,15 +785,18 @@ app.put('/api/me/media/:kind', async (c) => {
   await c.env.MEDIA.put(key, buf, { httpMetadata: { contentType: ct } });
 
   const old: any = await c.env.DB.prepare(`SELECT ${spec.col} AS k FROM users WHERE id = ?`).bind(me.id).first();
-  await c.env.DB.prepare(`UPDATE users SET ${spec.col} = ? WHERE id = ?`).bind(key, me.id).run();
+  // simpan key + versi (?v=) — setiap render URL-nya beda dari upload sebelumnya, cache browser tak pernah basi
+  const stored = `${key}?v=${Date.now()}`;
+  await c.env.DB.prepare(`UPDATE users SET ${spec.col} = ? WHERE id = ?`).bind(stored, me.id).run();
 
-  // buang objek lama kalau ekstensinya beda
-  if (old?.k && old.k !== key) {
-    await c.env.MEDIA.delete(old.k).catch(() => {});
+  // buang objek lama kalau ekstensinya beda (strip versi sebelum hapus dari R2)
+  const oldBase = String(old?.k || '').split('?')[0];
+  if (oldBase && oldBase !== key) {
+    await c.env.MEDIA.delete(oldBase).catch(() => {});
   }
 
   // cache-bust via versi = epoch saat upload
-  return c.json({ ok: true, url: `/media/${key}?v=${Date.now()}` });
+  return c.json({ ok: true, url: `/media/${stored}` });
 });
 
 app.get('/media/*', async (c) => {

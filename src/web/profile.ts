@@ -594,14 +594,21 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
 
     // ---- MEDIA PROFIL (avatar & cover) ----
     function avatarKeyValid(key) {
-      return new RegExp('^[a-z0-9_-]+/[a-z0-9_-]+[.](jpg|png|webp)$', 'i').test(String(key || ''));
+      return new RegExp('^[a-z0-9_-]+/[a-z0-9_-]+[.](jpg|png|webp)([?]v=[0-9]+)?$', 'i').test(String(key || ''));
+    }
+    // versi unik per-load: bikin URL gambar selaluFresh lintas sesi/halaman
+    const MEDIA_V = Date.now() + '' + Math.floor(Math.random() * 1e6);
+    function freshKey(key) {
+      const s = String(key || '');
+      if (s.includes('?v=')) return s; // sudah bawa versi anti-cache sendiri (mis. dari server saat upload)
+      return s ? s + '?v=' + MEDIA_V : s;
     }
     function applyAvatar(key, penName) {
       const box = document.getElementById('avatarLetter');
       if (!box) return;
       if (avatarKeyValid(key)) {
         box.textContent = '';
-        box.style.backgroundImage = 'url(/media/' + key + ')';
+        box.style.backgroundImage = 'url(/media/' + freshKey(key) + ')';
         box.style.backgroundSize = 'cover';
         box.style.backgroundPosition = 'center';
         box.style.color = 'transparent';
@@ -614,7 +621,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       if (!el) return;
       if (avatarKeyValid(key)) {
         // foto + ramp gradient: gelap tipis di atas (kontras nav), fade warna kartu di bawah (nyatu kartu)
-        el.style.background = 'linear-gradient(180deg, rgba(11,25,44,0.30) 0%, rgba(11,25,44,0.05) 30%, rgba(255,255,255,0) 55%, #FFFFFF 100%), url(/media/' + key + ')';
+        el.style.background = 'linear-gradient(180deg, rgba(11,25,44,0.30) 0%, rgba(11,25,44,0.05) 30%, rgba(255,255,255,0) 55%, #FFFFFF 100%), url(/media/' + freshKey(key) + ')';
         el.style.backgroundSize = 'cover';
         el.style.backgroundPosition = 'center';
       }
@@ -751,6 +758,12 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) { bbToast(data.error || 'Gagal menyimpan gambar.', 'error'); return; }
+        // tampil instan dengan URL anti-cache (?v=) dari server
+        const k = String((data && data.url) || '').split('/media/')[1] || '';
+        if (k && avatarKeyValid(k)) {
+          if (kind === 'avatar') applyAvatar(k, currentPenName);
+          else applyCover(k);
+        }
         await loadUserData();
         // refresh kartu feed di profil
         loadProfilePosts('original');
@@ -775,7 +788,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
         container.innerHTML = data.posts.map(p => \`
           <div class="thread-card">
             <div class="thread-header-soft">
-              <div class="thread-avatar-clip" style="background:\${getAvatarColor(p.pen_name)};\${p.avatar_key ? \`background-image:url(/media/\${p.avatar_key});background-size:cover;background-position:center;color:transparent;\` : ''}">
+              <div class="thread-avatar-clip" style="background:\${getAvatarColor(p.pen_name)};\${p.avatar_key ? \`background-image:url(/media/\${freshKey(p.avatar_key)});background-size:cover;background-position:center;color:transparent;\` : ''}">
                 \${(p.pen_name[0] || 'D').toUpperCase()}
                 <svg class="paperclip-svg" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
               </div>
