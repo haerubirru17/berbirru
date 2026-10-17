@@ -134,22 +134,23 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       font-size: 13.5px; font-weight: 500; line-height: 1.5; color: #334155; margin-bottom: 14px;
     }
     
-    /* Reddit-Style 3-Column Metrics */
+    /* Reddit-Style Metrics — 5 kolom agar 1 baris di layar kecil */
     .reddit-stats-row {
-      display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1.5px solid #E2E8F0;
+      display: grid; grid-template-columns: repeat(5, 1fr); border-top: 1.5px solid #E2E8F0;
       padding-top: 12px; margin-top: 4px;
     }
     .stat-col {
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      border-right: 1.5px solid #E2E8F0;
+      border-right: 1.5px solid #E2E8F0; min-width: 0;
     }
     .stat-col:last-child { border-right: none; }
     .stat-number {
-      font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 800; color: var(--ink);
+      font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 800; color: var(--ink);
       line-height: 1; margin-bottom: 2px;
     }
     .stat-label {
-      font-size: 9.5px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px;
+      font-size: 8.5px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.3px;
+      white-space: nowrap;
     }
 
     /* Tab Underline Bersih (Hanya 1 Aktif) */
