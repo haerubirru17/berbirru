@@ -683,9 +683,9 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       const ctx = canvas.getContext('2d');
       if (!ctx) { cropClose(); return; }
       const k = canvas.width / w; // stage -> output
-      // gambar digeser -tx,-ty dari tengah stage
-      const dx = (w / 2 - crop.tx) * k - (crop.imgW * crop.scale * k) / 2;
-      const dy = (h / 2 - crop.ty) * k - (crop.imgH * crop.scale * k) / 2;
+      // gambar digeser +tx,+ty dari tengah stage (sama arah dgn preview — tadinya tanda kebalik)
+      const dx = (w / 2 + crop.tx) * k - (crop.imgW * crop.scale * k) / 2;
+      const dy = (h / 2 + crop.ty) * k - (crop.imgH * crop.scale * k) / 2;
       const dw = crop.imgW * crop.scale * k;
       const dh = crop.imgH * crop.scale * k;
       ctx.drawImage(document.getElementById('cropImg'), dx, dy, dw, dh);
