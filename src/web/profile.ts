@@ -134,23 +134,15 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       font-size: 13.5px; font-weight: 500; line-height: 1.5; color: #334155; margin-bottom: 14px;
     }
     
-    /* Reddit-Style Metrics — 5 kolom agar 1 baris di layar kecil */
-    .reddit-stats-row {
-      display: grid; grid-template-columns: repeat(5, 1fr); border-top: 1.5px solid #E2E8F0;
-      padding-top: 12px; margin-top: 4px;
+    /* Statistik inline: icon + angka, 1 baris (Varian 2) */
+    .stats-inline {
+      display: flex; justify-content: center; gap: 22px; border-top: 1.5px solid #E2E8F0;
+      padding-top: 10px; margin-top: 4px;
     }
-    .stat-col {
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      border-right: 1.5px solid #E2E8F0; min-width: 0;
-    }
-    .stat-col:last-child { border-right: none; }
-    .stat-number {
-      font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 800; color: var(--ink);
-      line-height: 1; margin-bottom: 2px;
-    }
-    .stat-label {
-      font-size: 8.5px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.3px;
-      white-space: nowrap;
+    .si { display: inline-flex; align-items: center; gap: 6px; color: var(--ink); }
+    .si svg { width: 17px; height: 17px; flex: none; }
+    .si b {
+      font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 800; line-height: 1;
     }
 
     /* Tab Underline Bersih (Hanya 1 Aktif) */
@@ -391,27 +383,19 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
           "Goresan perenungan rasa dan bait kata di Berbirru."
         </div>
 
-        <div class="reddit-stats-row">
-          <div class="stat-col">
-            <span class="stat-number" id="countPosts">0</span>
-            <span class="stat-label">Warkah</span>
-          </div>
-          <div class="stat-col">
-            <span class="stat-number" id="countLikes">0</span>
-            <span class="stat-label">Terpaut</span>
-          </div>
-          <div class="stat-col">
-            <span class="stat-number" id="countSaved">0</span>
-            <span class="stat-label">Tersimpan</span>
-          </div>
-          <div class="stat-col">
-            <span class="stat-number" id="countFollowers">0</span>
-            <span class="stat-label">Pengikut</span>
-          </div>
-          <div class="stat-col">
-            <span class="stat-number" id="countFollowing">0</span>
-            <span class="stat-label">Mengikuti</span>
-          </div>
+        <div class="stats-inline">
+          <span class="si" title="Karya">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4H6.5A2.5 2.5 0 0 0 4 6.5v13z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>
+            <b id="countPosts">0</b>
+          </span>
+          <span class="si" title="Pengikut">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.4 3.4-5 6.5-5s5.7 1.6 6.5 5"/><circle cx="17.5" cy="9" r="2.5"/><path d="M15.5 15.2c2.8.2 5.2 1.6 6 4.3"/></svg>
+            <b id="countFollowers">0</b>
+          </span>
+          <span class="si" title="Mengikuti">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8.5" cy="8" r="3.5"/><path d="M2.5 20c.8-3.4 3.2-5 6-5s5.2 1.6 6 5"/><path d="M17 8h5M19.5 5.5v5"/></svg>
+            <b id="countFollowing">0</b>
+          </span>
         </div>
       </div>
     </div>
@@ -585,8 +569,6 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
           document.getElementById('cityDisplay').textContent = data.user.city || 'Nusantara';
           document.getElementById('bioDisplay').textContent = '"' + (data.user.bio || 'Goresan perenungan rasa dan bait kata di Berbirru.') + '"';
           document.getElementById('countPosts').textContent = data.user.posts_count || 0;
-          document.getElementById('countLikes').textContent = data.user.likes_count || 0;
-          document.getElementById('countSaved').textContent = data.user.saves_count || 0;
           document.getElementById('countFollowers').textContent = data.user.followers_count || 0;
           document.getElementById('countFollowing').textContent = data.user.following_count || 0;
           setFollowBtn(!!data.user.is_following);
