@@ -95,14 +95,9 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     }
     .media-edit-badge svg { width: 14px; height: 14px; stroke: var(--ink); stroke-width: 2.4; fill: none; }
     .cover-edit-badge {
-      position: absolute; right: 12px; bottom: 44px; z-index: 11;
-      display: inline-flex; align-items: center; gap: 6px;
-      background: rgba(255,255,255,0.92); color: var(--ink);
-      border: 2px solid var(--ink); border-radius: 999px; padding: 5px 12px;
-      font-family: 'Space Grotesk'; font-size: 11px; font-weight: 800; cursor: pointer;
-      box-shadow: 0 2px 0 rgba(11,25,44,0.35);
+      /* menimpa posisi badge kamera avatar untuk dipakai di banner */
+      right: 12px; bottom: 44px; z-index: 11;
     }
-    .cover-edit-badge svg { width: 13px; height: 13px; stroke: var(--ink); stroke-width: 2.4; fill: none; }
     .avatar-box {
       width: 72px; height: 72px; background: var(--blue-primary); color: #FFFFFF; border: var(--border-thick);
       border-radius: 18px; display: grid; place-items: center; font-family: 'Newsreader', serif;
@@ -318,9 +313,8 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       <div class="cover-banner" ${isMe ? `onclick="if(!event.target.closest('.banner-floating-nav'))document.getElementById('coverInput').click()" style="cursor:pointer" title="Ganti foto sampul"` : ''}>
       ${isMe ? '<input type="file" id="coverInput" data-kind="cover" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="pickMedia(this)">' : ''}
         ${isMe ? `
-        <div class="cover-edit-badge" onclick="event.stopPropagation(); document.getElementById('coverInput').click();" title="Ganti foto sampul">
+        <div class="cover-edit-badge media-edit-badge" onclick="event.stopPropagation(); document.getElementById('coverInput').click();" title="Ganti foto sampul">
           <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          <span>Ganti Sampul</span>
         </div>` : ''}
         <!-- Floating Navigation di dalam banner -->
         <div class="banner-floating-nav">
@@ -832,6 +826,14 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
         bbToast(err.message || 'Gagal menghapus.', 'error');
       }
     }
+
+    // fungsi dipanggil onclick inline -> wajib global (module scope tak terlihat oleh atribut HTML)
+    window.saveProfile = saveProfile;
+    window.toggleEditModal = toggleEditModal;
+    window.handleLogout = handleLogout;
+    window.switchProfileTab = switchProfileTab;
+    window.deletePost = deletePost;
+    window.toggleSettingsMenu = toggleSettingsMenu;
 
     loadUserData();
     loadProfilePosts('original');
