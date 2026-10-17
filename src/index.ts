@@ -26,6 +26,7 @@ import { VENDOR_SWEETALERT2_JS, VENDOR_SWEETALERT2_CSS } from './vendor';
 
 export interface Env {
   DB: D1Database;
+  MEDIA: R2Bucket;
   APP_NAME: string;
   APP_DOMAIN: string;
   RESEND_API_KEY?: string;
@@ -201,14 +202,14 @@ app.use('*', async (c, next) => {
 });
 
 // ---- AUTH HELPERS ----
-async function getAuthUser(c: any): Promise<{ id: string; email: string; pen_name: string; city: string; bio: string } | null> {
+async function getAuthUser(c: any): Promise<{ id: string; email: string; pen_name: string; city: string; avatar_key: string | null; cover_key: string | null; display_name: string | null; bio: string } | null> {
   const token = getCookie(c, 'berbirru_session');
   if (!token) return null;
   const session: any = await c.env.DB.prepare(
     // Baris OTP pending (`otp_<hash>`, token_hash NULL) BUKAN sesi: tanpa filter ini,
     // cookie berisi hash OTP lolos sebagai sesi valid (temuan Strix #28).
     // vuln-0005: lookup via SHA-256(token) — plaintext token tak tersimpan di DB.
-    'SELECT u.id, u.email, u.pen_name, u.city, u.bio FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token_hash = ? AND s.expires_at > datetime("now") LIMIT 1'
+    'SELECT u.id, u.email, u.pen_name, u.city, u.avatar_key, u.cover_key, u.display_name, u.bio FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token_hash = ? AND s.expires_at > datetime("now") LIMIT 1'
   ).bind(await sha256hex(token)).first();
   return session || null;
 }
@@ -690,7 +691,7 @@ app.patch('/api/users/me', async (c) => {
     return c.json({ error: 'Terlalu banyak perubahan profil. Tunggu sebentar.' }, 429);
   }
 
-  const { pen_name, city, bio } = await c.req.json().catch(() => ({}));
+  const { pen_name, city, bio, display_name } = await c.req.json().catch(() => ({}));
 
   let cleanPenName = user.pen_name;
   if (pen_name && pen_name.trim() !== user.pen_name) {
@@ -706,12 +707,13 @@ app.patch('/api/users/me', async (c) => {
   // escapeHtml) — lihat feed.ts & profile.ts (vuln-0008).
   const cleanCity = city !== undefined ? String(city).trim().slice(0, 60) : user.city;
   const cleanBio = bio !== undefined ? String(bio).trim().slice(0, 300) : user.bio;
+  const cleanDisplayName = display_name !== undefined ? String(display_name).trim().slice(0, 40) : user.display_name;
 
   await c.env.DB.prepare(
-    'UPDATE users SET pen_name = ?, city = ?, bio = ? WHERE id = ?'
-  ).bind(cleanPenName, cleanCity, cleanBio, user.id).run();
+    'UPDATE users SET pen_name = ?, city = ?, bio = ?, display_name = ? WHERE id = ?'
+  ).bind(cleanPenName, cleanCity, cleanBio, cleanDisplayName, user.id).run();
 
-  return c.json({ ok: true, user: { id: user.id, pen_name: cleanPenName, city: cleanCity, bio: cleanBio } });
+  return c.json({ ok: true, user: { id: user.id, pen_name: cleanPenName, city: cleanCity, bio: cleanBio, display_name: cleanDisplayName } });
 });
 
 app.get('/api/users/suggest', async (c) => {
@@ -725,7 +727,7 @@ app.get('/api/users/suggest', async (c) => {
 
 app.get('/api/users/:pen_name', async (c) => {
   const penName = c.req.param('pen_name').replace(/^@/, '').toLowerCase();
-  const user: any = await c.env.DB.prepare('SELECT id, pen_name, city, bio, created_at FROM users WHERE pen_name = ? LIMIT 1').bind(penName).first();
+  const user: any = await c.env.DB.prepare('SELECT id, pen_name, city, bio, avatar_key, cover_key, display_name, created_at FROM users WHERE pen_name = ? LIMIT 1').bind(penName).first();
   if (!user) return c.json({ error: 'Penulis tidak ditemukan' }, 404);
 
   const postsCount = await c.env.DB.prepare('SELECT COUNT(*) as c FROM posts WHERE author_id = ?').bind(user.id).first('c') || 0;
@@ -739,6 +741,71 @@ app.get('/api/users/:pen_name', async (c) => {
       likes_count: likesCount,
       saves_count: savesCount
     }
+  });
+});
+
+// ---- MEDIA PROFIL (R2): avatar & cover ----
+// batas setelah kompres client. ponytail: cap tetap, naikkan jika perlu.
+const MEDIA_SPEC: Record<string, { max: number; col: string; dir: string }> = {
+  avatar: { max: 256 * 1024, col: 'avatar_key', dir: 'avatar' },
+  cover:  { max: 512 * 1024, col: 'cover_key',  dir: 'cover' }
+};
+const MEDIA_TYPES: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp'
+};
+
+app.put('/api/me/media/:kind', async (c) => {
+  const me = await getAuthUser(c);
+  if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
+
+  const spec = MEDIA_SPEC[c.req.param('kind')];
+  if (!spec) return c.json({ error: 'Jenis media tak dikenal' }, 404);
+
+  const ct = (c.req.header('Content-Type') || '').split(';')[0].trim().toLowerCase();
+  const ext = MEDIA_TYPES[ct];
+  if (!ext) return c.json({ error: 'Hanya JPEG/PNG/WebP' }, 415);
+  if (!c.env.MEDIA) return c.json({ error: 'Media belum siap' }, 503);
+
+  const buf = await c.req.arrayBuffer();
+  if (!buf || buf.byteLength === 0) return c.json({ error: 'Berkas kosong' }, 400);
+  if (buf.byteLength > spec.max) return c.json({ error: `Gambar terlalu besar (maks ${Math.round(spec.max / 1024)}KB setelah kompresi otomatis)` }, 413);
+
+  // magic bytes sungguhan — Content-Type bisa bohong
+  const b = new Uint8Array(buf);
+  const isJpeg = b[0] === 0xFF && b[1] === 0xD8;
+  const isPng = b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47;
+  const isWebP = b[8] === 0x52 && b[9] === 0x49 && b[10] === 0x46 && b[11] === 0x46 && b[12] === 0x57 && b[13] === 0x45 && b[14] === 0x42 && b[15] === 0x50;
+  const sniffExt = isJpeg ? 'jpg' : isPng ? 'png' : isWebP ? 'webp' : null;
+  if (!sniffExt || sniffExt !== ext) return c.json({ error: 'Isi berkas tidak cocok dengan tipenya' }, 415);
+
+  // key per-user+jenis: timpa lama, tak menumpuk sampah di bucket
+  const key = `${spec.dir}/${me.id}.${ext}`;
+  await c.env.MEDIA.put(key, buf, { httpMetadata: { contentType: ct } });
+
+  const old: any = await c.env.DB.prepare(`SELECT ${spec.col} AS k FROM users WHERE id = ?`).bind(me.id).first();
+  await c.env.DB.prepare(`UPDATE users SET ${spec.col} = ? WHERE id = ?`).bind(key, me.id).run();
+
+  // buang objek lama kalau ekstensinya beda
+  if (old?.k && old.k !== key) {
+    await c.env.MEDIA.delete(old.k).catch(() => {});
+  }
+
+  // cache-bust via versi = epoch saat upload
+  return c.json({ ok: true, url: `/media/${key}?v=${Date.now()}` });
+});
+
+app.get('/media/*', async (c) => {
+  const key = c.req.path.replace('/media/', '');
+  if (!/^[a-z0-9_-]+\/[a-z0-9_-]+\.(jpg|png|webp)$/i.test(key)) return c.json({ error: 'Key tak valid' }, 400);
+  if (!c.env.MEDIA) return c.json({ error: 'Media belum siap' }, 503);
+  const obj = await c.env.MEDIA.get(key);
+  if (!obj) return c.json({ error: 'Tidak ditemukan' }, 404);
+  return c.body(obj.body, 200, {
+    'Content-Type': obj.httpMetadata?.contentType || 'application/octet-stream',
+    // ponytail: max-age 5 menit — ganti avatar tampil fresh cepat; ETag-revalidate kalau traffic R2 jadi mahal
+    'Cache-Control': 'public, max-age=300, stale-while-revalidate=3600'
   });
 });
 
@@ -761,7 +828,7 @@ app.get('/api/users/:pen_name/posts', async (c) => {
 
   if (tab === 'likes') {
     query = `
-      SELECT p.*, u.pen_name, u.city 
+      SELECT p.*, u.pen_name, u.city, u.avatar_key 
       FROM likes l 
       JOIN posts p ON l.post_id = p.id 
       JOIN users u ON p.author_id = u.id 
@@ -771,7 +838,7 @@ app.get('/api/users/:pen_name/posts', async (c) => {
     binds.push(targetUser.id);
   } else if (tab === 'saved') {
     query = `
-      SELECT p.*, u.pen_name, u.city 
+      SELECT p.*, u.pen_name, u.city, u.avatar_key 
       FROM bookmarks b 
       JOIN posts p ON b.post_id = p.id 
       JOIN users u ON p.author_id = u.id 
@@ -781,7 +848,7 @@ app.get('/api/users/:pen_name/posts', async (c) => {
     binds.push(targetUser.id);
   } else if (tab === 'chains') {
     query = `
-      SELECT p.*, u.pen_name, u.city 
+      SELECT p.*, u.pen_name, u.city, u.avatar_key 
       FROM posts p 
       JOIN users u ON p.author_id = u.id 
       WHERE p.author_id = ? AND p.parent_id IS NOT NULL 
@@ -791,7 +858,7 @@ app.get('/api/users/:pen_name/posts', async (c) => {
   } else {
     // tab === 'original'
     query = `
-      SELECT p.*, u.pen_name, u.city 
+      SELECT p.*, u.pen_name, u.city, u.avatar_key 
       FROM posts p 
       JOIN users u ON p.author_id = u.id 
       WHERE p.author_id = ? AND p.parent_id IS NULL 
@@ -858,7 +925,7 @@ app.get('/api/posts', async (c) => {
   const user = await getAuthUser(c);
 
   let query = `
-    SELECT p.*, u.pen_name, u.city,
+    SELECT p.*, u.pen_name, u.city, u.avatar_key,
       (SELECT content FROM posts prnt WHERE prnt.id = p.parent_id) as parent_content,
       (SELECT u2.pen_name FROM posts prnt JOIN users u2 ON prnt.author_id = u2.id WHERE prnt.id = p.parent_id) as parent_author
     FROM posts p

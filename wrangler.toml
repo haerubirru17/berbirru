@@ -14,6 +14,10 @@ binding = "DB"
 database_name = "berbirru-db"
 database_id = "03e44422-b75a-4a7d-8464-41640a5372c8"
 
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "berbirru-media"
+
 [vars]
 APP_NAME = "BERBIRRU"
 APP_DOMAIN = "berbirru.com"
