@@ -86,6 +86,23 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       margin-top: -38px; margin-bottom: 12px;
     }
     .avatar-wrapper { position: relative; display: inline-flex; }
+    /* badge kamera edit media (akun sendiri) */
+    .media-edit-badge {
+      position: absolute; right: -8px; bottom: -4px; width: 28px; height: 28px;
+      background: var(--accent-yellow); color: var(--ink); border: 2px solid var(--ink);
+      border-radius: 50%; display: grid; place-items: center; cursor: pointer; z-index: 5;
+      box-shadow: 0 2px 0 rgba(11,25,44,0.35);
+    }
+    .media-edit-badge svg { width: 14px; height: 14px; stroke: var(--ink); stroke-width: 2.4; fill: none; }
+    .cover-edit-badge {
+      position: absolute; right: 12px; bottom: 44px; z-index: 11;
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,0.92); color: var(--ink);
+      border: 2px solid var(--ink); border-radius: 999px; padding: 5px 12px;
+      font-family: 'Space Grotesk'; font-size: 11px; font-weight: 800; cursor: pointer;
+      box-shadow: 0 2px 0 rgba(11,25,44,0.35);
+    }
+    .cover-edit-badge svg { width: 13px; height: 13px; stroke: var(--ink); stroke-width: 2.4; fill: none; }
     .avatar-box {
       width: 72px; height: 72px; background: var(--blue-primary); color: #FFFFFF; border: var(--border-thick);
       border-radius: 18px; display: grid; place-items: center; font-family: 'Newsreader', serif;
@@ -225,6 +242,28 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     .avatar-popover-item:last-child { border-bottom: none; color: #EF4444; }
     .avatar-popover-item:hover { background: var(--bg-blue-subtle); }
 
+    /* modal crop media */
+    .crop-overlay {
+      display: none; position: fixed; inset: 0; z-index: 9999;
+      background: rgba(11,25,44,0.72); align-items: center; justify-content: center; padding: 16px;
+    }
+    .crop-box {
+      background: #FFF; border: var(--border-thick); border-radius: var(--radius);
+      box-shadow: var(--shadow-hard); width: 100%; max-width: 420px; padding: 16px;
+    }
+    .crop-stage {
+      position: relative; overflow: hidden; border: 2px solid var(--ink); border-radius: 10px;
+      background: #0B192C; touch-action: none; cursor: grab;
+      height: 300px;
+    }
+    .crop-stage.round { border-radius: 50%; aspect-ratio: 1 / 1; }
+    .crop-stage.wide { aspect-ratio: 16 / 9; }
+    .crop-img {
+      position: absolute; top: 50%; left: 50%; transform-origin: 0 0;
+      max-width: none; user-select: none; -webkit-user-drag: none; pointer-events: none;
+    }
+    .crop-hint { font-size: 11px; font-weight: 600; color: #64748B; margin-top: 8px; text-align: center; }
+
     .edit-modal {
       display: none; background: #FFF; border: var(--border-thick); border-radius: var(--radius);
       padding: 18px; margin-bottom: 20px; box-shadow: var(--shadow-hard);
@@ -278,6 +317,11 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     <div class="profile-card">
       <div class="cover-banner" ${isMe ? `onclick="if(!event.target.closest('.banner-floating-nav'))document.getElementById('coverInput').click()" style="cursor:pointer" title="Ganti foto sampul"` : ''}>
       ${isMe ? '<input type="file" id="coverInput" data-kind="cover" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="pickMedia(this)">' : ''}
+        ${isMe ? `
+        <div class="cover-edit-badge" onclick="event.stopPropagation(); document.getElementById('coverInput').click();" title="Ganti foto sampul">
+          <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <span>Ganti Sampul</span>
+        </div>` : ''}
         <!-- Floating Navigation di dalam banner -->
         <div class="banner-floating-nav">
           <a href="/feed" class="nav-btn-glass">
@@ -324,7 +368,10 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
             <div class="avatar-box" id="avatarLetter" ${isMe ? 'onclick="document.getElementById(\'avatarInput\').click()" style="cursor:pointer" title="Ganti foto profil"' : ''}>
               ${(penName[0] || 'D').toUpperCase()}
             </div>
-            ${isMe ? '<input type="file" id="avatarInput" data-kind="avatar" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="pickMedia(this)">' : ''}
+            ${isMe ? `<input type="file" id="avatarInput" data-kind="avatar" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="pickMedia(this)">
+            <div class="media-edit-badge" onclick="event.stopPropagation(); document.getElementById('avatarInput').click();" title="Ganti foto profil">
+              <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            </div>` : ''}
             ${!isMe ? `
               <button class="btn-follow-badge" onclick="followUser('${penName}')" aria-label="Ikuti Penulis" title="Ikuti Penulis">
                 <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
@@ -395,6 +442,21 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       <div style="display:flex;justify-content:flex-end;gap:8px;">
         <button onclick="toggleEditModal(false)" style="padding:6px 12px;border:2px solid #0B192C;border-radius:6px;font-weight:800;background:#FFF;cursor:pointer;">Batal</button>
         <button onclick="saveProfile()" style="padding:6px 14px;border:2px solid #0B192C;border-radius:6px;font-weight:900;background:#1D61E7;color:#FFF;cursor:pointer;">Simpan</button>
+      </div>
+    </div>
+
+    <!-- Crop Preview Modal -->
+    <div class="crop-overlay" id="cropOverlay">
+      <div class="crop-box">
+        <h3 style="font-family:'Space Grotesk';font-size:14px;font-weight:800;margin-bottom:10px;" id="cropTitle">Atur Posisi Foto</h3>
+        <div class="crop-stage" id="cropStage">
+          <img class="crop-img" id="cropImg" alt="pratinjau">
+        </div>
+        <div class="crop-hint">Geser untuk memindah • scroll/tonjol dua jari untuk memperbesar</div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px;">
+          <button onclick="cropCancel()" style="padding:6px 12px;border:2px solid #0B192C;border-radius:6px;font-weight:800;background:#FFF;cursor:pointer;">Batal</button>
+          <button onclick="cropSave()" style="padding:6px 14px;border:2px solid #0B192C;border-radius:6px;font-weight:900;background:#1D61E7;color:#FFF;cursor:pointer;">Simpan</button>
+        </div>
       </div>
     </div>
 
@@ -564,16 +626,130 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       }
     }
 
-    async function pickMedia(input) {
+    // ---- CROP PREVIEW (drag + zoom, canvas export, tanpa library) ----
+    const crop = { file: null, kind: 'avatar', scale: 1, minScale: 1, tx: 0, ty: 0, imgW: 0, imgH: 0, dragging: false, lastX: 0, lastY: 0, pinchD: 0 };
+
+    function cropStageSize() {
+      const st = document.getElementById('cropStage');
+      return { w: st.clientWidth, h: st.clientHeight };
+    }
+    function cropClamp() {
+      const { w, h } = cropStageSize();
+      // gambar tak boleh meninggalkan celah: tx/ty dibatasi pinggir
+      const dispW = crop.imgW * crop.scale, dispH = crop.imgH * crop.scale;
+      const mx = Math.max(0, (dispW - w) / 2), my = Math.max(0, (dispH - h) / 2);
+      crop.tx = Math.max(-mx, Math.min(mx, crop.tx));
+      crop.ty = Math.max(-my, Math.min(my, crop.ty));
+    }
+    function cropRender() {
+      const img = document.getElementById('cropImg');
+      img.style.width = (crop.imgW * crop.scale) + 'px';
+      img.style.transform = 'translate(' + (crop.tx - (crop.imgW * crop.scale) / 2) + 'px,' + (crop.ty - (crop.imgH * crop.scale) / 2) + 'px)';
+    }
+    function cropClampRender() { cropClamp(); cropRender(); }
+    function cropOpen(file, kind) {
+      crop.file = file; crop.kind = kind;
+      const st = document.getElementById('cropStage');
+      st.className = 'crop-stage ' + (kind === 'cover' ? 'wide' : 'round');
+      const url = URL.createObjectURL(file);
+      const img = document.getElementById('cropImg');
+      img.onload = () => {
+        crop.imgW = img.naturalWidth; crop.imgH = img.naturalHeight;
+        // tampilkan modal DULU — ukuran stage valid baru setelah terlihat
+        document.getElementById('cropOverlay').style.display = 'flex';
+        const { w, h } = cropStageSize();
+        // scale awal: "cover" — isi penuh stage
+        const cover = Math.max(w / crop.imgW, h / crop.imgH);
+        crop.scale = cover; crop.minScale = cover;
+        crop.tx = 0; crop.ty = 0;
+        cropClampRender();
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); bbToast('Gagal membaca gambar.', 'error'); };
+      img.src = url;
+    }
+    function cropClose() {
+      document.getElementById('cropOverlay').style.display = 'none';
+      if (crop.file && crop.file._url) { URL.revokeObjectURL(crop.file._url); crop.file._url = null; }
+    }
+    function cropCancel() { cropClose(); }
+    function cropSave() {
+      // render transform LIVE ke canvas sesuai frame stage
+      const st = document.getElementById('cropStage');
+      const { w, h } = cropStageSize();
+      const out = crop.kind === 'cover' ? 1080 : 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = out; canvas.height = Math.round(out * h / w);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { cropClose(); return; }
+      const k = canvas.width / w; // stage -> output
+      // gambar digeser -tx,-ty dari tengah stage
+      const dx = (w / 2 - crop.tx) * k - (crop.imgW * crop.scale * k) / 2;
+      const dy = (h / 2 - crop.ty) * k - (crop.imgH * crop.scale * k) / 2;
+      const dw = crop.imgW * crop.scale * k;
+      const dh = crop.imgH * crop.scale * k;
+      ctx.drawImage(document.getElementById('cropImg'), dx, dy, dw, dh);
+      canvas.toBlob(b => {
+        cropClose();
+        if (!b) { bbToast('Gagal memproses gambar.', 'error'); return; }
+        uploadMediaBlob(b, crop.kind);
+      }, 'image/webp', 0.85);
+    }
+    window.cropCancel = cropCancel; window.cropSave = cropSave;
+
+    // interaksi: drag mouse/touch + zoom wheel/pinch
+    (function () {
+      const st = document.getElementById('cropStage');
+      const down = (x, y) => { crop.dragging = true; crop.lastX = x; crop.lastY = y; st.style.cursor = 'grabbing'; };
+      const move = (x, y) => {
+        if (!crop.dragging) return;
+        crop.tx += x - crop.lastX; crop.ty += y - crop.lastY;
+        crop.lastX = x; crop.lastY = y;
+        cropClampRender();
+      };
+      const up = () => { crop.dragging = false; st.style.cursor = 'grab'; };
+      st.addEventListener('mousedown', e => { e.preventDefault(); down(e.clientX, e.clientY); });
+      window.addEventListener('mousemove', e => move(e.clientX, e.clientY));
+      window.addEventListener('mouseup', up);
+      st.addEventListener('touchstart', e => {
+        if (e.touches.length === 1) down(e.touches[0].clientX, e.touches[0].clientY);
+        else if (e.touches.length === 2) {
+          crop.pinchD = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        }
+      }, { passive: true });
+      st.addEventListener('touchmove', e => {
+        e.preventDefault();
+        if (e.touches.length === 1 && crop.pinchD === 0) move(e.touches[0].clientX, e.touches[0].clientY);
+        else if (e.touches.length === 2) {
+          const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+          if (crop.pinchD > 0) {
+            crop.scale = Math.max(crop.minScale, Math.min(crop.minScale * 4, crop.scale * d / crop.pinchD));
+            cropClampRender();
+          }
+          crop.pinchD = d;
+        }
+      }, { passive: false });
+      st.addEventListener('touchend', e => { if (e.touches.length === 0) { up(); crop.pinchD = 0; } }, { passive: true });
+      st.addEventListener('wheel', e => {
+        e.preventDefault();
+        const f = e.deltaY < 0 ? 1.1 : 0.9;
+        crop.scale = Math.max(crop.minScale, Math.min(crop.minScale * 4, crop.scale * f));
+        cropClampRender();
+      }, { passive: false });
+    })();
+
+    window.pickMedia = function (input) {
       const kind = input.dataset.kind || 'avatar';
       const file = input.files && input.files[0];
-      if (!file) return;
       input.value = '';
+      if (!file) return;
       if (!new RegExp('^image/(jpeg|png|webp)$').test(file.type)) { bbToast('Pilih gambar JPG, PNG, atau WebP.', 'warning'); return; }
       if (file.size > 15 * 1024 * 1024) { bbToast('Gambar terlalu besar (maks 15MB sebelum dikompres).', 'warning'); return; }
+      file._url = null;
+      cropOpen(file, kind);
+    };
+
+    async function uploadMediaBlob(blob, kind) {
       try {
-        const size = kind === 'cover' ? 1080 : 256;
-        const blob = await compressImage(file, size, kind === 'cover');
         const res = await fetch('/api/me/media/' + kind, {
           method: 'PUT',
           headers: { 'Content-Type': blob.type },
@@ -588,42 +764,6 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
         bbToast('Gagal memproses gambar. Coba gambar lain.', 'error');
       }
     }
-
-    function compressImage(file, size, wide) {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        const url = URL.createObjectURL(file);
-        img.onload = () => {
-          URL.revokeObjectURL(url);
-          const canvas = document.createElement('canvas');
-          if (wide) {
-            // cover: lebar tetap, tinggi proporsional (dipangkas 16:9 maks)
-            canvas.width = size;
-            canvas.height = Math.min(Math.round(size * 9 / 16), Math.round(size * img.height / img.width));
-          } else {
-            canvas.width = size; canvas.height = size;
-          }
-          const ctx = canvas.getContext('2d');
-          if (!ctx) { reject(new Error('canvas')); return; }
-          if (wide) {
-            // ambil bagian tengah vertikal selebar gambar
-            const th = Math.round(img.width * canvas.height / canvas.width);
-            const ty = Math.max(0, Math.round((img.height - th) / 2));
-            ctx.drawImage(img, 0, ty, img.width, th, 0, 0, canvas.width, canvas.height);
-          } else {
-            // cover-crop ke kotak
-            const s = Math.min(img.width, img.height);
-            ctx.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size);
-          }
-          canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob')), 'image/webp', 0.85);
-        };
-        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode')); };
-        img.src = url;
-      });
-    }
-
-    window.pickMedia = pickMedia;
-
 
     function escapeHtml(t) {
       return String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
