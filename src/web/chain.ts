@@ -61,7 +61,7 @@ export function renderChainPage(opts: {
     .brand { display: inline-flex; align-items: center; gap: 8px; background: #1c56eb; color: #fff; font-size: 17px; font-weight: 900; letter-spacing: .03em; border: 3px solid #111c2d; border-radius: 14px; padding: 8px 15px; box-shadow: 4px 5px #111c2d; }
     .brand svg { width: 20px; height: 20px; flex: none; }
     .brand-com-tag { font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 900; color: var(--blue-primary); position: relative; display: inline-block; transform: rotate(2deg); margin-left: 4px; margin-top: 2px; z-index: 1; line-height: 1; padding-bottom: 3px; }
-    .brand-com-tag::after { content: ''; position: absolute; left: -24px; bottom: -3px; width: calc(100% + 28px); height: 6px; background: var(--accent-yellow); border-radius: 3px; z-index: -1; }
+    .brand-com-tag::after { content: ''; position: absolute; left: -2px; bottom: -2px; width: calc(100% + 4px); height: 6px; background: var(--accent-yellow); border-radius: 3px; z-index: -1; }
     .back { font-size: 12.5px; font-weight: 900; border: 2px solid #0B192C; background: #FFF; border-radius: 9px; padding: 6px 12px; box-shadow: 2px 2px 0 #1E293B; text-decoration: none; color: #0B192C; }
     .notice { background: #FFF8E6; border: 2px dashed #C79A2E; border-radius: 12px; padding: 11px 13px; font-size: 12.5px; font-weight: 600; color: #7A5A00; margin-bottom: 12px; line-height: 1.5; }
     .tcard { background: #FFF; border: 2.5px solid #22314A; border-radius: 13px; box-shadow: 3px 3px 0 #C9D6E8; padding: 12px 13px; margin-bottom: 12px; position: relative; }
