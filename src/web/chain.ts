@@ -56,12 +56,25 @@ export function renderChainPage(opts: {
     body { background: #EAF2FB; font-family: 'Plus Jakarta Sans', sans-serif; color: #0B192C; padding-bottom: 96px; }
     .wrap { max-width: 560px; margin: 0 auto; padding: 14px; }
     .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-    /* Logo resmi — .brand verbatim dari sibiru.ts; .brand-com-tag verbatim dari feed.ts */
-    .brand-wrap { display: inline-flex; align-items: flex-start; text-decoration: none; position: relative; }
-    .brand { display: inline-flex; align-items: center; gap: 8px; background: #1c56eb; color: #fff; font-size: 17px; font-weight: 900; letter-spacing: .03em; border: 3px solid #111c2d; border-radius: 14px; padding: 8px 15px; box-shadow: 4px 5px #111c2d; }
-    .brand svg { width: 20px; height: 20px; flex: none; }
-    .brand-com-tag { font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 900; color: var(--blue-primary); position: relative; display: inline-block; transform: rotate(2deg); margin-left: 4px; margin-top: 2px; z-index: 1; line-height: 1; padding-bottom: 3px; }
-    .brand-com-tag::after { content: ''; position: absolute; left: -2px; bottom: -2px; width: calc(100% + 4px); height: 6px; background: var(--accent-yellow); border-radius: 3px; z-index: -1; }
+    /* Logo resmi — verbatim .brand-header login.ts (z-index lapisan ikut disalin) */
+    .brand-wrap { display: inline-flex; align-items: center; text-decoration: none; position: relative; }
+    .brand {
+      display: inline-flex; align-items: center; gap: 6px; background: var(--blue-primary);
+      color: #FFFFFF; padding: 6px 14px; border: var(--border-thick); border-radius: 16px;
+      box-shadow: 4px 4px 0 var(--shadow-ink); transform: rotate(-1deg); position: relative; z-index: 2;
+    }
+    .brand h1 { margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 800; letter-spacing: 0.5px; color: #FFFFFF; line-height: 1; }
+    .brand svg { width: 16px; height: 16px; stroke: #FFFFFF; stroke-width: 2; fill: none; flex-shrink: 0; }
+    .brand-com-tag {
+      font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 900;
+      color: var(--blue-primary); position: relative; display: inline-block;
+      transform: rotate(2deg); margin-left: 4px; margin-top: 2px; z-index: 1; line-height: 1;
+      padding-bottom: 3px;
+    }
+    .brand-com-tag::after {
+      content: ''; position: absolute; left: -24px; bottom: -3px; width: calc(100% + 28px); height: 6px;
+      background: var(--accent-yellow); border-radius: 3px; z-index: -1;
+    }
     .back { font-size: 12.5px; font-weight: 900; border: 2px solid #0B192C; background: #FFF; border-radius: 9px; padding: 6px 12px; box-shadow: 2px 2px 0 #1E293B; text-decoration: none; color: #0B192C; }
     .notice { background: #FFF8E6; border: 2px dashed #C79A2E; border-radius: 12px; padding: 11px 13px; font-size: 12.5px; font-weight: 600; color: #7A5A00; margin-bottom: 12px; line-height: 1.5; }
     .tcard { background: #FFF; border: 2.5px solid #22314A; border-radius: 13px; box-shadow: 3px 3px 0 #C9D6E8; padding: 12px 13px; margin-bottom: 12px; position: relative; }
@@ -127,7 +140,13 @@ export function renderChainPage(opts: {
 <body>
   <div class="wrap">
     <div class="top">
-      <a class="brand-wrap" href="/feed"><span class="brand"><svg viewBox="0 0 28 28" fill="none" stroke="white" stroke-width="3" aria-hidden="true"><path d="m14 2 11 6v13l-11 6L3 21V8Z"/></svg>BERBIRRU</span><span class="brand-com-tag">.com</span></a>
+      <a href="/feed" class="brand-wrap">
+        <div class="brand">
+          <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          <h1>BERBIRRU</h1>
+        </div>
+        <span class="brand-com-tag">.com</span>
+      </a>
       <a class="back" href="/feed">‹ Beranda</a>
     </div>
 
