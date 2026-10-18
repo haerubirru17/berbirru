@@ -1,0 +1,31 @@
+# ENV UJI — sandbox Pasar Buku. PROD TIDAK TERSANGKUT (tanpa routes, worker sendiri).
+# Deploy: npx wrangler deploy --config wrangler.uji.toml
+name = "berbirru-uji"
+main = "src/index.ts"
+compatibility_date = "2025-06-01"
+workers_dev = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "berbirru-db-uji"
+database_id = "743f739f-e59b-492a-baa2-5eb3ea33968d"
+
+# ponytail: nimpa bucket media prod (key UUID acak, blob foto saja) — bucket terpisah butuh izin R2 create yg belum ada di token.
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "berbirru-media"
+
+[vars]
+APP_NAME = "BERBIRRU"
+APP_DOMAIN = "berbirru-uji.workers.dev"
+# Kunci TEST resmi Cloudflare (auto-pass, khusus staging) — bukan widget prod.
+TURNSTILE_SITE_KEY = "1x00000000000000000000AA"
+TURNSTILE_SECRET_KEY = "1x0000000000000000000000000000000AA"
+KLIKQRIS_MOCK = "1"
+BINDERBYTE_KEY = "sk_t6ubhvdfwticakc9mrc6fy53ksxmbfr0fpdeximr6g7iurqvsll8j7nipe8yotqf"
+
+[observability]
+enabled = true
+
+[triggers]
+crons = ["0 * * * *"]
