@@ -12,25 +12,18 @@ export function renderSearchPage(user: any = null): string {
   <meta property="og:description" content="Cari penulis dan warkah di BERBIRRU.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800;900&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,700;1,6..72,500&family=Roboto+Mono:wght@600;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --bg-main: #F0F6FE; --bg-card: #FFFFFF; --bg-blue-subtle: #E0EEFD;
-      --ink: #0B192C; --shadow-ink: #1E293B; --blue-primary: #1D61E7;
-      --blue-deep: #0F3E99; --blue-light: #60A5FA; --accent-yellow: #FDE047;
-      --border-thick: 3px solid var(--ink); --border-med: 2.5px solid var(--ink); --border-thin: 2px solid var(--ink);
-      --shadow-hard: 4px 4px 0 var(--shadow-ink); --shadow-hard-sm: 2.5px 2.5px 0 var(--shadow-ink);
-      --radius: 16px; --radius-sm: 10px;
-    }
+    :root{--blue:#1D61E7;--deep:#0F3E99;--ink:#0B192C;--paper:#FFF9E9;--white:#FFFEF8;--yellow:#FDE047;--coral:#FF735F;--mint:#88E6BD;--soft:#E0EEFD;--red:#EF4444;--green:#059669;--line:3px solid var(--ink);--thin:2px solid var(--ink);--shadow:6px 7px 0 #26364A;--small-shadow:3px 4px 0 #26364A;--bg-main:var(--paper);--bg-card:#fff;--bg-blue-subtle:var(--soft);--shadow-ink:#26364A;--blue-primary:var(--blue);--blue-deep:var(--deep);--blue-light:#60A5FA;--accent-yellow:var(--yellow);--border-thick:var(--line);--border-med:3px solid var(--ink);--border-thin:var(--thin);--shadow-hard:var(--small-shadow);--shadow-hard-lg:var(--shadow);--shadow-hard-sm:2px 3px 0 #26364A;--radius:0;--radius-sm:0}
     body {
-      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      font-family: 'DM Sans', -apple-system, sans-serif;
       background-color: #FBF8F3; color: var(--ink); min-height: 100vh;
       padding: 20px 16px 80px;
     }
     .container { max-width: 480px; margin: 0 auto; }
     .search-hero { margin-bottom: 16px; }
-    .search-title { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 800; margin-bottom: 12px; }
+    .search-title { font-family: 'Archivo Black', sans-serif; font-size: 22px; font-weight: 800; margin-bottom: 12px; }
     .search-box { display: flex; gap: 8px; }
     .search-input {
       flex: 1; font: inherit; font-size: 14px; font-weight: 700; padding: 12px 14px;
@@ -102,29 +95,23 @@ export function renderSearchPage(user: any = null): string {
     }
     /* 5-TAB DOCKED BOTTOM NAVBAR — Shadcn / Lucide Style (kembar feed) */
     .bottom-navbar {
-      position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255, 255, 255, 0.94);
-      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-      border-top: 1.5px solid #0B192C; padding: 6px 12px calc(6px + env(safe-area-inset-bottom));
-      display: flex; justify-content: space-between; z-index: 1000; box-shadow: 0 -4px 20px rgba(11,25,44,0.08);
+      position:fixed;bottom:0;left:0;right:0;transform:none;width:100%;max-width:none;z-index:70;background:#fff;border-top:2px solid var(--ink);padding:6px 12px calc(6px + env(safe-area-inset-bottom));box-shadow:0 -5px 0 rgba(11,25,44,.07)
     }
     .navbar-inner {
-      width: 100%; max-width: 480px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; align-items: center;
+      max-width:560px;margin:auto;background:transparent;border:0;border-radius:0;box-shadow:none;display:grid;grid-template-columns:repeat(5,1fr);padding:0
     }
     .nav-item {
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 3px; text-decoration: none; color: #64748B; padding: 5px 0; cursor: pointer;
-      transition: color 0.15s ease, transform 0.1s ease;
+gap:2px;text-decoration:none;color:#6A788D;font-size:10px;font-weight:800;cursor:pointer;padding:0
     }
-    .nav-item span { font-size: 10.5px; font-weight: 700; letter-spacing: -0.01em; }
+    .nav-item span { font-size:10px;font-weight:800; letter-spacing: -0.01em; }
     .nav-item svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .nav-item.active { color: var(--blue-primary); }
     .nav-item.active span { color: var(--blue-primary); font-weight: 900; }
     .nav-item.active svg { stroke: var(--blue-primary); stroke-width: 2.3; }
     .nav-item-center { position: relative; top: -8px; }
     .btn-create-floating {
-      width: 46px; height: 46px; background: var(--accent-yellow); color: var(--ink);
-      border: 2.5px solid var(--ink); border-radius: 14px; display: grid; place-items: center;
-      box-shadow: 2.5px 2.5px 0 var(--shadow-ink); transform: rotate(-2deg); transition: transform 0.05s ease;
+width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);color:var(--ink);border:2.5px solid var(--ink);box-shadow:3px 3px 0 var(--ink);transform:rotate(-2deg)
     }
     .btn-create-floating svg { width: 20px; height: 20px; stroke: #0B192C; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .btn-create-floating:active { transform: translate(1.5px, 1.5px); box-shadow: none; }

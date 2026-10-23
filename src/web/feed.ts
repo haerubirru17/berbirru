@@ -14,20 +14,13 @@ export function renderFeedPage(user: any = null): string {
   <meta property="og:image" content="https://berbirru.com/og-image.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800;900&family=Space+Grotesk:wght@600;700;800&family=JetBrains+Mono:wght@600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,700;1,6..72,500&family=Roboto+Mono:wght@600;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --bg-main: #F0F6FE; --bg-card: #FFFFFF; --bg-blue-subtle: #E0EEFD;
-      --ink: #0B192C; --shadow-ink: #1E293B; --blue-primary: #1D61E7;
-      --blue-deep: #0F3E99; --blue-light: #60A5FA; --accent-yellow: #FDE047;
-      --border-thick: 3px solid var(--ink); --border-med: 2.5px solid var(--ink); --border-thin: 2px solid var(--ink);
-      --shadow-hard: 4px 4px 0 var(--shadow-ink); --shadow-hard-lg: 6px 6px 0 var(--shadow-ink); --shadow-hard-sm: 2.5px 2.5px 0 var(--shadow-ink);
-      --radius: 16px; --radius-sm: 10px;
-    }
+    :root{--blue:#1D61E7;--deep:#0F3E99;--ink:#0B192C;--paper:#FFF9E9;--white:#FFFEF8;--yellow:#FDE047;--coral:#FF735F;--mint:#88E6BD;--soft:#E0EEFD;--red:#EF4444;--green:#059669;--line:3px solid var(--ink);--thin:2px solid var(--ink);--shadow:6px 7px 0 #26364A;--small-shadow:3px 4px 0 #26364A;--bg-main:var(--paper);--bg-card:#fff;--bg-blue-subtle:var(--soft);--shadow-ink:#26364A;--blue-primary:var(--blue);--blue-deep:var(--deep);--blue-light:#60A5FA;--accent-yellow:var(--yellow);--border-thick:var(--line);--border-med:3px solid var(--ink);--border-thin:var(--thin);--shadow-hard:var(--small-shadow);--shadow-hard-lg:var(--shadow);--shadow-hard-sm:2px 3px 0 #26364A;--radius:0;--radius-sm:0}
     body {
       font-family: 'DM Sans', -apple-system, sans-serif;
-      background-color: var(--paper, #FBF8F3); color: var(--ink); min-height: 100vh;
+      background:var(--paper); color: var(--ink); min-height: 100vh;
       padding: 20px 16px 80px;
     }
     .container { max-width: 480px; margin: 0 auto; }
@@ -38,9 +31,9 @@ export function renderFeedPage(user: any = null): string {
       color: #FFFFFF; padding: 6px 14px; border: var(--border-thick); border-radius: var(--radius);
       box-shadow: var(--shadow-hard); transform: rotate(-1deg); position: relative; z-index: 2;
     }
-    .brand-badge h1 { font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 800; letter-spacing: 0.5px; }
+    .brand-badge h1 { font-family: 'Archivo Black', sans-serif; font-size: 19px; font-weight: 800; letter-spacing: 0.5px; }
     .brand-com-tag {
-      font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 900;
+      font-family: 'Archivo Black', sans-serif; font-size: 26px; font-weight: 900;
       color: var(--blue-primary); position: relative; display: inline-block;
       transform: rotate(2deg); margin-left: 4px; margin-top: 2px; z-index: 1; line-height: 1;
       padding-bottom: 3px;
@@ -76,7 +69,7 @@ export function renderFeedPage(user: any = null): string {
     .trigger-avatar-clip {
       position: absolute; left: 12px; top: -14px; width: 48px; height: 50px;
       background: var(--blue-primary); color: #FFF; border: var(--border-thick);
-      border-radius: 12px; display: grid; place-items: center; font-family: 'Space Grotesk', sans-serif;
+      border-radius: 12px; display: grid; place-items: center; font-family: 'Archivo Black', sans-serif;
       font-weight: 900; font-size: 23px; box-shadow: none;
       transform: rotate(-2deg); z-index: 5;
     }
@@ -130,7 +123,7 @@ export function renderFeedPage(user: any = null): string {
     .thread-parent-connector:hover { background: var(--bg-blue-subtle); }
     .chain-inline { padding: 9px 12px 4px; background: #FBFDFF; border-top: 1.5px solid #E2E8F0; }
     .mini-bait { position: relative; background: #F4F8FE; border: 1.5px solid #C9D6E8; border-radius: 9px; padding: 7px 9px; margin-bottom: 7px; }
-    .mini-who { font-size: 10.5px; font-weight: 900; color: var(--blue-primary); margin-bottom: 3px; }
+    .mini-who { font-size:10px; font-weight: 900; color: var(--blue-primary); margin-bottom: 3px; }
     .mini-who a { color: var(--blue-primary); text-decoration: none; }
     .mini-txt { font-size: 12px; line-height: 1.55; color: #3A4C68; }
     .ctamini { text-align: center; font-size: 11.5px; font-weight: 900; margin: 4px 0 6px; }
@@ -162,8 +155,8 @@ export function renderFeedPage(user: any = null): string {
     }
     
     .font-serif { font-family: 'Newsreader', serif !important; font-size: 16px; }
-    .font-sans { font-family: 'Plus Jakarta Sans', sans-serif !important; }
-    .font-mono { font-family: 'JetBrains Mono', monospace !important; background: #E0EEFD; padding: 1px 5px; border-radius: 4px; font-size: 13.5px; }
+    .font-sans { font-family: 'DM Sans', sans-serif !important; }
+    .font-mono { font-family: 'Roboto Mono', monospace !important; background: #E0EEFD; padding: 1px 5px; border-radius: 4px; font-size: 13.5px; }
 
     .thread-footer {
       padding: 8px 10px; background: #FFFFFF; display: flex; justify-content: space-between; align-items: center;
@@ -216,7 +209,7 @@ export function renderFeedPage(user: any = null): string {
       font-size: 13px; font-weight: 800; color: #64748B; background: none; border: none; cursor: pointer; padding: 6px 4px;
     }
     .header-title-clean {
-      font-family: 'Space Grotesk', sans-serif; font-size: 15.5px; font-weight: 800; color: var(--ink); letter-spacing: -0.3px;
+      font-family: 'Archivo Black', sans-serif; font-size: 15.5px; font-weight: 800; color: var(--ink); letter-spacing: -0.3px;
     }
     .btn-publish-pill {
       background: var(--blue-primary); color: #FFFFFF; border: var(--border-med); border-radius: 999px;
@@ -229,7 +222,7 @@ export function renderFeedPage(user: any = null): string {
       padding: 20px 18px 90px; flex: 1; display: flex; flex-direction: column; gap: 14px;
     }
     .title-input {
-      font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 800; color: var(--ink);
+      font-family: 'Archivo Black', sans-serif; font-size: 22px; font-weight: 800; color: var(--ink);
       border: none; outline: none; width: 100%; line-height: 1.25; letter-spacing: -0.4px;
     }
     .title-input::placeholder { color: #CBD5E1; font-weight: 700; }
@@ -246,7 +239,7 @@ export function renderFeedPage(user: any = null): string {
 
     /* Floating Docked Bottom Toolbar */
     .docked-footer {
-      position: sticky; bottom: 0; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(8px);
+      position: sticky; bottom: 0; background:#fff;
       border-top: var(--border-thick); padding: 10px 16px; display: flex; justify-content: space-between;
       align-items: center; z-index: 20;
     }
@@ -264,24 +257,20 @@ export function renderFeedPage(user: any = null): string {
       background: #FFFFFF; font-size: 12px; font-weight: 800; color: var(--ink);
       box-shadow: 1.5px 1.5px 0 var(--shadow-ink); outline: none; cursor: pointer;
     }
-    .stats-label { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 700; color: #64748B; }
+    .stats-label { font-family: 'Roboto Mono', monospace; font-size: 11.5px; font-weight: 700; color: #64748B; }
 
     /* 5-TAB DOCKED BOTTOM NAVBAR — Shadcn / Lucide Style */
     .bottom-navbar {
-      position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255, 255, 255, 0.94);
-      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-      border-top: 1.5px solid #0B192C; padding: 6px 12px calc(6px + env(safe-area-inset-bottom));
-      display: flex; justify-content: space-between; z-index: 1000; box-shadow: 0 -4px 20px rgba(11,25,44,0.08);
+      position:fixed;bottom:0;left:0;right:0;transform:none;width:100%;max-width:none;z-index:70;background:#fff;border-top:2px solid var(--ink);padding:6px 12px calc(6px + env(safe-area-inset-bottom));box-shadow:0 -5px 0 rgba(11,25,44,.07)
     }
     .navbar-inner {
-      width: 100%; max-width: 480px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; align-items: center;
+      max-width:560px;margin:auto;background:transparent;border:0;border-radius:0;box-shadow:none;display:grid;grid-template-columns:repeat(5,1fr);padding:0
     }
     .nav-item {
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 3px; text-decoration: none; color: #64748B; padding: 5px 0; cursor: pointer;
-      transition: color 0.15s ease, transform 0.1s ease;
+gap:2px;text-decoration:none;color:#6A788D;font-size:10px;font-weight:800;cursor:pointer;padding:0
     }
-    .nav-item span { font-size: 10.5px; font-weight: 700; letter-spacing: -0.01em; }
+    .nav-item span { font-size:10px;font-weight:800; letter-spacing: -0.01em; }
     .nav-item svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .nav-item.active { color: var(--blue-primary); }
     .nav-item.active span { color: var(--blue-primary); font-weight: 900; }
@@ -292,9 +281,7 @@ export function renderFeedPage(user: any = null): string {
       position: relative; top: -8px;
     }
     .btn-create-floating {
-      width: 46px; height: 46px; background: var(--accent-yellow); color: var(--ink);
-      border: 2.5px solid var(--ink); border-radius: 14px; display: grid; place-items: center;
-      box-shadow: 2.5px 2.5px 0 var(--shadow-ink); transform: rotate(-2deg); transition: transform 0.05s ease;
+width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);color:var(--ink);border:2.5px solid var(--ink);box-shadow:3px 3px 0 var(--ink);transform:rotate(-2deg)
     }
     .btn-create-floating svg { width: 20px; height: 20px; stroke: #0B192C; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .btn-create-floating:active { transform: translate(1.5px, 1.5px); box-shadow: none; }

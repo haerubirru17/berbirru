@@ -25,3 +25,6 @@ TURNSTILE_SITE_KEY = "0x4AAAAAAFTEI0GwdODJRhtT"
 
 [observability]
 enabled = true
+
+[triggers]
+crons = ["0 * * * *"]

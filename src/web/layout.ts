@@ -9,10 +9,9 @@ export function renderBottomNav(activeTab: 'feed' | 'search' | 'compose' | 'noti
         <span>Beranda</span>
       </a>
 
-      <a href="/search" class="nav-item ${activeTab === 'search' ? 'active' : ''}">
-        <!-- Lucide Search -->
-        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <span>Telusuri</span>
+      <a href="/pasar" class="nav-item ${activeTab === 'search' ? 'active' : ''}">
+        <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>
+        <span>Pasar Buku</span>
       </a>
 
       <div class="nav-item nav-item-center" onclick="typeof openStudioModal === 'function' ? openStudioModal() : (location.href='/feed?action=compose')">

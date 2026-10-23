@@ -16,11 +16,17 @@ async function sha256hex(s: string): Promise<string> {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 import { renderLoginPage } from './web/login';
+import { cekResi } from './kurir';
 import { renderFeedPage } from './web/feed';
 import { renderSearchPage } from './web/search';
 import { renderProfilePage } from './web/profile';
 import { renderNotificationsPage } from './web/notifications';
 import { renderChainPage } from './web/chain';
+import { renderPasarPage, renderJualPage, renderListingDetail } from './web/pasar';
+import { renderCheckoutPage } from './web/checkout';
+import { renderOrderPage } from './web/order';
+import { createQrisTransaction, getQrisStatus, verifyWebhook, KlikQrisEnv } from './klikqris';
+import { providerAmountMatches, settlementAmounts } from './lib/pasar-settlement';
 import { sendOtpEmail } from './mail';
 import { OG_IMAGE_BASE64 } from './assets';
 import { VENDOR_SWEETALERT2_JS, VENDOR_SWEETALERT2_CSS } from './vendor';
@@ -34,6 +40,11 @@ export interface Env {
   RESEND_FROM?: string;
   TURNSTILE_SITE_KEY?: string;
   TURNSTILE_SECRET_KEY?: string;
+  KLIKQRIS_API_KEY?: string;
+  KLIKQRIS_MERCHANT_ID?: string;
+  KLIKQRIS_API_URL?: string;
+  KLIKQRIS_CALLBACK_URL?: string;
+  KLIKQRIS_MOCK?: string;
 }
 
 // Helper verifikasi Cloudflare Turnstile token
@@ -190,10 +201,12 @@ app.use('*', async (c, next) => {
     const origin = c.req.header('origin');
     // dev: request ke host lokal (wrangler dev) boleh bawa origin localhost.
     // produksi: host selalu berbirru.com → origin localhost asing tetap ditolak.
-    const reqHost = new URL(c.req.url).hostname;
+    const requestUrl = new URL(c.req.url);
+    const reqHost = requestUrl.hostname;
     const devHost = reqHost === 'localhost' || reqHost === '127.0.0.1';
     const okLocal = devHost && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin || '');
-    if (origin && !okLocal && !ALLOWED_ORIGINS.includes(origin)) {
+    const sameOrigin = origin === requestUrl.origin;
+    if (origin && !sameOrigin && !okLocal && !ALLOWED_ORIGINS.includes(origin)) {
       return c.json({ error: 'Permintaan dari situs lain ditolak.' }, 403);
     }
   }
@@ -893,6 +906,352 @@ app.get('/api/users/:pen_name/posts', async (c) => {
 });
 
 // ---- NOTIFIKASI (SSR) ----
+// ================= PASAR BUKU (rekber marketplace) =================
+// Fee rekber 5.000/order ditanggung penjual; pembeli bayar harga+ongkir persis.
+const PASAR_FEE = 5000; // ponytail: konstanta — pindah env/KV saat owner mau ubah tanpa deploy
+const MAX_LISTING_PHOTOS = 5;
+const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
+const PHOTO_DIR = 'pasar';
+const PHOTO_TYPES: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+
+app.post('/api/pasar/upload', async (c) => {
+  const me = await getAuthUser(c);
+  if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
+  const ct = (c.req.header('Content-Type') || '').split(';')[0].trim().toLowerCase();
+  const ext = PHOTO_TYPES[ct];
+  if (!ext) return c.json({ error: 'Hanya JPEG/PNG/WebP' }, 415);
+  if (!c.env.MEDIA) return c.json({ error: 'Media belum siap' }, 503);
+  const buf = await c.req.arrayBuffer();
+  if (!buf || buf.byteLength === 0) return c.json({ error: 'Berkas kosong' }, 400);
+  if (buf.byteLength > PHOTO_MAX_BYTES) return c.json({ error: 'Foto terlalu besar (maks 5MB)' }, 413);
+  const b = new Uint8Array(buf);
+  const isJpeg = b[0] === 0xFF && b[1] === 0xD8;
+  const isPng = b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47;
+  const isWebP = b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50;
+  const sniffExt = isJpeg ? 'jpg' : isPng ? 'png' : isWebP ? 'webp' : null;
+  if (!sniffExt || sniffExt !== ext) return c.json({ error: 'Isi berkas tidak cocok dengan tipenya' }, 415);
+  const key = `${PHOTO_DIR}/${me.id}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  await c.env.MEDIA.put(key, buf, { httpMetadata: { contentType: ct } });
+  return c.json({ ok: true, key, url: `/media/${key}?v=${Date.now()}` });
+});
+
+app.delete('/api/pasar/upload', async (c) => {
+  const me = await getAuthUser(c);
+  if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
+  const key = c.req.query('key') || '';
+  // hanya boleh hapus foto miliknya sendiri di folder pasar
+  if (!key.startsWith(`${PHOTO_DIR}/${me.id}_`)) return c.json({ error: 'Key tak valid' }, 403);
+  if (!/^[a-z0-9_/-]+\.(jpg|png|webp)$/i.test(key)) return c.json({ error: 'Key tak valid' }, 400);
+  await c.env.MEDIA.delete(key).catch(() => {});
+  return c.json({ ok: true });
+});
+
+app.post('/api/pasar/listings', async (c) => {
+  const me = await getAuthUser(c);
+  if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
+  const body: any = await c.req.json().catch(() => null);
+  if (!body) return c.json({ error: 'Body tidak valid' }, 400);
+  const title = String(body.title || '').trim();
+  const author = String(body.author || '').trim().slice(0, 100);
+  const descr = String(body.descr || '').trim().slice(0, 800);
+  const cond = ['baru', 'bekas_bagus', 'bekas_layak'].includes(body.cond) ? body.cond : 'bekas_bagus';
+  const price = Number(body.price);
+  const shippingFlat = Number(body.shipping_flat) || 0;
+  let photos: string[] = Array.isArray(body.photos) ? body.photos.map(String) : [];
+  photos = photos.filter((k) => new RegExp(`^${PHOTO_DIR}/${me.id}_[0-9]+_[a-z0-9]+\\.(jpg|png|webp)$`).test(k)).slice(0, MAX_LISTING_PHOTOS);
+  if (!title || title.length > 140) return c.json({ error: 'Judul wajib diisi (maks 140 karakter)' }, 400);
+  if (!Number.isInteger(price) || price < 1000 || price > 10_000_000) return c.json({ error: 'Harga harus Rp1.000–10.000.000' }, 400);
+  if (shippingFlat < 0 || shippingFlat > 100_000) return c.json({ error: 'Ongkir maksimal Rp100.000' }, 400);
+  if (photos.length === 0) return c.json({ error: 'Minimal 1 foto buku' }, 400);
+  const id = crypto.randomUUID();
+  await c.env.DB.prepare(
+    'INSERT INTO listings (id, seller_id, title, author, descr, cond, price, shipping_flat, status, photos) VALUES (?,?,?,?,?,?,?,?,?,?)'
+  ).bind(id, me.id, title, author, descr, cond, price, shippingFlat, 'active', JSON.stringify(photos)).run();
+  return c.json({ ok: true, id });
+});
+
+app.get('/pasar', async (c) => {
+  const user = await getAuthUser(c);
+  const listings = await c.env.DB.prepare(
+    "SELECT id, seller_id, title, cond, price, shipping_flat, photos FROM listings WHERE status = 'active' ORDER BY created_at DESC LIMIT 100"
+  ).all();
+  return c.html(renderPasarPage(user, listings.results || []));
+});
+
+app.get('/pasar/jual', async (c) => {
+  const user = await getAuthUser(c);
+  if (!user) return c.redirect('/login');
+  return c.html(renderJualPage(user));
+});
+
+app.get('/pasar/:id', async (c) => {
+  const user = await getAuthUser(c);
+  const p: any = await c.env.DB.prepare(
+    'SELECT * FROM listings WHERE id = ? AND status != \'hidden\''
+  ).bind(c.req.param('id')).first();
+  if (!p) return c.notFound();
+  const seller: any = await c.env.DB.prepare(
+    'SELECT pen_name, display_name, city, avatar_key FROM users WHERE id = ?'
+  ).bind(p.seller_id).first();
+  if (!seller) return c.notFound();
+  return c.html(renderListingDetail(user, p, seller));
+});
+
+// ---- Order: kwitansi → QRIS → webhook → serah → selesai ----
+// State: created → paid → handed → completed | expired | disputed
+const ORDER_EXPIRE_MIN = 48 * 60;      // created tanpa bayar 48 jam → expired (cron)
+const AUTO_COMPLETE_DAYS = 5;          // handed + diam D+5 → auto completed (cron)
+
+async function logOrderEvent(db: any, orderId: string, actor: string, fromSt: string | null, toSt: string, note?: string) {
+  await db.prepare('INSERT INTO order_events (order_id, actor, from_st, to_st, note) VALUES (?,?,?,?,?)')
+    .bind(orderId, actor, fromSt, toSt, note || null).run();
+}
+
+app.get('/pasar/:id/beli', async (c) => {
+  const user = await getAuthUser(c);
+  if (!user) return c.redirect('/login');
+  const p: any = await c.env.DB.prepare("SELECT * FROM listings WHERE id = ? AND status = 'active'")
+    .bind(c.req.param('id')).first();
+  if (!p) return c.notFound();
+  if (p.seller_id === user.id) return c.redirect(`/pasar/${p.id}`);
+  return c.html(renderCheckoutPage(user, p));
+});
+
+app.post('/api/pasar/orders', async (c) => {
+  const me = await getAuthUser(c);
+  if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
+  const body: any = await c.req.json().catch(() => null);
+  if (!body) return c.json({ error: 'Body tidak valid' }, 400);
+  // Kwitansi Rekber: kesepakatan wajib — ini satu-satunya "form", pengiriman bukan urusan platform.
+  const kesepakatan = String(body.kesepakatan || '').trim().slice(0, 500);
+  if (kesepakatan.length < 10) return c.json({ error: 'Tuliskan kesepakatan minimal 10 karakter' }, 400);
+
+  const p: any = await c.env.DB.prepare("SELECT * FROM listings WHERE id = ? AND status = 'active'")
+    .bind(String(body.listing_id || '')).first();
+  if (!p) return c.json({ error: 'Listing tidak tersedia' }, 404);
+  if (p.seller_id === me.id) return c.json({ error: 'Tidak bisa membeli barang sendiri' }, 400);
+
+  // satu order aktif per listing: kalau ada created/paid yang masih hidup, tolak
+  const live: any = await c.env.DB.prepare(
+    "SELECT id FROM orders WHERE listing_id = ? AND status IN ('created','paid','handed') LIMIT 1"
+  ).bind(p.id).first();
+  if (live) return c.json({ error: 'Ada pesanan aktif untuk buku ini. Coba lagi nanti.' }, 409);
+
+  const id = crypto.randomUUID();
+  const qrisOrderId = `BBR-${id.slice(0, 8)}-${Date.now()}`;
+  const total = Number(p.price) + Number(p.shipping_flat);
+
+  const qris = await createQrisTransaction(c.env as unknown as KlikQrisEnv, {
+    orderId: qrisOrderId, amount: total, description: `Pasar Buku: ${p.title.slice(0, 60)}`,
+  });
+  if (!qris.ok) return c.json({ error: qris.error || 'Gagal menyiapkan pembayaran' }, 502);
+
+  try {
+    await c.env.DB.batch([
+      c.env.DB.prepare(
+        'INSERT INTO orders (id, listing_id, buyer_id, seller_id, price, shipping, status, kesepakatan, qris_order_id, qris_signature, qris_url, qris_final_amount, qris_expired_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)'
+      ).bind(id, p.id, me.id, p.seller_id, p.price, p.shipping_flat, 'created', kesepakatan, qrisOrderId, qris.signature || null, qris.qrisUrl || null, qris.finalAmount || total, qris.expiredAt || null),
+      c.env.DB.prepare('INSERT INTO order_events (order_id, actor, from_st, to_st, note) VALUES (?,?,?,?,?)')
+        .bind(id, 'buyer', null, 'created', `Kwitansi dibuat oleh ${me.pen_name}`),
+    ]);
+  } catch (e: any) {
+    if (String(e?.message || e).includes('UNIQUE')) return c.json({ error: 'Ada pesanan aktif untuk buku ini. Coba lagi nanti.' }, 409);
+    throw e;
+  }
+  return c.json({ ok: true, id });
+});
+
+app.get('/pasar/order/:id', async (c) => {
+  const user = await getAuthUser(c);
+  const o: any = await c.env.DB.prepare('SELECT * FROM orders WHERE id = ?').bind(c.req.param('id')).first();
+  if (!o) return c.notFound();
+  // pembeli & penjual boleh lihat; orang lain 404 (kwitansi privat)
+  if (!user || (user.id !== o.buyer_id && user.id !== o.seller_id)) return c.notFound();
+  const p: any = await c.env.DB.prepare('SELECT title, photos FROM listings WHERE id = ?').bind(o.listing_id).first();
+  if (!p) return c.notFound();
+  const ev = await c.env.DB.prepare('SELECT actor, note, to_st, created_at FROM order_events WHERE order_id = ? ORDER BY id').bind(o.id).all();
+  o.events = ev.results || [];
+  let photos: string[] = [];
+  try { photos = JSON.parse(p.photos || '[]'); } catch { photos = []; }
+  return c.html(renderOrderPage(o, p, photos, user));
+});
+
+async function reconcileQris(db: any, env: Env, o: any): Promise<{ ok: boolean; paid?: boolean; error?: string }> {
+  if (o.status !== 'created') return { ok: true, paid: o.status === 'paid' };
+  const provider = await getQrisStatus(env, o.qris_order_id);
+  if (!provider.ok) return { ok: false, error: provider.error };
+  const expected = Number(o.qris_final_amount || Number(o.price) + Number(o.shipping));
+  if (!providerAmountMatches(provider.finalAmount, expected)) return { ok: false, error: 'Nominal status KlikQRIS tidak cocok atau hilang' };
+  if (provider.signature && o.qris_signature && provider.signature !== o.qris_signature) return { ok: false, error: 'Signature status KlikQRIS tidak cocok' };
+  if (!provider.paid) return { ok: true, paid: false };
+  const res = await db.prepare("UPDATE orders SET status = 'paid', updated_at = datetime('now') WHERE id = ? AND status = 'created'").bind(o.id).run();
+  if ((res.meta?.changes || 0) > 0) {
+    await logOrderEvent(db, o.id, 'system', 'created', 'paid', 'Status KlikQRIS terverifikasi');
+    await db.prepare("UPDATE listings SET status = 'sold' WHERE id = ? AND status = 'active'").bind(o.listing_id).run();
+  }
+  return { ok: true, paid: true };
+}
+
+app.get('/api/pasar/orders/:id/status', async (c) => {
+  const me = await getAuthUser(c);
+  if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
+  const o: any = await c.env.DB.prepare('SELECT * FROM orders WHERE id = ?').bind(c.req.param('id')).first();
+  if (!o || (o.buyer_id !== me.id && o.seller_id !== me.id)) return c.json({ error: 'Tidak ditemukan' }, 404);
+  if (o.status === 'created') {
+    const r = await reconcileQris(c.env.DB, c.env, o);
+    if (!r.ok) return c.json({ ok: false, status: o.status, error: r.error }, 502);
+    if (r.paid) o.status = 'paid';
+  }
+  return c.json({ ok: true, status: o.status });
+});
+
+// Webhook hanya trigger; status API provider tetap sumber kebenaran.
+app.post('/api/klikqris/webhook', async (c) => {
+  const body: any = await c.req.json().catch(() => null);
+  if (!body) return c.json({ ok: false }, 400);
+  const o: any = await c.env.DB.prepare('SELECT * FROM orders WHERE qris_order_id = ?').bind(String(body.order_id || '')).first();
+  if (!o) return c.json({ ok: false, error: 'order tak dikenal' }, 404);
+  if (o.status !== 'created') return c.json({ ok: true, note: 'sudah diproses' });
+  const v = verifyWebhook(body, { qris_order_id: o.qris_order_id, qris_signature: o.qris_signature, final_amount: Number(o.qris_final_amount || Number(o.price) + Number(o.shipping)) });
+  if (!v.ok) return c.json({ ok: false, error: v.error }, 400);
+  const r = await reconcileQris(c.env.DB, c.env, o);
+  if (!r.ok) return c.json({ ok: false, error: r.error }, 409);
+  if (!r.paid) return c.json({ ok: false, error: 'Pembayaran belum terkonfirmasi provider' }, 409);
+  return c.json({ ok: true });
+});
+
+// Penjual tandai serah: mode "cod" (COD/antar/kurir sendiri) atau "ekspedisi"
+// (kurir + resi WAJIB → bukti trackable pembeli + admin). Guard WHERE status='paid' (idempoten).
+// Daftar kurir + URL lacak = TRACK_URLS di src/web/pasar.ts (satu sumber).
+app.post('/pasar/order/:id/handover', async (c) => {
+  const me = await getAuthUser(c);
+  if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
+  const body: any = await c.req.json().catch(() => ({}));
+  const mode = body?.mode === 'ekspedisi' ? 'ekspedisi' : 'cod';
+  let note = String(body?.note || '').trim().slice(0, 200);
+  let kurir: string | null = null, resi: string | null = null;
+  if (mode === 'ekspedisi') {
+    kurir = String(body?.kurir || '').trim().slice(0, 40);
+    resi = String(body?.resi || '').trim().slice(0, 60);
+    if (!kurir || !resi) return c.json({ error: 'Kirim via ekspedisi wajib isi nama kurir + nomor resi' }, 400);
+    note = `Dikirim via ${kurir} — resi ${resi}`;
+  } else if (!note) note = 'Penjual menandai sudah diserahkan';
+  const o: any = await c.env.DB.prepare('SELECT * FROM orders WHERE id = ?').bind(c.req.param('id')).first();
+  if (!o || o.seller_id !== me.id) return c.json({ error: 'Tidak ditemukan' }, 404);
+  const res = await c.env.DB.prepare(
+    "UPDATE orders SET status = 'handed', handed_at = datetime('now'), kurir = ?, resi = ?, updated_at = datetime('now') WHERE id = ? AND status = 'paid'"
+  ).bind(kurir, resi, o.id).run();
+  if ((res.meta?.changes || 0) === 0) return c.json({ error: 'Pesanan tidak dalam status dibayar' }, 409);
+  await logOrderEvent(c.env.DB, o.id, 'seller', 'paid', 'handed', note);
+  return c.json({ ok: true });
+});
+
+// Cek status resi live (BinderByte) — pembeli/penjual pada order sendiri. Guard: handed+resi.
+// KURIR_MOCK utk dev/test; BINDERBYTE_KEY prod. Fallback selalu "Buka Web Kurir".
+const KURIR_MAP: Record<string, string> = { 'JNE': 'jne', 'J&T': 'jnt', 'SiCepat': 'sicepat', 'POS': 'pos', 'TIKI': 'tiki', 'AnterAja': 'anteraja' };
+
+app.post('/pasar/order/:id/track', async (c) => {
+  const me = await getAuthUser(c);
+  if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
+  const o: any = await c.env.DB.prepare('SELECT * FROM orders WHERE id = ?').bind(c.req.param('id')).first();
+  if (!o || (o.buyer_id !== me.id && o.seller_id !== me.id)) return c.json({ error: 'Tidak ditemukan' }, 404);
+  if (o.status !== 'handed' || !o.kurir || !o.resi) return c.json({ error: 'Resi belum tercatat' }, 409);
+  const r = await cekResi(c.env, KURIR_MAP[o.kurir] || 'jne', o.resi);
+  return c.json(r.ok ? { ok: true, status: r.status, desc: r.desc, history: r.history } : { ok: false, error: r.error });
+});
+
+// Pembeli klik "Pesanan Diterima" → completed + kredit saldo penjual (fee 5000 dipotong),
+// ongkir utuh ke penjual. Guard WHERE status='handed' = idempoten.
+app.post('/pasar/order/:id/receive', async (c) => {
+  const me = await getAuthUser(c);
+  if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
+  const o: any = await c.env.DB.prepare('SELECT * FROM orders WHERE id = ?').bind(c.req.param('id')).first();
+  if (!o || o.buyer_id !== me.id) return c.json({ error: 'Tidak ditemukan' }, 404);
+  if (o.status !== 'handed') return c.json({ error: 'Pesanan belum ditandai diserahkan penjual' }, 409);
+
+  const money = settlementAmounts(o.price, o.shipping, PASAR_FEE);
+  let settled: any[];
+  try {
+    settled = await c.env.DB.batch([
+      c.env.DB.prepare("UPDATE orders SET status = 'completed', updated_at = datetime('now') WHERE id = ? AND status = 'handed'").bind(o.id),
+      c.env.DB.prepare("INSERT INTO ledger (user_id, order_id, delta, kind) SELECT ?,?,?,? FROM orders WHERE id = ? AND status = 'completed'").bind(o.seller_id, o.id, money.sale, 'sale', o.id),
+      c.env.DB.prepare("INSERT INTO ledger (user_id, order_id, delta, kind) SELECT ?,?,?,? FROM orders WHERE id = ? AND status = 'completed'").bind(o.seller_id, o.id, money.fee, 'fee', o.id),
+      c.env.DB.prepare("INSERT INTO order_events (order_id, actor, from_st, to_st, note) SELECT ?,?,?,?,? FROM orders WHERE id = ? AND status = 'completed'")
+        .bind(o.id, 'buyer', 'handed', 'completed', 'Pembeli konfirmasi terima', o.id),
+    ]);
+  } catch (e: any) {
+    if (String(e?.message || e).includes('UNIQUE')) return c.json({ error: 'Pesanan sudah diselesaikan' }, 409);
+    throw e;
+  }
+  if (!(settled[0].meta?.changes || 0)) return c.json({ error: 'Pesanan sudah diselesaikan' }, 409);
+  return c.json({ ok: true });
+});
+
+// Pembeli lapor sengketa
+app.post('/pasar/order/:id/dispute', async (c) => {
+  const me = await getAuthUser(c);
+  if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
+  const body: any = await c.req.json().catch(() => null);
+  const note = String(body?.note || '').trim().slice(0, 500);
+  if (note.length < 10) return c.json({ error: 'Ceritakan masalah minimal 10 karakter' }, 400);
+  const o: any = await c.env.DB.prepare('SELECT * FROM orders WHERE id = ?').bind(c.req.param('id')).first();
+  if (!o || (o.buyer_id !== me.id && o.seller_id !== me.id)) return c.json({ error: 'Tidak ditemukan' }, 404);
+  if (!['paid', 'handed'].includes(o.status)) return c.json({ error: 'Status tidak bisa disengketakan' }, 409);
+
+  const res = await c.env.DB.prepare(
+    "UPDATE orders SET status = 'disputed', updated_at = datetime('now') WHERE id = ? AND status = ?"
+  ).bind(o.id, o.status).run();
+  if ((res.meta?.changes || 0) === 0) return c.json({ ok: true });
+  await logOrderEvent(c.env.DB, o.id, me.id === o.buyer_id ? 'buyer' : 'seller', o.status, 'disputed', note);
+  return c.json({ ok: true });
+});
+
+// Cron sweep per jam: expire order tak dibayar; handed D+5 tanpa gesekan → done;
+// anti-resi-hantu: handed ekspedisi D+1, resi nggak ketemu di kurir → flag disputes.
+async function sweepOrders(db: any, env: any): Promise<string> {
+  const exp = await db.prepare(
+    "UPDATE orders SET status = 'expired', updated_at = datetime('now') WHERE status = 'created' AND created_at < datetime('now', '-48 hours')"
+  ).run();
+  // resi hantu: ekspedisi (kurir+resi terisi), handed >24 jam, belum completed/disputed
+  let ghosts = 0;
+  if (env.BINDERBYTE_KEY) {
+    const susp = await db.prepare(
+      "SELECT id, kurir, resi FROM orders WHERE status = 'handed' AND kurir IS NOT NULL AND resi IS NOT NULL AND handed_at < datetime('now', '-1 day')"
+    ).all();
+    for (const o of (susp.results || []) as any[]) {
+      const r = await cekResi(env, KURIR_MAP[o.kurir] || 'jne', o.resi);
+      if (!r.ok) {
+        const g = await db.prepare(
+          "UPDATE orders SET status = 'disputed', updated_at = datetime('now') WHERE id = ? AND status = 'handed'"
+        ).bind(o.id).run();
+        if ((g.meta?.changes || 0) > 0) {
+          ghosts++;
+          await logOrderEvent(db, o.id, 'system', 'handed', 'disputed', `Resi ${o.resi} tidak ditemukan di ${o.kurir} (cek otomatis 24 jam)`);
+        }
+      }
+    }
+  }
+  const stale = await db.prepare(
+    "SELECT id, seller_id, price, shipping FROM orders WHERE status = 'handed' AND handed_at IS NOT NULL AND handed_at < datetime('now', '-5 days')"
+  ).all();
+  let completed = 0;
+  for (const o of (stale.results || []) as any[]) {
+    const money = settlementAmounts(o.price, o.shipping, PASAR_FEE);
+    try {
+      const settled = await db.batch([
+        db.prepare("UPDATE orders SET status = 'completed', updated_at = datetime('now') WHERE id = ? AND status = 'handed'").bind(o.id),
+        db.prepare("INSERT INTO ledger (user_id, order_id, delta, kind) SELECT ?,?,?,? FROM orders WHERE id = ? AND status = 'completed'").bind(o.seller_id, o.id, money.sale, 'sale', o.id),
+        db.prepare("INSERT INTO ledger (user_id, order_id, delta, kind) SELECT ?,?,?,? FROM orders WHERE id = ? AND status = 'completed'").bind(o.seller_id, o.id, money.fee, 'fee', o.id),
+        db.prepare("INSERT INTO order_events (order_id, actor, from_st, to_st, note) SELECT ?,?,?,?,? FROM orders WHERE id = ? AND status = 'completed'").bind(o.id, 'system', 'handed', 'completed', 'Auto-selesai D+5', o.id),
+      ]);
+      if ((settled[0].meta?.changes || 0) > 0) completed++;
+    } catch (e: any) {
+      if (!String(e?.message || e).includes('UNIQUE')) throw e;
+    }
+  }
+  return `expired=${exp.meta?.changes || 0} completed=${completed}`;
+}
+
 app.get('/notifications', async (c) => {
   const user = await getAuthUser(c);
   if (!user) return c.redirect('/login');
@@ -1250,4 +1609,10 @@ app.post('/api/users/:pen_name/follow', async (c) => {
   }
 });
 
-export default app;
+export default {
+  fetch: app.fetch,
+  // Cron per jam: expire 48 jam, auto-complete D+5, anti-resi-hantu D+1 (BinderByte).
+  async scheduled(_event: any, env: any, ctx: any) {
+    ctx.waitUntil(sweepOrders(env.DB, env).then((s: string) => console.log('[cron] sweepOrders', s)));
+  },
+} as any;

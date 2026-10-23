@@ -9,7 +9,7 @@ export function renderLandingPage(user: any = null): string {
   <link rel="icon" href="data:," />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,700;1,6..72,500&family=Roboto+Mono:wght@600;700&display=swap" rel="stylesheet" />
   <title>BERBIRRU.COM — Pustaka Tulisan &amp; Kolaborasi Kata</title>
   <meta name="description" content="Tempat segala bentuk tulisan—puisi, kutipan bermakna, cerita kilat, resensi buku, hingga perenungan absurd—dicatat abadi dan disambung bersama." />
   <meta property="og:type" content="website" />
@@ -26,23 +26,7 @@ export function renderLandingPage(user: any = null): string {
   <meta name="twitter:description" content="Pernah tiba-tiba nulis ide bagus, tapi pas mau dibaca lagi malah lupa ditaruh di mana? Berbirru adalah rumahnya." />
   <meta name="twitter:image" content="https://berbirru.com/og-image.png?v=6" />
   <style>
-    :root{
-      color-scheme:light;
-      --paper:#f4f0e7;
-      --paper-2:#fffdf7;
-      --ink:#122031;
-      --muted:#53606c;
-      --navy:#123f67;
-      --sky:#9dcbe6;
-      --yellow:#f2cc57;
-      --coral:#ee9a79;
-      --mint:#b9d8c6;
-      --line:#122031;
-      --shadow:#122031;
-      --soft:rgba(18,32,49,.16);
-      --dots:rgba(18,63,103,.16);
-      --focus:#be3f1a;
-    }
+    :root{--blue:#1D61E7;--deep:#0F3E99;--ink:#0B192C;--paper:#FFF9E9;--white:#FFFEF8;--yellow:#FDE047;--coral:#FF735F;--mint:#88E6BD;--soft:#E0EEFD;--red:#EF4444;--green:#059669;--line:3px solid var(--ink);--thin:2px solid var(--ink);--shadow:6px 7px 0 #26364A;--small-shadow:3px 4px 0 #26364A;--bg-main:var(--paper);--bg-card:#fff;--bg-blue-subtle:var(--soft);--shadow-ink:#26364A;--blue-primary:var(--blue);--blue-deep:var(--deep);--blue-light:#60A5FA;--accent-yellow:var(--yellow);--border-thick:var(--line);--border-med:3px solid var(--ink);--border-thin:var(--thin);--shadow-hard:var(--small-shadow);--shadow-hard-lg:var(--shadow);--shadow-hard-sm:2px 3px 0 #26364A;--radius:0;--radius-sm:0}
     *{box-sizing:border-box}
     html{scroll-behavior:smooth}
     body{margin:0;min-width:320px;overflow-x:hidden;background:var(--paper);color:var(--ink);font-family:"DM Sans",sans-serif;line-height:1.55}
@@ -57,9 +41,9 @@ export function renderLandingPage(user: any = null): string {
     .topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;min-height:82px;border-bottom:2px solid var(--line)}
     .brand-wrap{display:inline-flex;align-items:center;text-decoration:none;position:relative}
     .brand-badge{display:inline-flex;align-items:center;gap:6px;background:var(--blue-primary,#1D61E7);color:#FFFFFF;padding:6px 14px;border:3px solid var(--ink,#0B192C);border-radius:12px;box-shadow:4px 4px 0 var(--shadow-ink,#1E293B);transform:rotate(-1deg);position:relative;z-index:2}
-    .brand-badge h1{margin:0;font-family:'Space Grotesk','DM Sans',sans-serif;font-size:18px;font-weight:800;letter-spacing:0.5px;color:#FFFFFF;line-height:1}
+    .brand-badge h1{margin:0;font-family:'Archivo Black','DM Sans',sans-serif;font-size:18px;font-weight:800;letter-spacing:0.5px;color:#FFFFFF;line-height:1}
     .brand-badge svg{width:16px;height:16px;stroke:#FFFFFF;stroke-width:2;fill:none;flex-shrink:0}
-    .brand-com-tag{font-family:'Space Grotesk','DM Sans',sans-serif;font-size:24px;font-weight:900;color:var(--blue-primary,#1D61E7);position:relative;display:inline-block;transform:rotate(2deg);margin-left:4px;margin-top:2px;z-index:1;line-height:1;padding-bottom:3px}
+    .brand-com-tag{font-family:'Archivo Black','DM Sans',sans-serif;font-size:24px;font-weight:900;color:var(--blue-primary,#1D61E7);position:relative;display:inline-block;transform:rotate(2deg);margin-left:4px;margin-top:2px;z-index:1;line-height:1;padding-bottom:3px}
     .brand-com-tag::after{content:'';position:absolute;left:-24px;bottom:-3px;width:calc(100% + 28px);height:6px;background:var(--accent-yellow,#FDE047);border-radius:3px;z-index:-1}
     .nav{display:flex;align-items:center;gap:28px}
     .nav a{font-size:14px;font-weight:800;text-decoration:none}
