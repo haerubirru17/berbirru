@@ -40,6 +40,10 @@ export function renderBuktiPencairan(w: any, opts: { owner: boolean; penName: st
   td:first-child{color:var(--dim);font-weight:700;width:42%}
   td:last-child{text-align:right;font-weight:700}
   .num{font-family:'Roboto Mono',monospace}
+  .hero{border:3px solid var(--ink);background:#F0F6FE;padding:12px 14px;margin:0 0 18px}
+  .hero-t{font:700 10px 'Roboto Mono',monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--dim)}
+  .hero-v{font:400 30px 'Archivo Black',system-ui,sans-serif;color:var(--blue);line-height:1.1;margin:4px 0 3px}
+  .hero-s{font-size:11.5px;font-weight:700;color:#334155}
   .total td{border-top:2px solid var(--ink);border-bottom:none;font:400 16px 'Archivo Black',system-ui,sans-serif;padding-top:12px}
   .note{margin-top:18px;background:#FFFDF2;border:2px solid var(--ink);padding:11px 13px;font-size:12px;font-weight:600;line-height:1.6;color:#334155}
   .foot{margin-top:18px;font:600 10.5px 'Roboto Mono',monospace;color:var(--dim);line-height:1.7}
@@ -63,15 +67,27 @@ export function renderBuktiPencairan(w: any, opts: { owner: boolean; penName: st
   <h1>Bukti Pencairan Saldo</h1>
   <div class="kode">${escapeHtml(w.kode || '—')}</div>
 
+  <div class="hero">
+    <div class="hero-t">Total diterima</div>
+    <div class="hero-v">${w.status === 'rejected' ? 'Rp0' : rupiah(Number(w.amount))}</div>
+    <div class="hero-s">${w.status === 'rejected'
+      ? 'Permintaan ditolak — saldo tidak terpotong, dana tetap di saldo kamu.'
+      : Number(w.fee) > 0
+        ? `Sudah dipotong biaya tarik ${rupiah(Number(w.fee))} · total terpotong dari saldo ${rupiah(total)}`
+        : 'Tanpa biaya tarik (pembeli bebas biaya)'}</div>
+  </div>
+
   <table>
     <tr><td>Pemilik saldo</td><td>@${escapeHtml(opts.penName)}</td></tr>
     <tr><td>Jenis</td><td>${w.kind === 'buyer' ? 'Pencairan pembeli (refund)' : 'Pencairan penjual'}</td></tr>
     <tr><td>Tujuan</td><td>${escapeHtml(METHOD[w.method] || w.method || 'QRIS')} · <span class="num">${escapeHtml(w.account || '—')}</span></td></tr>
     <tr><td>Diajukan</td><td>${tgl(w.requested_at)}</td></tr>
     <tr><td>Diproses</td><td>${tgl(w.paid_at || w.reviewed_at)}</td></tr>
-    <tr><td>Jumlah ditarik</td><td class="num">${rupiah(Number(w.amount))}</td></tr>
-    <tr><td>Biaya tarik</td><td class="num">${Number(w.fee) > 0 ? rupiah(Number(w.fee)) : 'Rp0'}</td></tr>
-    <tr class="total"><td>Total saldo terpakai</td><td class="num">${rupiah(total)}</td></tr>
+    <tr><td>Jumlah diminta</td><td class="num">${rupiah(Number(w.amount))}</td></tr>
+    <tr><td>Potongan biaya tarik${Number(w.fee) > 0 ? ` (${Number(w.amount) >= 200000 ? '≥ Rp200rb' : '&lt; Rp200rb'})` : ''}</td><td class="num">${Number(w.fee) > 0 ? '− ' + rupiah(Number(w.fee)) : 'Rp0'}</td></tr>
+    <tr><td>Potongan lain</td><td class="num">Tidak ada</td></tr>
+    <tr class="total"><td>Total terpotong dari saldo</td><td class="num">${rupiah(total)}</td></tr>
+    <tr><td><b>Total diterima</b></td><td class="num"><b>${w.status === 'rejected' ? 'Rp0' : rupiah(Number(w.amount))}</b></td></tr>
     ${w.status === 'paid' && w.transfer_ref ? `<tr><td>Referensi transfer</td><td class="num">${escapeHtml(w.transfer_ref)}</td></tr>` : ''}
   </table>
 
