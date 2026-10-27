@@ -19,6 +19,8 @@ binding = "MEDIA"
 bucket_name = "berbirru-media"
 
 [vars]
+# Satu-satunya akun yang boleh membuka /owner (putus sengketa + cairkan saldo).
+OWNER_EMAIL = "haeru@berbirru.com"
 APP_NAME = "BERBIRRU"
 APP_DOMAIN = "berbirru.com"
 TURNSTILE_SITE_KEY = "0x4AAAAAAFTEI0GwdODJRhtT"

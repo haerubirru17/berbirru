@@ -1,4 +1,4 @@
-export function renderBottomNav(activeTab: 'feed' | 'search' | 'compose' | 'notifications' | 'profile' | '', currentUser: any = null, isMe = false): string {
+export function renderBottomNav(activeTab: 'feed' | 'pasar' | 'compose' | 'notifications' | 'profile' | '', currentUser: any = null, isMe = false): string {
   return `
   <!-- 5-TAB DOCKED BOTTOM NAVBAR — Shared Component -->
   <nav class="bottom-navbar">
@@ -9,7 +9,7 @@ export function renderBottomNav(activeTab: 'feed' | 'search' | 'compose' | 'noti
         <span>Beranda</span>
       </a>
 
-      <a href="/pasar" class="nav-item ${activeTab === 'search' ? 'active' : ''}">
+      <a href="/pasar" class="nav-item ${activeTab === 'pasar' ? 'active' : ''}">
         <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>
         <span>Pasar Buku</span>
       </a>

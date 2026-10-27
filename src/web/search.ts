@@ -137,11 +137,12 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
   </div>
 
   <!-- 5-TAB DOCKED BOTTOM NAVBAR -->
-  ${renderBottomNav('search', user, false)}
+  ${renderBottomNav('', user, false)}
 
   <script>
     const input = document.getElementById('searchInput');
-    input.focus();
+    const _q = new URLSearchParams(location.search).get('q');
+    if (_q) { input.value = _q; doSearch(); } else { input.focus(); }
 
     function escapeHtml(s) {
       return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -189,7 +190,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
         }
 
         if (!usersHTML && !postsHTML) {
-          box.innerHTML = '<div class="res-empty"><p>Belum ada yang menulis tentang "' + escapeHtml(q) + '"…<br>jadilah yang pertama ✍️</p><a class="btn-write" href="/feed?action=compose">Tulis warkah</a></div>';
+          box.innerHTML = '<div class="res-empty"><p>Tidak ada hasil untuk "' + escapeHtml(q) + '"<br>di akun maupun warkah. Coba kata kunci atau @nama_pena lain.</p></div>';
           return;
         }
         box.innerHTML = usersHTML + postsHTML;

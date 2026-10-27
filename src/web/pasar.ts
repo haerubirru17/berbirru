@@ -93,7 +93,7 @@ export function renderPasarPage(user: any, listings: any[]): string {
           <div class="card-price">${rupiah(p.price)}</div>
           <div class="card-meta">
             <span class="cond-badge">${escapeHtml(COND_LABEL[p.cond] || p.cond)}</span>
-            <span class="card-ship">${p.shipping_flat > 0 ? '+ ongkir ' + rupiah(p.shipping_flat) : 'Gratis ongkir'}</span>
+            <span class="card-ship">Ongkir saat checkout</span>
           </div>
         </div>
       </a>`).join('');
@@ -123,10 +123,16 @@ export function renderPasarPage(user: any, listings: any[]): string {
   <div class="container">
     <div class="pasar-top">
       <div><div class="sec-title" style="margin:0;">Pasar Buku</div><p style="margin:7px 0 0;color:#52627A;font-weight:600">Jual beli buku fisik dengan rekber.</p></div>
-      <a class="btn-jual" href="/pasar/jual">
-        <svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-        Jual Buku
-      </a>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        ${user ? `<a class="btn-jual" style="background:#fff;" href="/pasar/saya">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M3 9h18M3 9l1.5-4.5h15L21 9M4 9v11h16V9M9 20v-6h6v6"/></svg>
+          ${user.seller_status === 'approved' ? 'Pasar Saya' : 'Pesanan Saya'}
+        </a>` : ''}
+        <a class="btn-jual" href="/pasar/jual">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          Jual Buku
+        </a>
+      </div>
     </div>
 
     ${listings.length === 0 ? `
@@ -140,7 +146,7 @@ export function renderPasarPage(user: any, listings: any[]): string {
       <span>Semua transaksi dilindungi rekber BERBIRRU: uang baru diteruskan ke penjual setelah barang tiba di tanganmu. Biaya keamanan Rp5.000 ditanggung penjual.</span>
     </div>
   </div>
-  ${renderBottomNav('search', user)}
+  ${renderBottomNav('pasar', user)}
 </body>
 </html>`;
 }
@@ -172,6 +178,11 @@ export function renderJualPage(user: any): string {
     }
     .hint { font-size: 10.5px; font-weight: 700; color: #64748B; margin-top: 4px; line-height: 1.5; }
     .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .chip-pick { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip { border: var(--border-thin); background: #fff; color: var(--ink); border-radius: 999px; padding: 8px 14px; font-size: 12px; font-weight: 900; cursor: pointer; box-shadow: var(--small-shadow); min-height: 38px; }
+    .chip.on { background: var(--blue-primary); color: #fff; box-shadow: none; transform: translate(1px,1px); }
+    @media (max-width: 420px) { .row3 { grid-template-columns: 1fr; } }
     .convert-wrap { background: var(--bg-blue-subtle); border: var(--border-thin); border-radius: var(--radius-sm); padding: 9px 12px; font-size: 11px; font-weight: 800; color: var(--blue-deep); margin-top: 4px; line-height: 1.6; }
     .err-msg { display: none; margin-top: 10px; padding: 9px 12px; font-size: 11.5px; font-weight: 800; color: #B91C1C; background: #FEE2E2; border: var(--border-thin); border-radius: var(--radius-sm); }
     ${BRAND_CSS}
@@ -216,12 +227,38 @@ export function renderJualPage(user: any): string {
           <input class="form-input" id="fPrice" type="number" min="1000" max="10000000" step="500" placeholder="50000">
         </div>
         <div>
-          <label class="form-label" for="fShip">Ongkir flat (Rp)</label>
-          <input class="form-input" id="fShip" type="number" min="0" max="100000" step="1000" placeholder="15000 / 0 = gratis">
+          <label class="form-label">Perkiraan tebal buku *</label>
+          <div class="chip-pick" id="fWeightChips">
+            <button type="button" class="chip on" data-w="300">Ringan &lt;500 g</button>
+            <button type="button" class="chip" data-w="700">Sedang ±1 kg</button>
+            <button type="button" class="chip" data-w="1500">Tebal &gt;1 kg</button>
+          </div>
+          <input class="form-input" id="fWeightGram" type="number" min="1001" max="30000" step="100" placeholder="Berat gram (mis. 1500)" style="display:none;margin-top:8px;">
+          <div class="hint">Ongkir dihitung per kg dan dibulatkan ke atas, minimum 1 kg. Ringan &amp; Sedang sama-sama dihitung 1 kg.</div>
         </div>
       </div>
       <div class="form-group">
-        <div class="convert-wrap" id="feeInfo">Harga jual 50.000 → saldo kamu cair +45.000 (dikurangi biaya rekber 5.000). Ongkir utuh untuk kamu.</div>
+        <div class="convert-wrap" id="feeInfo">Harga jual 50.000 → saldo kamu cair +45.000 (dikurangi biaya rekber 5.000). Ongkir dihitung otomatis &amp; utuh untuk kamu.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Layanan pengiriman *</label>
+        <div class="chip-pick" id="fCouriers">
+          <button type="button" class="chip on" data-c="jne">JNE</button>
+          <button type="button" class="chip on" data-c="jnt">J&amp;T</button>
+          <button type="button" class="chip on" data-c="sicepat">SiCepat</button>
+          <button type="button" class="chip" data-c="pos">POS</button>
+          <button type="button" class="chip" data-c="anteraja">AnterAja</button>
+        </div>
+        <div class="hint">Pilih kurir yang kamu siap kirim. Pembeli nanti pilih layanan + lihat tarif live sesuai kotanya. <b>Satu listing = satu buku fisik</b> — untuk 2 copy, buat 2 listing.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Kota asal pengiriman *</label>
+        <div class="row3">
+          <select class="form-input" id="fProv"><option value="">Provinsi</option></select>
+          <select class="form-input" id="fKab"><option value="">Kota/Kabupaten</option></select>
+          <select class="form-input" id="fKec"><option value="">Kecamatan</option></select>
+        </div>
+        <div class="hint" id="originHint">Dipakai menghitung ongkir pembeli. Pastikan kecamatan asal benar.</div>
       </div>
       <div class="form-group">
         <label class="form-label">Foto buku (1–5) *</label>
@@ -300,25 +337,77 @@ export function renderJualPage(user: any): string {
   function fmt(n) { return 'Rp' + Number(n || 0).toLocaleString('id-ID'); }
   function updateFeeInfo() {
     var p = parseInt(document.getElementById('fPrice').value, 10) || 0;
-    var s = parseInt(document.getElementById('fShip').value, 10) || 0;
     if (p > 0) {
       document.getElementById('feeInfo').textContent =
-        'Harga jual ' + fmt(p) + (s > 0 ? ' + ongkir ' + fmt(s) : ' (gratis ongkir)') +
-        ' → saldo kamu cair +' + fmt(p - 5000 + s) + ' (dikurangi biaya rekber 5.000; ongkir utuh untuk kamu).';
+        'Harga jual ' + fmt(p) + ' → saldo kamu cair +' + fmt(p - 5000) +
+        ' (dikurangi biaya rekber 5.000). Ongkir dipilih pembeli saat checkout & cair utuh ke kamu.';
     }
   }
   document.getElementById('fPrice').addEventListener('input', updateFeeInfo);
-  document.getElementById('fShip').addEventListener('input', updateFeeInfo);
+
+  // ── Preset berat buku ───────────────────────────────────────────────
+  document.querySelectorAll('#fWeightChips .chip').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('#fWeightChips .chip').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on');
+      document.getElementById('fWeightGram').style.display = b.getAttribute('data-w') === '1500' ? 'block' : 'none';
+    });
+  });
+
+  // ── Layanan pengiriman & kota asal ──────────────────────────────────
+  var courierChips = Array.prototype.slice.call(document.querySelectorAll('#fCouriers .chip'));
+  courierChips.forEach(function (ch) {
+    ch.addEventListener('click', function () { ch.classList.toggle('on'); });
+  });
+
+  function pilihanKurir() {
+    return courierChips.filter(function (c) { return c.classList.contains('on'); })
+      .map(function (c) { return c.getAttribute('data-c'); });
+  }
+
+  async function isiWilayah(sel, parent, label) {
+    sel.innerHTML = '<option value="">' + label + '</option>';
+    var url = '/api/kurir/wilayah' + (parent ? '?parent=' + encodeURIComponent(parent) : '');
+    try {
+      var j = await (await fetch(url)).json();
+      if (!j.ok) { sel.innerHTML = '<option value="">' + (j.error || 'Gagal memuat') + '</option>'; return; }
+      j.items.forEach(function (it) {
+        var o = document.createElement('option'); o.value = it.id; o.textContent = it.name; sel.appendChild(o);
+      });
+    } catch (e) { sel.innerHTML = '<option value="">Gagal memuat wilayah</option>'; }
+  }
+
+  var fProv = document.getElementById('fProv'), fKab = document.getElementById('fKab'), fKec = document.getElementById('fKec');
+  isiWilayah(fProv, null, 'Provinsi');
+  fProv.addEventListener('change', function () {
+    fKab.innerHTML = '<option value="">Kota/Kabupaten</option>';
+    fKec.innerHTML = '<option value="">Kecamatan</option>';
+    if (fProv.value) isiWilayah(fKab, fProv.value, 'Kota/Kabupaten');
+  });
+  fKab.addEventListener('change', function () {
+    fKec.innerHTML = '<option value="">Kecamatan</option>';
+    if (fKab.value) isiWilayah(fKec, fKab.value, 'Kecamatan');
+  });
+  function labelKec() {
+    var k = fKec.options[fKec.selectedIndex], b = fKab.options[fKab.selectedIndex], pv = fProv.options[fProv.selectedIndex];
+    if (!fKec.value) return '';
+    return [k && k.textContent, b && b.textContent, pv && pv.textContent].filter(Boolean).join(', ');
+  }
 
   document.getElementById('btnSubmit').addEventListener('click', function () {
     if (busy) return;
     var title = document.getElementById('fTitle').value.trim();
     var price = parseInt(document.getElementById('fPrice').value, 10);
-    var ship = parseInt(document.getElementById('fShip').value, 10) || 0;
+    var wChip = document.querySelector('#fWeightChips .chip.on');
+    var weight = wChip ? parseInt(wChip.getAttribute('data-w'), 10) : 0;
+    if (weight >= 1500) weight = parseInt(document.getElementById('fWeightGram').value, 10) || 0;
+    var kurir = pilihanKurir();
     if (!title) { showErr('Judul buku wajib diisi.'); return; }
     if (!price || price < 1000) { showErr('Harga minimal Rp1.000.'); return; }
     if (price > 10000000) { showErr('Harga maksimal Rp10.000.000.'); return; }
-    if (ship > 100000) { showErr('Ongkir maksimal Rp100.000.'); return; }
+    if (!weight || weight < 100) { showErr('Isi berat buku dalam gram (mis. 1500) untuk buku tebal.'); return; }
+    if (!kurir.length) { showErr('Pilih minimal satu layanan pengiriman.'); return; }
+    if (!fKec.value) { showErr('Pilih kecamatan asal pengiriman.'); return; }
     if (photos.length === 0) { showErr('Pasang minimal 1 foto buku.'); return; }
     hideErr(); busy = true;
     this.style.opacity = '0.6';
@@ -329,7 +418,11 @@ export function renderJualPage(user: any): string {
         author: document.getElementById('fAuthor').value.trim(),
         descr: document.getElementById('fDescr').value.trim(),
         cond: document.getElementById('fCond').value,
-        price: price, shipping_flat: ship,
+        price: price,
+        weight_g: weight,
+        couriers: kurir,
+        origin_id: fKec.value,
+        origin_name: labelKec(),
         photos: photos.map(function (p) { return p.key; })
       })
     })
@@ -355,7 +448,7 @@ export function renderListingDetail(user: any, p: any, seller: any): string {
   const photosHtml = keys.map((k, i) => `
         <div class="shot ${i === 0 ? 'shot-main' : ''}"><img src="/media/${escapeHtml(String(k).split('?')[0])}?v=${Date.now()}" alt="Foto ${i + 1}" loading="lazy"></div>`).join('');
 
-  const total = Number(p.price) + Number(p.shipping_flat);
+  const total = Number(p.price); // ongkir dihitung live saat checkout
 
   return `<!DOCTYPE html>
 <html lang="id">
@@ -422,7 +515,7 @@ export function renderListingDetail(user: any, p: any, seller: any): string {
       <div class="d-title">${escapeHtml(p.title)}</div>
       ${p.author ? `<div class="d-author">oleh ${escapeHtml(p.author)}</div>` : ''}
       <div class="d-price">${rupiah(p.price)}</div>
-      <div class="d-ship">${p.shipping_flat > 0 ? 'Ongkir flat ' + rupiah(p.shipping_flat) + ' → total ' + rupiah(total) : 'Gratis ongkir → total ' + rupiah(total)}</div>
+      <div class="d-ship">${Number(p.weight_g) > 0 ? 'Berat ±' + (Number(p.weight_g) >= 1000 ? (Number(p.weight_g) / 1000).toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' kg' : Number(p.weight_g) + ' g') + ' · ' : ''}Ongkir dihitung kurir, min 1 kg saat checkout</div>
       <div class="d-badges">
         <span class="badge">${escapeHtml(COND_LABEL[p.cond] || escapeHtml(p.cond))}</span>
         <span class="badge">Rekber BERBIRRU</span>
@@ -431,6 +524,7 @@ export function renderListingDetail(user: any, p: any, seller: any): string {
       <div class="seller-row">
         <a class="seller-ava" href="/u/${escapeHtml(seller.pen_name)}">${seller.avatar_key ? `<img src="/media/${escapeHtml(String(seller.avatar_key).split('?')[0])}" alt="">` : escapeHtml((seller.display_name || seller.pen_name || '?').charAt(0).toUpperCase())}</a>
         <div style="flex:1;">
+          ${seller.shop_name ? `<div style="font-size:10px;font-weight:900;color:var(--blue-deep);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">${escapeHtml(seller.shop_name)}</div>` : ''}
           <a class="seller-name" href="/u/${escapeHtml(seller.pen_name)}">${escapeHtml(seller.display_name || seller.pen_name)}</a>
           <div class="seller-city">${seller.city ? escapeHtml(seller.city) : 'Indonesia'}</div>
         </div>

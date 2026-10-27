@@ -16,6 +16,7 @@ const STATUS_LABEL: Record<string, string> = {
   expired: 'Kedaluwarsa',
   canceled: 'Dibatalkan',
   disputed: 'Sengketa — Owner Review',
+  refunded: 'Dana Dikembalikan ke Pembeli',
 };
 
 const STEP_ORDER = ['created', 'paid', 'handed', 'completed'];
@@ -63,13 +64,15 @@ export function renderOrderPage(o: any, p: any, photos: string[], viewer: any): 
   } else if (st === 'disputed') {
     actions = `<div class="st-sub">Owner BERBIRRU sedang meninjau sengketa ini. Semua pesan & kwitansi sudah terkirim ke owner.</div>`;
   } else if (st === 'completed' && isSeller) {
-    actions = `<div class="st-sub">Saldo bertambah Rp${(Number(o.price) - 5000 + Number(o.shipping)).toLocaleString('id-ID')} (fee rekber Rp5.000 dipotong).</div>`;
+    actions = `<div class="st-sub">Saldo bertambah Rp${(Number(o.price) - 5000 + Number(o.shipping)).toLocaleString('id-ID')} (fee rekber Rp5.000 dipotong).</div>
+      <a class="btn b-ghost" style="text-align:center;" href="/saldo">Lihat Saldo & Tarik Dana</a>`;
+  } else if (st === 'refunded') {
+    actions = `<div class="st-sub">Owner memutuskan dana dikembalikan ke pembeli. Penjual tidak menerima saldo untuk pesanan ini.</div>`;
   }
 
   return `<!DOCTYPE html>
 <html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pesanan | BERBIRRU</title>
-<link rel="stylesheet" href="/styling.css">
 ${PASAR_BASE_CSS}
 <style>${PAGE_CSS}</style></head>
 <body>
@@ -90,12 +93,27 @@ ${PASAR_BASE_CSS}
     <div class="kw">${escapeHtml(o.kesepakatan)}</div>
   </div>
 
+  ${o.dest_address ? `<div class="st-card"><div class="st-big" style="font-size:14px;">Tujuan</div>
+    ${o.receiver_name ? `<div class="st-sub" style="margin-top:6px;"><b>${escapeHtml(o.receiver_name)}</b>${o.receiver_phone ? ' · ' + escapeHtml(o.receiver_phone) : ''}</div>` : ''}
+    <div class="st-sub" style="margin-top:4px;">${escapeHtml(o.dest_district_name || o.dest_district_id || '-')}${o.postal_code ? ' · ' + escapeHtml(o.postal_code) : ''}</div>
+    <div style="margin-top:6px;font-size:12.5px;font-weight:600;line-height:1.6;color:#334155;">${escapeHtml(o.dest_address)}</div>
+    ${o.receiver_name ? `<button type="button" id="btnSalin" class="btn b-ghost" style="width:100%;margin-top:10px;" onclick="salinAlamat(this)">Salin alamat penerima</button>
+    <script>function salinAlamat(btn){var t=${JSON.stringify(`${o.receiver_name}\n${o.receiver_phone || ''}\n${o.dest_address || ''}\n${o.dest_district_name || ''} ${o.postal_code || ''}`.trim())};if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){if(btn)btn.textContent='Tersalin ✓'},function(){prompt('Salin manual:',t)})}else{prompt('Salin manual:',t)}}</script>` : ''}
+  </div>` : ''}
+
   ${o.kurir && o.resi ? `<div class="st-card"><div class="st-big" style="font-size:14px;">Pengiriman</div>
     <div style="margin-top:8px;font-weight:800;">${escapeHtml(o.kurir)}</div>
     <div style="font-family:monospace;font-size:15px;background:#F0F6FE;border:2px dashed #1D61E7;border-radius:8px;padding:8px 10px;margin-top:6px;letter-spacing:1px;">${escapeHtml(o.resi)}</div>
+    <div style="font:700 10px 'Roboto Mono';letter-spacing:.04em;margin-top:6px;color:${Number(o.resi_verified) ? '#166534' : '#92400E'};">
+      ${Number(o.resi_verified) ? '✓ RESI TERVERIFIKASI KURIR' : 'RESI BELUM TERVERIFIKASI — DICEK OTOMATIS, DANA DITAHAN'}
+    </div>
     <div id="track-box"></div>
     <a class="btn b-ghost" style="width:100%;margin-top:10px;text-align:center;" href="${trackUrl(o.kurir, o.resi)}" target="_blank" rel="noopener">Buka Web Kurir</a>
     <button class="btn b-blue" style="width:100%;margin-top:8px;" onclick="cekStatus()">Cek Status Paket</button>
+  </div>` : ''}
+
+  ${o.courier_name && !o.resi ? `<div class="st-card"><div class="st-big" style="font-size:14px;">Layanan Pengiriman</div>
+    <div class="st-sub" style="margin-top:6px;">${escapeHtml(o.courier_name)} ${escapeHtml(o.service || '')}${o.eta ? ' · estimasi ' + escapeHtml(o.eta) : ''} · ${rupiah(Number(o.shipping || 0))}</div>
   </div>` : ''}
 
   ${st === 'created' && o.qris_url && o.qris_url.startsWith('data:') ? `<div class="st-card"><div class="st-big" style="font-size:14px;">Scan QRIS</div><img class="qris-img" src="${o.qris_url}" alt="QRIS"><div class="st-sub" style="text-align:center;">Halaman ini otomatis update setelah pembayaran terdeteksi.</div></div>` : ''}
@@ -105,7 +123,8 @@ ${PASAR_BASE_CSS}
     ${photoKeys[0] ? `<img src="/media/${escapeHtml(photoKeys[0])}?v=${Date.now()}" style="width:100%;border:2.5px solid #0B192C;border-radius:12px;margin-top:10px;" alt="Foto buku">` : ''}
     <div style="margin-top:10px;">
       <div class="sum-row"><span>Harga buku</span><span>${rupiah(o.price)}</span></div>
-      ${Number(o.shipping) > 0 ? `<div class="sum-row"><span>Ongkir (urusan penjual)</span><span>${rupiah(o.shipping)}</span></div>` : ''}
+      ${Number(o.shipping) > 0 ? `<div class="sum-row"><span>Ongkir ${o.courier_name ? escapeHtml(o.courier_name) : ''}${o.service ? ' ' + escapeHtml(o.service) : ''}</span><span>${rupiah(o.shipping)}</span></div>` : ''}
+      ${Number(o.qris_final_amount || 0) > Number(o.price) + Number(o.shipping || 0) ? `<div class="sum-row"><span>Biaya layanan QRIS</span><span>${rupiah(Number(o.qris_final_amount) - Number(o.price) - Number(o.shipping || 0))}</span></div>` : ''}
       <div class="sum-row tot"><span>${st === 'completed' ? `Total diterima penjual` : 'Total QRIS'}</span><span>${st === 'completed' ? rupiah(Number(o.price) - 5000 + Number(o.shipping)) : rupiah(total)}</span></div>
     </div>
   </div>

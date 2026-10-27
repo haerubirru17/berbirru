@@ -128,6 +128,11 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     }
     
     /* Statistik inline: icon + angka, 1 baris (Varian 2) */
+    .pasar-link { display:flex;align-items:center;gap:8px;margin:14px 0 0;padding:11px 12px;background:#fff;
+      border:2.5px solid var(--ink);box-shadow:3px 3px 0 var(--shadow-ink);text-decoration:none;color:var(--ink);font-weight:900;font-size:12.5px }
+    .pasar-link svg { width:16px;height:16px;flex:none }
+    .pasar-link .pl-s { margin-left:auto;font:700 10px 'Roboto Mono';color:#64748B }
+    .pasar-link:active { transform:translate(2px,2px);box-shadow:none }
     .stats-inline {
       display: flex; justify-content: center; gap: 22px; border-top: 1.5px solid #E2E8F0;
       padding-top: 10px; margin-top: 4px;
@@ -369,6 +374,11 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
         <div class="bio-box" id="bioDisplay">
           "Goresan perenungan rasa dan bait kata di Berbirru."
         </div>
+
+        ${isMe ? `<a class="pasar-link" href="/pasar/saya">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9h18M3 9l1.5-4.5h15L21 9M4 9v11h16V9M9 20v-6h6v6"/></svg>
+          <span>Pasar Buku</span><span class="pl-s">Pesanan, toko &amp; saldo &rsaquo;</span>
+        </a>` : ''}
 
         <div class="stats-inline">
           <span class="si" title="Karya">

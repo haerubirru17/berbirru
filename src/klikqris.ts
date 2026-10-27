@@ -71,6 +71,8 @@ export async function getQrisStatus(env: KlikQrisEnv, orderId: string): Promise<
     const data = payload(raw);
     if (String(data?.order_id || '') !== orderId) return { ok: false, error: 'Order ID status tidak cocok' };
     const status = String(data?.status ?? '').toUpperCase();
+    // log operasional: status mentah provider (tanpa kredensial) utk menelusuri pembayaran macet
+    console.log('[qris-status]', orderId, 'status=' + status, 'amount=' + (amount(data) ?? '-'));
     return { ok: true, status, paid: status === 'PAID' || status === 'SUCCESS' || status === 'SETTLEMENT' || data?.status === true, finalAmount: amount(data), signature: typeof data?.signature === 'string' ? data.signature : undefined };
   } catch (e: any) { return { ok: false, error: e?.message || 'Gagal mengecek status KlikQRIS' }; }
 }

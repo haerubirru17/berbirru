@@ -42,16 +42,19 @@ export function renderNotificationsPage(user: any = null): string {
       background: var(--accent-yellow); border-radius: 3px; z-index: -1;
     }
 
-    .btn-mark-read {
-      background: var(--bg-card); border: var(--border-med); border-radius: var(--radius-sm);
-      padding: 6px 12px; font-size: 11.5px; font-weight: 800; box-shadow: var(--shadow-hard-sm);
-      cursor: pointer; display: flex; align-items: center; gap: 4px; color: var(--ink);
-    }
-
     /* Notification Feed */
+    .notif-section-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      margin-bottom: 10px;
+    }
     .notif-section-label {
       font-size: 11px; font-weight: 800; color: #64748B; text-transform: uppercase;
-      letter-spacing: 0.5px; margin-bottom: 10px; display: block;
+      letter-spacing: 0.5px; margin: 0; display: block;
+    }
+    .btn-mark-read-small {
+      background: none; border: none; padding: 0; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 4px;
+      color: var(--blue-primary); font-size: 11px; font-weight: 800; font-family: inherit;
     }
     .notif-list { display: flex; flex-direction: column; gap: 10px; }
 
@@ -86,6 +89,9 @@ export function renderNotificationsPage(user: any = null): string {
     .badge-chain { background: var(--accent-yellow); color: var(--ink); }
     .badge-save { background: var(--blue-primary); color: #FFF; }
     .badge-follow { background: #10B981; color: #FFF; }
+  .hub-link { display:inline-block;font:800 10.5px 'DM Sans';color:#0F3E99;text-decoration:none;background:#E0EEFD;
+    border:2px solid #0B192C;padding:6px 10px;margin-bottom:12px;box-shadow:2px 2px 0 #26364A }
+    
 
     .notif-content { flex: 1; display: flex; flex-direction: column; gap: 3px; }
     .notif-text { font-size: 13.5px; font-weight: 600; line-height: 1.4; color: #1E293B; }
@@ -146,14 +152,16 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
         </div>
         <span class="brand-com-tag">.com</span>
       </a>
-      <button class="btn-mark-read" onclick="markAllRead()">
-        <svg class="ico" style="width:13px;height:13px;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-        <span>Tandai Dibaca</span>
-      </button>
     </div>
 
     <!-- Notifications List Container -->
-    <span class="notif-section-label">Aktivitas Terbaru</span>
+    <div class="notif-section-row">
+      <span class="notif-section-label">Aktivitas Terbaru</span>
+      <button class="btn-mark-read-small" onclick="markAllRead()">
+        <svg class="ico" style="width:12px;height:12px;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        <span>Tandai Dibaca</span>
+      </button>
+    </div>
     <div class="notif-list" id="notifListContainer">
       <div style="background:#FFF;padding:24px;border:3px solid #0B192C;border-radius:16px;text-align:center;font-weight:700;box-shadow:4px 4px 0 #1E293B;">
         Memuat aktivitas...
