@@ -35,6 +35,13 @@ const PAGE_CSS = `
   textarea.inp{min-height:64px;resize:vertical}
   .inp:focus{box-shadow:3px 3px 0 #1D61E7}
   .field{margin-top:12px}
+  .trk{margin-top:8px}
+  .trk .row{border-left:3px solid #1D61E7;padding:5px 0 5px 10px;margin-bottom:6px;background:#F8FAFC}
+  .trk .d{font:700 9.5px 'Roboto Mono';color:#64748B}
+  .trk .m{font:700 11.5px 'DM Sans';color:#0B192C;line-height:1.45}
+  .trk .l{font:600 10.5px 'DM Sans';color:#475569}
+  .trk .bad{color:#B42318;font-weight:800;font-size:11.5px}
+  .trk .ok{color:#0F7A3D;font-weight:800;font-size:11.5px}
 `;
 
 const rp = (n: any) => rupiah(Number(n || 0));
@@ -51,7 +58,9 @@ export function renderOwnerPage(disputes: any[], withdrawals: any[], calonPenjua
       <div class="st-big">${escapeHtml(o.title || 'Buku')}</div>
       <div class="st-sub">Pembeli @${escapeHtml(o.buyer_name || '?')} · Penjual @${escapeHtml(o.seller_name || '?')}</div>
       <div class="kw">${escapeHtml(o.kesepakatan || '—')}</div>
-      ${o.kurir ? `<div class="st-sub">${escapeHtml(o.kurir)} · resi ${escapeHtml(o.resi || '—')} · ${Number(o.resi_verified) ? 'terverifikasi kurir' : 'BELUM terverifikasi'}</div>` : '<div class="st-sub">Tanpa ekspedisi (COD / antar langsung)</div>'}
+      ${o.kurir && o.resi ? `<div class="st-sub">${escapeHtml(o.kurir)} · resi ${escapeHtml(o.resi)} · ${Number(o.resi_verified) ? 'terverifikasi kurir' : 'BELUM terverifikasi'}</div>
+      <button class="btn b-blue" style="margin-top:8px" onclick="lacak('${escapeHtml(o.id)}',this)">Lihat riwayat pengiriman (${escapeHtml(o.kurir)})</button>
+      <div class="trk" id="trk-${escapeHtml(o.id)}"></div>` : '<div class="st-sub">Tanpa ekspedisi (COD / antar langsung)</div>'}
       <div class="sum-row"><span>Harga buku</span><span>${rp(o.price)}</span></div>
       <div class="sum-row"><span>Ongkir</span><span>${rp(o.shipping)}</span></div>
       <div class="sum-row tot"><span>Dana ditahan</span><span>${rp(o.qris_final_amount || Number(o.price) + Number(o.shipping || 0))}</span></div>
@@ -147,6 +156,7 @@ ${BRAND_HEADER}
 </div>
 <script>
 function err(t){document.getElementById('err').textContent=t||''}
+function esc(x){return String(x==null?'':x).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function val(id){var e=document.getElementById(id);return e?e.value.trim():''}
 async function post(url,body){
   err('');
@@ -168,6 +178,26 @@ async function reviewSeller(id,decision,btn){
     if(reason.length<5){err('Alasan penolakan minimal 5 karakter.');return}
   } else if(decision==='approve' && !confirm('Setujui akun ini sebagai penjual? Dia bisa langsung memasang buku.')) return;
   btn.disabled=true; if(!await post('/api/owner/sellers/'+id+'/review',{decision,reason})) btn.disabled=false;
+}
+async function lacak(id,btn){
+  const box=document.getElementById('trk-'+id);
+  box.innerHTML='<div class="m">Menghubungi kurir…</div>';
+  btn.disabled=true;
+  try{
+    const r=await fetch('/pasar/order/'+id+'/track',{method:'POST'});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok||!j.ok){
+      const nota = j.kind==='error'
+        ? 'Kurir tidak bisa dihubungi — coba lagi nanti (bukan berarti resi palsu).'
+        : j.kind==='notfound'
+          ? 'Resi tidak ditemukan di sistem kurir. Minta penjual periksa kembali nomor resi.'
+          : (j.error||'Riwayat tidak tersedia.');
+      box.innerHTML='<div class="bad">'+esc(nota)+'</div>'; btn.disabled=false; return;
+    }
+    const rows=(j.history||[]).map(function(h){return '<div class="row"><div class="d">'+esc(h.date)+'</div><div class="m">'+esc(h.desc)+'</div><div class="l">'+esc(h.location)+'</div></div>'}).join('');
+    box.innerHTML='<div class="ok">Status kurir: '+esc(j.status||'-')+'</div>'+rows+(rows?'':'<div class="l">Belum ada riwayat.</div>');
+  }catch(e){ box.innerHTML='<div class="bad">Gagal menghubungi kurir.</div>' }
+  btn.disabled=false;
 }
 async function settle(id,decision,btn){
   const note=val('wnote-'+id), ref=val('wref-'+id);

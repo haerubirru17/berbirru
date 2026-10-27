@@ -1375,8 +1375,9 @@ app.post('/pasar/order/:id/track', async (c) => {
   const me = await getAuthUser(c);
   if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
   const o: any = await c.env.DB.prepare('SELECT * FROM orders WHERE id = ?').bind(c.req.param('id')).first();
-  if (!o || (o.buyer_id !== me.id && o.seller_id !== me.id)) return c.json({ error: 'Tidak ditemukan' }, 404);
-  if (o.status !== 'handed' || !o.kurir || !o.resi) return c.json({ error: 'Resi belum tercatat' }, 409);
+  // owner ikut boleh: dia yang memutus sengketa, butuh melihat perjalanan paket
+  if (!o || (o.buyer_id !== me.id && o.seller_id !== me.id && !isOwner(c.env, me))) return c.json({ error: 'Tidak ditemukan' }, 404);
+  if (!o.kurir || !o.resi) return c.json({ error: 'Resi belum tercatat' }, 409);
   const r = await cekResi(c.env, KURIR_MAP[o.kurir] || 'jne', o.resi);
   if (r.kind === 'found' && !o.resi_verified) {
     await c.env.DB.prepare("UPDATE orders SET resi_verified = 1, resi_checked_at = datetime('now') WHERE id = ? AND resi_verified = 0").bind(o.id).run();
