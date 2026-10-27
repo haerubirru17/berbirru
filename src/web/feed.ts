@@ -245,11 +245,11 @@ export function renderFeedPage(user: any = null): string {
       background: #F6F8FB; border: 1.5px solid #E8ECF2; border-radius: 14px; padding: 8px 12px;
     }
     .vis-label { font-size: 11px; font-weight: 800; color: #8A94A6; text-transform: uppercase; letter-spacing: .4px; }
-    .vis-toggle { display: inline-flex; border: 1.5px solid var(--ink); border-radius: 10px; overflow: hidden; background: #FFFFFF; box-shadow: 1.5px 1.5px 0 var(--shadow-ink); }
+    .vis-toggle { display: inline-flex; flex: 0 0 auto; border: 1.5px solid var(--ink); border-radius: 10px; overflow: hidden; background: #FFFFFF; box-shadow: 1.5px 1.5px 0 var(--shadow-ink); }
     .vis-opt { border: 0; background: transparent; padding: 6px 14px; font-size: 12px; font-weight: 900; cursor: pointer; color: var(--ink); transition: transform .06s ease, box-shadow .06s ease, background .06s ease; }
     .vis-opt + .vis-opt { border-left: 1.5px solid var(--ink); }
     .vis-opt.active { background: var(--blue-primary); color: #FFF; box-shadow: none; transform: translate(1px, 1px); }
-    .vis-hint { margin-left: auto; font-size: 11px; font-weight: 700; color: #8A94A6; white-space: nowrap; }
+    .vis-hint { margin-left: auto; font-size: 11px; font-weight: 700; color: #8A94A6; white-space: nowrap; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; text-align: right; }
 
     /* Kanvas editor: panel berisi, bukan whitespace mengambang */
     .rich-editor-canvas {
