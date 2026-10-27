@@ -1,8 +1,8 @@
 type Mode = 'sosial' | 'pasar';
-type MarketTab = 'pasar' | 'pesanan' | 'toko';
+type MarketTab = 'pasar' | 'pesanan' | 'toko' | 'akun';
 
 export function renderBottomNav(
-  activeTab: 'feed' | 'pasar' | 'compose' | 'notifications' | 'profile' | '',
+  activeTab: 'feed' | 'pasar' | 'compose' | 'notifications' | 'profile' | 'akun' | '',
   currentUser: any = null,
   isMe = false,
   opts: { mode?: Mode; marketTab?: MarketTab } = {},
@@ -51,7 +51,7 @@ export function renderBottomNav(
         <span class="bnav-lbl">${label}</span>
       </a>`;
       })()
-      + item(akun, 'Profil', icoUser, mode === 'pasar' && activeTab === 'profile' && isMe ? ' is-on' : '')
+      + item('/akun', 'Akun', icoUser, mon('akun'))
     : item('/feed', 'Beranda', icoHome, on('feed'))
       + item('/pasar', 'Pasar', icoPasar, '')
       + `

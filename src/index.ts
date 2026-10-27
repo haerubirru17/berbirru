@@ -22,6 +22,7 @@ import { renderSearchPage } from './web/search';
 import { renderProfilePage } from './web/profile';
 import { renderNotificationsPage } from './web/notifications';
 import { renderChainPage } from './web/chain';
+import { renderAkunPage, renderAlamatPage } from './web/akun';
 import { renderPasarPage, renderJualPage, renderListingDetail } from './web/pasar';
 import { renderCheckoutPage } from './web/checkout';
 import { renderOrderPage } from './web/order';
@@ -1058,6 +1059,35 @@ app.get('/pasar', async (c) => {
   const stmt = c.env.DB.prepare(sql);
   const listings = binds.length ? await stmt.bind(...binds).all() : await stmt.all();
   return c.html(renderPasarPage(user, listings.results || [], { q, cond, sort, max }));
+});
+
+// Halaman akun: pintu pengaturan yang masuk akal di dalam Pasar.
+app.get('/akun', async (c) => {
+  const user = await getAuthUser(c);
+  if (!user) return c.redirect('/login');
+  return c.html(renderAkunPage(user));
+});
+
+app.get('/akun/alamat', async (c) => {
+  const user = await getAuthUser(c);
+  if (!user) return c.redirect('/login');
+  return c.html(renderAlamatPage(user, c.req.query('ok') ? 'Alamat tersimpan.' : ''));
+});
+
+app.post('/akun/alamat', async (c) => {
+  const user = await getAuthUser(c);
+  if (!user) return c.redirect('/login');
+  const f: any = await c.req.parseBody();
+  const receiver = String(f.receiver || '').trim().slice(0, 60);
+  const phone = String(f.phone || '').replace(/[^0-9+]/g, '').slice(0, 20);
+  const postal = String(f.postal || '').replace(/\D/g, '').slice(0, 5);
+  const text = String(f.text || '').trim().slice(0, 300);
+  const sah = receiver.length >= 3 && phone.replace(/\D/g, '').length >= 9 && postal.length === 5 && text.length >= 10;
+  if (!sah) return c.html(renderAlamatPage({ ...user, addr_receiver: receiver, addr_phone: phone, addr_postal: postal, addr_text: text }), 400);
+  await c.env.DB.prepare(
+    'UPDATE users SET addr_receiver = ?, addr_phone = ?, addr_postal = ?, addr_text = ? WHERE id = ?'
+  ).bind(receiver, phone, postal, text, user.id).run();
+  return c.redirect('/akun/alamat?ok=1');
 });
 
 app.get('/pasar/jual', async (c) => {
