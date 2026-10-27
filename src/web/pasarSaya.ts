@@ -26,7 +26,10 @@ const SHELL_CSS = `
     font:800 9.5px/1.15 'DM Sans';letter-spacing:-.01em;color:#0B192C;text-decoration:none;border-right:2px solid #0B192C;text-align:center;position:relative}
   .hub-tab:last-child{border-right:0}
   .hub-tab .c{font:700 9px 'Roboto Mono';color:#64748B}
-  .hub-tab.on{background:#1D61E7;color:#fff}.hub-tab.on .c{color:#DBEAFE}
+  /* mode pasar: aksen kuning-amber, konsisten dengan navbar */
+  .hub-tab.on{background:#B45309;color:#fff}.hub-tab.on .c{color:#FEF3C7}
+  .hub-body .tab.on{background:#B45309;color:#fff}
+  .hub-body .tab.on .c{color:#FEF3C7}
   .hub-tab.locked{color:#94A3B8}.hub-tab.locked .c{color:#CBD5E1}
   .hub-tab .dot{position:absolute;top:5px;right:6px;min-width:15px;height:15px;border-radius:9px;background:#B42318;color:#fff;
     font:800 9px/15px 'Roboto Mono';text-align:center;padding:0 3px;border:1.5px solid #fff}
