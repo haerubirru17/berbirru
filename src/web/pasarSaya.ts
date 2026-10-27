@@ -73,7 +73,7 @@ const AKT_LABEL: Record<string, string> = {
 
 export interface HubData {
   pesanan: { orders: any[]; sub: string };
-  toko: { orders: any[]; listings: any[] };
+  toko: { orders: any[]; listings: any[]; gmv?: number; escrow?: number };
   saldo: { balance: number; ledger: any[]; withdrawals: any[]; ditahan?: any[] };
   aktivitas: { items: any[]; unread: number };
 }
@@ -103,7 +103,7 @@ export function renderPasarSaya(user: any, tab: string, sub: string, d: HubData)
   if (aktif === 'pesanan') {
     isi = renderPesananPage(user, d.pesanan.orders, sub || 'bayar', true);
   } else if (aktif === 'toko') {
-    isi = renderTokoPage(user, d.toko.orders, d.toko.listings, d.saldo.balance, sub || 'perlu', true);
+    isi = renderTokoPage(user, d.toko.orders, d.toko.listings, d.saldo.balance, sub || 'perlu', true, { gmv: d.toko.gmv || 0, escrow: d.toko.escrow || 0 });
   } else if (aktif === 'saldo') {
     isi = renderSaldoPage(user, d.saldo.balance, d.saldo.ledger, d.saldo.withdrawals, true, d.saldo.ditahan || []);
   } else {

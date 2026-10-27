@@ -14,6 +14,12 @@ const PAGE_CSS = `
     background:#DCFCE7;border:2px solid #0B192C;padding:4px 8px;box-shadow:2px 2px 0 #26364A;white-space:nowrap;margin-top:2px}
   .verif svg{width:11px;height:11px;stroke:#0B192C;stroke-width:3;fill:none}
 
+  .dash{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:0 0 6px}
+  .dbox{border:2.5px solid #0B192C;box-shadow:4px 5px 0 #26364A;padding:10px 12px;background:#fff}
+  .dbox .dk{font:700 9px 'Roboto Mono';letter-spacing:.06em;text-transform:uppercase;color:#64748B}
+  .dbox .dn{font:400 19px 'Archivo Black';margin-top:3px;letter-spacing:-.02em}
+  .d-saldo{background:#DCFCE7}.d-escrow{background:#FEF3C7}.d-gmv{background:#DBEAFE}.d-produk{background:#fff}
+  .dash-hint{font:600 9.5px 'DM Sans';color:#64748B;margin:0 0 12px;line-height:1.45}
   .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:14px}
   .stat{background:#fff;border:2.5px solid #0B192C;box-shadow:4px 5px 0 #26364A;padding:12px 12px 11px;min-width:0;display:flex;flex-direction:column;justify-content:space-between;gap:8px}
   .stat .n{font:400 clamp(17px,4.6vw,21px)/1.05 'Archivo Black';color:#0F3E99;letter-spacing:-.02em;overflow-wrap:anywhere}
@@ -104,7 +110,7 @@ function tanggal(iso: any): string {
   return `${Number(d)} ${bulan} ${y}`;
 }
 
-export function renderTokoPage(user: any, orders: any[], listings: any[], saldo: number, tab: string, embed = false): string {
+export function renderTokoPage(user: any, orders: any[], listings: any[], saldo: number, tab: string, embed = false, angka: { gmv?: number; escrow?: number } = {}): string {
   const bukuAktif = (listings || []).filter((l) => l.status === 'active').length;
   const r = ringkasToko(orders, saldo, bukuAktif);
   const aktif: Kelompok = (['perlu', 'kirim', 'selesai'] as Kelompok[]).includes(tab as Kelompok) ? (tab as Kelompok) : 'perlu';
@@ -162,11 +168,13 @@ export function renderTokoPage(user: any, orders: any[], listings: any[], saldo:
     <span class="verif"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg>Terverifikasi</span>
   </div>`}
 
-  <div class="stats">
-    <div class="stat ${r.perlu > 0 ? 'urgent' : ''}"><div class="n">${r.perlu}</div><div class="k">Perlu<br>dikirim</div></div>
-    <div class="stat potong"><div class="n">${rupiah(r.saldo)}</div><div class="k">Saldo</div></div>
-    <div class="stat"><div class="n">${r.bukuAktif}</div><div class="k">Buku<br>aktif</div></div>
+  <div class="dash">
+    <div class="dbox d-saldo"><div class="dk">Saldo</div><div class="dn">${rupiah(r.saldo)}</div></div>
+    <div class="dbox d-escrow"><div class="dk">Escrow</div><div class="dn">${rupiah(Number(angka.escrow || 0))}</div></div>
+    <div class="dbox d-gmv"><div class="dk">GMV</div><div class="dn">${rupiah(Number(angka.gmv || 0))}</div></div>
+    <div class="dbox d-produk"><div class="dk">Produk</div><div class="dn">${r.bukuAktif}</div></div>
   </div>
+  <div class="dash-hint">Escrow = uang pembeli yang ditahan rekber. GMV = total nilai transaksi selesai.</div>
 
   ${r.perlu > 0 ? `<a class="strip warn" href="/toko?tab=perlu">
     <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>

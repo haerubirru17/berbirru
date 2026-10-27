@@ -1188,6 +1188,14 @@ app.get('/pasar/saya', async (c) => {
   // Tab default: Toko kalau ada pesanan yang harus dikirim, selain itu Pesanan.
   const perluKirim = (jualRows.results || []).filter((o: any) => o.status === 'paid').length;
   // Prioritas: ?tab= → ada yang perlu dikirim → penjual tanpa pembelian → Pesanan.
+  // Angka ringkas ala dashboard: GMV (nilai transaksi selesai) & escrow (dana ditahan).
+  const agg: any = approved ? await c.env.DB.prepare(
+    `SELECT
+       COALESCE(SUM(CASE WHEN status = 'completed' THEN price + shipping ELSE 0 END), 0) AS gmv,
+       COALESCE(SUM(CASE WHEN status IN ('paid','handed','disputed')
+                         THEN COALESCE(qris_final_amount, price + shipping) ELSE 0 END), 0) AS escrow
+     FROM orders WHERE seller_id = ?`
+  ).bind(user.id).first() : { gmv: 0, escrow: 0 };
   // "Uangku di mana" versi penjual: dana yang sudah dibayar tapi belum jadi saldo.
   const tahanRows = await c.env.DB.prepare(
     `SELECT id, price, shipping, qris_final_amount, status, updated_at FROM orders
@@ -1198,7 +1206,7 @@ app.get('/pasar/saya', async (c) => {
 
   return c.html(renderPasarSaya(user, tabFinal, sub, {
     pesanan: { orders: beliRows.results || [], sub },
-    toko: { orders: jualRows.results || [], listings: bukuRows.results || [] },
+    toko: { orders: jualRows.results || [], listings: bukuRows.results || [], gmv: Number(agg?.gmv || 0), escrow: Number(agg?.escrow || 0) },
     saldo: { balance: saldo, ledger, withdrawals: wd, ditahan: tahanRows.results || [] },
     aktivitas: { items: aktItems, unread: aktItems.filter((n: any) => !n.is_read).length },
   }));
