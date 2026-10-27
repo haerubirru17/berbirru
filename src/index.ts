@@ -249,7 +249,7 @@ app.use('*', async (c, next) => {
 async function getAuthUser(c: any): Promise<{ id: string; email: string; pen_name: string; city: string; avatar_key: string | null; cover_key: string | null; display_name: string | null; bio: string; seller_status?: string; seller_full_name?: string | null; seller_phone?: string | null; seller_note?: string | null; seller_reject_reason?: string | null; shop_name?: string | null; shop_slug?: string | null;
   addr_receiver?: string | null; addr_phone?: string | null; addr_postal?: string | null; addr_text?: string | null;
   addr_province_id?: string | null; addr_province_name?: string | null; addr_city_id?: string | null;
-  addr_city_name?: string | null; addr_district_id?: string | null; addr_district_name?: string | null } | null> {
+  addr_city_name?: string | null; addr_district_id?: string | null; addr_district_name?: string | null; is_owner?: boolean; owner_pending?: number } | null> {
   const token = getCookie(c, 'berbirru_session');
   if (!token) return null;
   const session: any = await c.env.DB.prepare(
@@ -258,7 +258,20 @@ async function getAuthUser(c: any): Promise<{ id: string; email: string; pen_nam
     // vuln-0005: lookup via SHA-256(token) — plaintext token tak tersimpan di DB.
     'SELECT u.id, u.email, u.pen_name, u.city, u.avatar_key, u.cover_key, u.display_name, u.bio, u.seller_status, u.seller_full_name, u.seller_phone, u.seller_note, u.seller_reject_reason, u.shop_name, u.shop_slug, u.addr_receiver, u.addr_phone, u.addr_postal, u.addr_text, u.addr_province_id, u.addr_province_name, u.addr_city_id, u.addr_city_name, u.addr_district_id, u.addr_district_name FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token_hash = ? AND s.expires_at > datetime("now") LIMIT 1'
   ).bind(await sha256hex(token)).first();
-  return session || null;
+  if (!session) return null;
+  // Penanda owner + jumlah antrean: dipakai navbar (label "Admin") dan strip di /pasar.
+  // satu query tambahan, hanya untuk akun owner.
+  if (c.env.OWNER_EMAIL && String(session.email || '').toLowerCase() === String(c.env.OWNER_EMAIL).toLowerCase()) {
+    const q: any = await c.env.DB.prepare(
+      `SELECT (SELECT COUNT(*) FROM orders WHERE status = 'disputed')
+            + (SELECT COUNT(*) FROM withdrawals WHERE status = 'requested')
+            + (SELECT COUNT(*) FROM users WHERE seller_status = 'pending')
+            + (SELECT COUNT(DISTINCT listing_id) FROM listing_reports WHERE status = 'open') AS n`
+    ).first();
+    session.is_owner = true;
+    session.owner_pending = Number(q?.n || 0);
+  }
+  return session;
 }
 
 // ---- WEB PAGES (SSR) ----
@@ -1306,7 +1319,7 @@ app.get('/pasar', async (c) => {
   const listings = await stmt.all();
   return c.html(renderPasarPage(user, listings.results || [], { q, cond, sort, max }, {
     hal, perPage, total: Number(total?.n || 0),
-  }));
+  }, isOwner(c.env, user) ? { pending: Number((user as any).owner_pending || 0) } : undefined));
 });
 
 // Halaman akun: pintu pengaturan yang masuk akal di dalam Pasar.
@@ -2095,6 +2108,13 @@ async function sellerBalance(db: any, userId: string): Promise<number> {
   ).bind(userId, userId).first();
   return Number(row?.bal || 0);
 }
+
+// Satu pintu setelah login: owner ke dashboard, pengguna lain ke feed.
+app.get('/setelah-masuk', async (c) => {
+  const me = await getAuthUser(c);
+  if (!me) return c.redirect('/login');
+  return c.redirect(isOwner(c.env, me) ? '/owner' : '/feed');
+});
 
 app.get('/saldo', async (c) => {
   const user = await getAuthUser(c);
