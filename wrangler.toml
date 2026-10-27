@@ -26,6 +26,9 @@ APP_DOMAIN = "berbirru.com"
 TURNSTILE_SITE_KEY = "0x4AAAAAAFTEI0GwdODJRhtT"
 KLIKQRIS_CALLBACK_URL = "https://berbirru.com/api/klikqris/webhook"
 
+[assets]
+directory = "./public"
+
 [observability]
 enabled = true
 
