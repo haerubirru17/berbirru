@@ -105,3 +105,29 @@ export async function sendOtpEmail(toEmail: string, otpCode: string, env: any = 
     return false;
   }
 }
+
+
+/** Notifikasi: sandi akun berubah (kontrol deteksi wajib saat reset). */
+export async function sendPasswordChangedEmail(toEmail: string, env: any = null): Promise<boolean> {
+  const apiKey = (env && env.RESEND_API_KEY) || '';
+  const fromEmail = (env && env.RESEND_FROM) || 'BERBIRRU.COM <noreply@berbirru.com>';
+  if (!apiKey) return false;
+  const html = `<!DOCTYPE html><html lang="id"><body style="margin:0;padding:24px 12px;background:#F0F6FE;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#0B192C;">
+  <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:480px;background:#fff;border:3px solid #0B192C;border-radius:16px;overflow:hidden;">
+    <tr><td style="background:#E0EEFD;padding:18px 22px;border-bottom:2px solid #0B192C;font-weight:900;letter-spacing:.5px;">BERBIRRU</td></tr>
+    <tr><td style="padding:22px;">
+      <h1 style="margin:0 0 10px;font-size:20px;">Sandi akunmu baru saja diubah</h1>
+      <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">Kami mencatat perubahan sandi untuk akun <b>${toEmail}</b>. Semua perangkat lain sudah dikeluarkan.</p>
+      <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">Kalau ini bukan kamu, segera atur ulang sandi dan hubungi kami.</p>
+      <p style="margin:0;font-size:12px;color:#64748B;">Waktu: ${new Date().toISOString()}</p>
+    </td></tr>
+  </table></body></html>`;
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: fromEmail, to: [toEmail], subject: 'Sandi akun BERBIRRU diubah', html }),
+    });
+    return res.ok;
+  } catch { return false; }
+}

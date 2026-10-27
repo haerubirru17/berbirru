@@ -143,7 +143,7 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
         </form>
 
         <div class="auth-footer-help">
-          <p id="authHelperText">Lupa kata sandi? <a onclick="toggleOtpCard(true)">Masuk dengan Kode OTP</a></p>
+          <p id="authHelperText"><a href="/lupa-sandi">Lupa kata sandi?</a> · <a onclick="toggleOtpCard(true)">Masuk dengan Kode OTP</a></p>
         </div>
       </div>
     </div>
