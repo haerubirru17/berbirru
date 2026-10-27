@@ -145,6 +145,6 @@ ${approved && user.shop_slug ? `<div class="wrap" style="padding-top:0"><div cla
     </div>
     <script>function salinToko(b){var u='https://'+location.host+'/toko/${escapeHtml(user.shop_slug)}';if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(u).then(function(){b.textContent='Tersalin ✓'},function(){prompt('Salin:',u)})}else{prompt('Salin:',u)}}</script></div>` : ''}
 ${approved ? '' : `<div class="wrap" style="padding-top:0"><a class="jual-cta" href="/pasar">Mau jual buku juga? Ajukan verifikasi &rsaquo;</a></div>`}
-${renderBottomNav('pasar', user, false)}
+${renderBottomNav('pasar', user, false, { mode: 'pasar', marketTab: (aktif === 'toko' ? 'toko' : aktif === 'pesanan' ? 'pesanan' : 'pasar') })}
 </body></html>`;
 }

@@ -111,16 +111,6 @@ export function renderPasarPage(user: any, listings: any[]): string {
   <div class="container">
     <div class="pasar-top">
       <div><div class="sec-title" style="margin:0;">Pasar Buku</div><p style="margin:7px 0 0;color:#52627A;font-weight:600">Jual beli buku fisik dengan rekber.</p></div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-        ${user ? `<a class="btn-jual" style="background:#fff;" href="/pasar/saya">
-          <svg class="ico" viewBox="0 0 24 24"><path d="M3 9h18M3 9l1.5-4.5h15L21 9M4 9v11h16V9M9 20v-6h6v6"/></svg>
-          ${user.seller_status === 'approved' ? 'Pasar Saya' : 'Pesanan Saya'}
-        </a>` : ''}
-        <a class="btn-jual" href="/pasar/jual">
-          <svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-          Jual Buku
-        </a>
-      </div>
     </div>
 
     ${listings.length === 0 ? `
