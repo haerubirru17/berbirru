@@ -185,10 +185,6 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
             <label class="form-label">Kode OTP 6-Digit</label>
             <input type="text" id="otpCodeInput" maxlength="6" class="form-input" style="letter-spacing:6px;text-align:center;font-size:22px;font-family:'Archivo Black',monospace;font-weight:800;" placeholder="••••••" required>
           </div>
-          <div class="form-group">
-            <label class="form-label">Kata Sandi Baru <span style="font-weight:600;text-transform:none;letter-spacing:0;">(opsional — hanya untuk akun yang belum aktif)</span></label>
-            <input type="password" id="otpNewPassword" class="form-input" placeholder="Minimal 8 karakter" autocomplete="new-password">
-          </div>
           <button type="button" class="btn-submit-auth" id="btnVerifyOtp" style="background:#059669;" onclick="handleVerifyOtp()">
             <svg class="ico" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
             <span>Verifikasi &amp; Masuk</span>
@@ -311,9 +307,7 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
       if (!otp || otp.length !== 6) return bbToast('Masukkan 6 digit kode OTP!', 'warning');
 
       let turnstileToken = getTurnstileToken('turnstileOtpWidget') || await tungguToken('turnstileOtpWidget', 12000);
-      const newPwd = (document.getElementById('otpNewPassword') || {}).value || '';
       const payload = { email, otp, turnstile_token: turnstileToken };
-      if (newPwd) payload.new_password = newPwd;
 
       const btn = document.getElementById('btnVerifyOtp');
       btn.disabled = true;
