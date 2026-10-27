@@ -75,6 +75,7 @@ const AKT_LABEL: Record<string, string> = {
   order_cancel: 'Pembeli membatalkan pesanan sebelum dikirim',
   order_seller_approved: 'Toko kamu disetujui — buku sudah bisa dipasang',
   order_seller_rejected: 'Pengajuan toko ditolak — lihat alasan & ajukan ulang',
+  order_listing_removed: 'Buku kamu ditarik owner — cek catatannya',
   order_withdraw_paid: 'Pencairan saldo sudah ditransfer',
   order_withdraw_reject: 'Pencairan saldo ditolak — saldo dikembalikan',
 };
@@ -134,7 +135,7 @@ export function renderPasarSaya(user: any, tab: string, sub: string, d: HubData)
     isi = `<div class="akt-bar"><span class="lbl">${items.length} aktivitas pesanan</span>
       ${d.aktivitas.unread > 0 ? '<button onclick="bacaSemua()">Tandai dibaca</button>' : ''}</div>` +
       (items.length ? items.map((n) => `
-        <a class="akt ${n.is_read ? '' : 'unread'}" href="${n.order_id ? '/pasar/order/' + escapeHtml(n.order_id) : n.type === 'order_seller_approved' ? '/pasar/saya?tab=toko' : n.type === 'order_seller_rejected' ? '/pasar/jual' : '/pasar/saya?tab=saldo'}">
+        <a class="akt ${n.is_read ? '' : 'unread'}" href="${n.order_id ? '/pasar/order/' + escapeHtml(n.order_id) : n.type === 'order_seller_approved' ? '/pasar/saya?tab=toko' : n.type === 'order_seller_rejected' ? '/pasar/jual' : n.type === 'order_listing_removed' ? '/pasar/saya?tab=toko' : '/pasar/saya?tab=saldo'}">
           <span class="ic"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></span>
           <span class="tx">
             <span class="t1">${escapeHtml(AKT_LABEL[n.type] || 'Pembaruan pesanan')}</span>

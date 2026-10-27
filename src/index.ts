@@ -1753,6 +1753,28 @@ app.patch('/api/pasar/listings/:id', async (c) => {
   return c.json({ ok: true });
 });
 
+// Laporan listing: satu per orang per buku, tidak boleh melaporkan milik sendiri.
+app.post('/api/pasar/listings/:id/report', async (c) => {
+  const me = await getAuthUser(c);
+  if (!me) return c.json({ error: 'Masuk dulu' }, 401);
+  const body: any = await c.req.json().catch(() => ({}));
+  const reason = ['mismatch', 'fraud', 'misleading', 'price', 'other'].includes(String(body?.reason)) ? String(body.reason) : 'other';
+  const note = String(body?.note || '').trim().slice(0, 300);
+  const l: any = await c.env.DB.prepare("SELECT id, seller_id, status FROM listings WHERE id = ? AND status != 'hidden'")
+    .bind(c.req.param('id')).first();
+  if (!l) return c.json({ error: 'Buku tidak ditemukan' }, 404);
+  if (l.seller_id === me.id) return c.json({ error: 'Tidak bisa melaporkan buku sendiri' }, 400);
+  try {
+    await c.env.DB.prepare(
+      'INSERT INTO listing_reports (id, listing_id, reporter_id, reason, note) VALUES (?,?,?,?,?)'
+    ).bind(crypto.randomUUID(), l.id, me.id, reason, note || null).run();
+  } catch (e: any) {
+    if (String(e?.message || e).includes('UNIQUE')) return c.json({ error: 'Kamu sudah melaporkan buku ini' }, 409);
+    throw e;
+  }
+  return c.json({ ok: true });
+});
+
 app.post('/api/pasar/listings/:id/status', async (c) => {
   const me = await getAuthUser(c);
   if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
@@ -1888,6 +1910,30 @@ app.get('/owner', async (c) => {
   const audit = await c.env.DB.prepare(
     `SELECT action, target_type, target_id, note, created_at FROM owner_actions ORDER BY created_at DESC LIMIT 25`
   ).all();
+  const rep = await c.env.DB.prepare(
+    `SELECT r.listing_id, r.reason, r.note, r.created_at, r.reporter_name,
+            l.title, l.price, l.status AS listing_status, l.seller_id, s.pen_name AS seller_name,
+            (SELECT COUNT(*) FROM listing_reports x WHERE x.listing_id = r.listing_id AND x.status = 'open') AS jumlah,
+            (SELECT COUNT(*) FROM orders o WHERE o.seller_id = l.seller_id AND o.status = 'completed') AS trx_selesai,
+            (SELECT COUNT(*) FROM orders o WHERE o.seller_id = l.seller_id AND o.status = 'disputed') AS sengketa
+       FROM (SELECT lr.*, u.pen_name AS reporter_name FROM listing_reports lr JOIN users u ON u.id = lr.reporter_id
+              WHERE lr.status = 'open') r
+       JOIN listings l ON l.id = r.listing_id
+       JOIN users s ON s.id = l.seller_id
+      ORDER BY r.created_at DESC LIMIT 60`
+  ).all();
+  const laporan: any[] = [];
+  const peta = new Map<string, any>();
+  for (const r of (rep.results || []) as any[]) {
+    let g = peta.get(r.listing_id);
+    if (!g) {
+      g = { ...r, items: [] };
+      peta.set(r.listing_id, g);
+      laporan.push(g);
+    }
+    g.items.push({ reason: r.reason, note: r.note, reporter: r.reporter_name, at: r.created_at });
+  }
+
   const liab: any = await c.env.DB.prepare(
     `SELECT
        (SELECT COALESCE(SUM(delta),0) FROM ledger)
@@ -1898,7 +1944,7 @@ app.get('/owner', async (c) => {
   ).first();
   return c.html(renderOwnerPage(disputes, withdrawals, calon.results || [], audit.results || [], {
     saldo: Number(liab?.saldo || 0), escrow: Number(liab?.escrow || 0), fee: Number(liab?.fee || 0),
-  }));
+  }, laporan));
 });
 
 app.post('/api/owner/orders/:id/resolve', async (c) => {
@@ -1950,6 +1996,35 @@ app.post('/api/owner/orders/:id/resolve', async (c) => {
   }
   if (!(r[0].meta?.changes || 0)) return c.json({ error: 'Sengketa sudah diputuskan' }, 409);
   await logOwnerAction(c.env.DB, me?.email, 'dispute_release', 'order', o.id, note);
+  return c.json({ ok: true });
+});
+
+// Keputusan owner atas laporan listing: sembunyikan buku atau abaikan laporan.
+app.post('/api/owner/reports/:id/resolve', async (c) => {
+  const me = await getAuthUser(c);
+  if (!isOwner(c.env, me)) return c.json({ error: 'Tidak ditemukan' }, 404);
+  const body: any = await c.req.json().catch(() => ({}));
+  const decision = body?.decision === 'hide' ? 'hide' : body?.decision === 'ignore' ? 'ignore' : null;
+  const note = String(body?.note || '').trim().slice(0, 300);
+  if (!decision) return c.json({ error: 'Keputusan tidak dikenal' }, 400);
+  if (note.length < 5) return c.json({ error: 'Tulis catatan keputusan (min 5 karakter)' }, 400);
+
+  const l: any = await c.env.DB.prepare('SELECT id, seller_id, title FROM listings WHERE id = ?').bind(c.req.param('id')).first();
+  if (!l) return c.json({ error: 'Buku tidak ditemukan' }, 404);
+
+  const status = decision === 'hide' ? 'removed' : 'ignored';
+  await c.env.DB.batch([
+    c.env.DB.prepare(
+      "UPDATE listing_reports SET status = ?, reviewed_at = datetime('now'), review_note = ?, reviewer_email = ? WHERE listing_id = ? AND status = 'open'"
+    ).bind(status, note, me?.email || null, l.id),
+    ...(decision === 'hide'
+      ? [c.env.DB.prepare("UPDATE listings SET status = 'hidden' WHERE id = ? AND status = 'active'").bind(l.id)]
+      : []),
+  ]);
+  if (decision === 'hide') {
+    await notifyOrder(c.env.DB, { userId: l.seller_id, actorId: me!.id, type: 'order_listing_removed', orderId: null });
+  }
+  await logOwnerAction(c.env.DB, me?.email, decision === 'hide' ? 'listing_remove' : 'listing_ignore', 'listing', l.id, note);
   return c.json({ ok: true });
 });
 

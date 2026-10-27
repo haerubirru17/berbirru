@@ -579,8 +579,51 @@ export function renderListingDetail(user: any, p: any, seller: any): string {
       </div>
       ${user ? '' : '<div class="login-hint">Belum punya akun? Daftar dulu — gratis.</div>'}
     </div>
+
+    ${user && user.id !== p.seller_id ? `
+    <details class="lap" data-id="${escapeHtml(p.id)}">
+      <summary>Laporkan buku ini</summary>
+      <div class="lap-in">
+        <label class="lap-l">Alasan</label>
+        <select id="lapReason">
+          <option value="mismatch">Barang tidak sesuai deskripsi</option>
+          <option value="fraud">Penipuan / penjual tidak mengirim</option>
+          <option value="misleading">Judul atau foto menyesatkan</option>
+          <option value="price">Harga tidak wajar</option>
+          <option value="other">Lain-lain</option>
+        </select>
+        <label class="lap-l">Catatan (opsional)</label>
+        <textarea id="lapNote" maxlength="300" placeholder="Ceritakan singkat masalahnya…"></textarea>
+        <button type="button" class="lap-go" onclick="laporkan(this)">Kirim laporan</button>
+        <div class="lap-msg" id="lapMsg"></div>
+      </div>
+    </details>` : ''}
   </div>
+  <style>
+    .lap{margin:14px 0 24px;border:2.5px solid var(--ink);background:#fff;box-shadow:var(--small-shadow)}
+    .lap summary{cursor:pointer;padding:11px 13px;font:800 12px 'DM Sans';color:#991B1B;list-style:none}
+    .lap summary::-webkit-details-marker{display:none}
+    .lap-in{padding:0 13px 13px;display:flex;flex-direction:column;gap:8px}
+    .lap-l{font:800 10px 'Roboto Mono';color:#64748B;letter-spacing:.05em;text-transform:uppercase}
+    .lap select,.lap textarea{width:100%;border:2px solid var(--ink);border-radius:8px;padding:9px 11px;font:600 13px 'DM Sans';background:#fff}
+    .lap textarea{min-height:70px;resize:vertical}
+    .lap-go{min-height:42px;border:2.5px solid var(--ink);background:#FEE2E2;color:#991B1B;font:900 12.5px 'DM Sans';cursor:pointer;box-shadow:2px 3px 0 #26364A}
+    .lap-msg{font:700 11.5px 'DM Sans';color:#0F7A3D}
+  </style>
   <script>
+  async function laporkan(btn){
+    btn.disabled=true;
+    var msg=document.getElementById('lapMsg');
+    try{
+      var r=await fetch('/api/pasar/listings/'+btn.closest('.lap').getAttribute('data-id')+'/report',
+        {method:'POST',headers:{'Content-Type':'application/json'},
+         body:JSON.stringify({reason:document.getElementById('lapReason').value,note:document.getElementById('lapNote').value})});
+      var j=await r.json().catch(function(){return {}});
+      msg.style.color = r.ok ? '#0F7A3D' : '#B42318';
+      msg.textContent = r.ok ? 'Laporan diterima. Owner akan meninjau.' : (j.error||'Gagal mengirim laporan.');
+    }catch(e){msg.style.color='#B42318';msg.textContent='Gagal mengirim laporan.'}
+    btn.disabled=false;
+  }
   (function () {
     var b = document.getElementById('btnBeli');
     if (b) b.addEventListener('click', function () {

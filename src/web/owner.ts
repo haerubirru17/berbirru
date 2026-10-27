@@ -61,7 +61,15 @@ const AKSI_LABEL: Record<string, string> = {
   sweep: 'Sweep manual',
 };
 
-export function renderOwnerPage(disputes: any[], withdrawals: any[], calonPenjual: any[] = [], audit: any[] = [], liab: { saldo?: number; escrow?: number; fee?: number } = {}): string {
+const ALASAN: Record<string, string> = {
+  mismatch: 'Barang tidak sesuai deskripsi',
+  fraud: 'Penipuan / tidak mengirim',
+  misleading: 'Judul atau foto menyesatkan',
+  price: 'Harga tidak wajar',
+  other: 'Lain-lain',
+};
+
+export function renderOwnerPage(disputes: any[], withdrawals: any[], calonPenjual: any[] = [], audit: any[] = [], liab: { saldo?: number; escrow?: number; fee?: number } = {}, laporan: any[] = []): string {
   const dispCards = (disputes || []).map((o) => `
     <div class="st-card">
       <div class="lbl">Sengketa · ${tgl(o.updated_at)}</div>
@@ -130,6 +138,21 @@ export function renderOwnerPage(disputes: any[], withdrawals: any[], calonPenjua
       </div>
     </div>`).join('') || `<div class="empty">Tidak ada permintaan pencairan.</div>`;
 
+  const laporCards = (laporan || []).map((r) => `
+    <div class="st-card">
+      <div class="lbl">Laporan · ${tgl(r.created_at)} · ${Number(r.jumlah)} pelapor</div>
+      <div class="st-big">${escapeHtml(r.title || 'Buku')}</div>
+      <div class="st-sub">Penjual @${escapeHtml(r.seller_name || '?')} · ${rp(r.price)} · rekam jejak: ${Number(r.trx_selesai)} transaksi selesai, ${Number(r.sengketa)} sengketa</div>
+      <div class="kw">${(r.items || []).map((i: any) => `${escapeHtml(ALASAN[i.reason] || i.reason)} — @${escapeHtml(i.reporter)}${i.note ? `\n“${escapeHtml(i.note)}”` : ''}`).join('\n\n')}</div>
+      <div class="field"><label class="lbl">Catatan keputusan (wajib)</label>
+        <textarea class="inp" id="rnote-${escapeHtml(r.listing_id)}" maxlength="300" placeholder="Contoh: foto tidak sesuai, 3 pelapor berbeda, buku disembunyikan."></textarea>
+      </div>
+      <div class="btns">
+        <button class="btn b-red" onclick="putusLaporan('${escapeHtml(r.listing_id)}','hide',this)">Sembunyikan Buku</button>
+        <button class="btn" onclick="putusLaporan('${escapeHtml(r.listing_id)}','ignore',this)">Abaikan Laporan</button>
+      </div>
+    </div>`).join('') || `<div class="empty">Tidak ada laporan listing.</div>`;
+
   const sellerCards = (calonPenjual || []).map((u) => `
     <div class="st-card">
       <div class="lbl">Pengajuan · ${tgl(u.seller_applied_at)}</div>
@@ -171,6 +194,9 @@ ${PASAR_BASE_CSS}
   <div class="st-big" style="margin:18px 0 10px;">Verifikasi Penjual</div>
   ${sellerCards}
 
+  <div class="st-big" style="margin:26px 0 10px;">Laporan Listing</div>
+  ${laporCards}
+
   <div class="st-big" style="margin:26px 0 10px;">Sengketa Menunggu</div>
   ${dispCards}
 
@@ -197,6 +223,13 @@ async function post(url,body){
   const j=await r.json().catch(()=>({}));
   if(!r.ok){err(j.error||'Gagal.');return false}
   location.reload(); return true;
+}
+async function putusLaporan(id,decision,btn){
+  const note=val('rnote-'+id);
+  if(note.length<5){err('Tulis catatan keputusan dulu (min 5 karakter).');return}
+  if(decision==='hide' && !confirm('Sembunyikan buku ini dari Pasar & toko publik?')) return;
+  btn.disabled=true;
+  if(!await post('/api/owner/reports/'+id+'/resolve',{decision,note})) btn.disabled=false;
 }
 async function resolve(id,decision,btn){
   const note=val('note-'+id);
