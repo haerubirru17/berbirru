@@ -70,11 +70,12 @@ export function renderOwnerPage(disputes: any[], withdrawals: any[], calonPenjua
     <tr>
       <td>
         <div class="fw-bold">${escapeHtml(o.title || 'Buku')}</div>
-        <div class="muted">${escapeHtml(o.id)} · ${tgl(o.updated_at)}<br>${escapeHtml(o.kesepakatan || '—')}</div>
+        <div class="muted">${tgl(o.updated_at)}<br>${escapeHtml(o.kesepakatan || '—')}</div>
+        <a class="small" href="/pasar/order/${escapeHtml(o.id)}" target="_blank" rel="noopener">Buka pesanan →</a>
       </td>
       <td>
-        <div class="fw-bold">@${escapeHtml(o.buyer_name || '?')}</div><div class="muted">pembeli</div>
-        <div class="fw-bold mt-2">@${escapeHtml(o.seller_name || '?')}</div><div class="muted">penjual</div>
+        <a class="fw-bold" href="/owner/akun/${escapeHtml(o.buyer_id)}">@${escapeHtml(o.buyer_name || '?')}</a><div class="muted">pembeli</div>
+        <a class="fw-bold mt-2 d-block" href="/owner/akun/${escapeHtml(o.seller_id)}">@${escapeHtml(o.seller_name || '?')}</a><div class="muted">penjual</div>
       </td>
       <td>
         <div class="num">${rp(o.qris_final_amount || Number(o.price) + Number(o.shipping || 0))}</div>
@@ -87,6 +88,11 @@ export function renderOwnerPage(disputes: any[], withdrawals: any[], calonPenjua
              <button class="btn btn-sm btn-outline-secondary mt-1" onclick="lacak('${escapeHtml(o.id)}',this)">Riwayat kirim</button>
              <div class="trk" id="trk-${escapeHtml(o.id)}"></div>`
           : '<div class="muted">Tanpa ekspedisi</div>'}
+        ${(o.evidence || []).length ? `<div class="mt-2"><div class="muted fw-bold">Bukti ${(o.evidence || []).length} foto</div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px;">
+            ${(o.evidence || []).map((b: any) => `<a href="/berkas/sengketa/${escapeHtml(b.id)}" target="_blank" rel="noopener" title="${escapeHtml(b.role === 'buyer' ? 'Pembeli' : 'Penjual')}${b.note ? ' · ' + escapeHtml(b.note) : ''}">
+              <img src="/berkas/sengketa/${escapeHtml(b.id)}" alt="Bukti" style="width:44px;height:44px;object-fit:cover;border:1px solid var(--tblr-border-color);border-radius:6px;"></a>`).join('')}
+          </div></div>` : '<div class="muted mt-1">Belum ada bukti foto</div>'}
       </td>
       <td class="d-none d-lg-table-cell">
         <details>
@@ -115,7 +121,7 @@ export function renderOwnerPage(disputes: any[], withdrawals: any[], calonPenjua
   const wdRows = (withdrawals || []).map((w) => `
     <tr>
       <td>
-        <div class="fw-bold">@${escapeHtml(w.pen_name || '?')}</div>
+        <a class="fw-bold" href="/owner/akun/${escapeHtml(w.user_id)}">@${escapeHtml(w.pen_name || '?')}</a>
         <div class="muted">${escapeHtml(w.method || 'qris')} · ${escapeHtml(w.account || '—')} · ${tgl(w.requested_at)}</div>
       </td>
       <td><span class="badge ${w.kind === 'buyer' ? 'bg-cyan-lt' : 'bg-green-lt'}">${w.kind === 'buyer' ? 'pembeli · refund' : 'penjual'}</span></td>
@@ -151,10 +157,14 @@ export function renderOwnerPage(disputes: any[], withdrawals: any[], calonPenjua
     <div class="list-group-item">
       <div class="d-flex justify-content-between align-items-start gap-2">
         <div>
-          <div class="fw-bold">${escapeHtml(u.shop_name || '(tanpa nama toko)')}</div>
+          <a class="fw-bold" href="/owner/akun/${escapeHtml(u.id)}">${escapeHtml(u.shop_name || '(tanpa nama toko)')}</a>
           <div class="muted">${escapeHtml(u.seller_full_name || u.pen_name)} · @${escapeHtml(u.pen_name)} · ${escapeHtml(u.city || '-')} · ${Number(u.listing_aktif || 0)} listing aktif</div>
         </div>
         <span class="badge bg-yellow-lt">menunggu</span>
+      </div>
+      <div class="d-flex gap-2 mt-2">
+        ${Number(u.doc_ktp) ? `<a href="/berkas/dokumen/${escapeHtml(u.id)}/ktp" target="_blank" rel="noopener"><img src="/berkas/dokumen/${escapeHtml(u.id)}/ktp" alt="KTP" style="width:64px;height:44px;object-fit:cover;border:1px solid var(--tblr-border-color);border-radius:6px;"><span class="d-block muted" style="font-size:.62rem;">KTP</span></a>` : '<span class="badge bg-red-lt">KTP belum ada</span>'}
+        ${Number(u.doc_bank) ? `<a href="/berkas/dokumen/${escapeHtml(u.id)}/bank" target="_blank" rel="noopener"><img src="/berkas/dokumen/${escapeHtml(u.id)}/bank" alt="Buku tabungan" style="width:64px;height:44px;object-fit:cover;border:1px solid var(--tblr-border-color);border-radius:6px;"><span class="d-block muted" style="font-size:.62rem;">Rekening</span></a>` : '<span class="badge bg-red-lt">Rekening belum ada</span>'}
       </div>
       <div class="row g-2 mt-1 muted">
         <div class="col-sm-4">WA: <span class="text-body">${escapeHtml(u.seller_phone || '—')}</span></div>
@@ -173,8 +183,8 @@ export function renderOwnerPage(disputes: any[], withdrawals: any[], calonPenjua
     <div class="list-group-item">
       <div class="d-flex justify-content-between align-items-start gap-2">
         <div>
-          <div class="fw-bold">${escapeHtml(r.title || 'Buku')}</div>
-          <div class="muted">@${escapeHtml(r.seller_name || '?')} · ${rp(r.price)} · ${Number(r.jumlah)} pelapor · ${tgl(r.created_at)}</div>
+          <a class="fw-bold" href="/pasar/${escapeHtml(r.listing_id)}" target="_blank" rel="noopener">${escapeHtml(r.title || 'Buku')}</a>
+          <div class="muted"><a href="/owner/akun/${escapeHtml(r.seller_id)}">@${escapeHtml(r.seller_name || '?')}</a> · ${rp(r.price)} · ${Number(r.jumlah)} pelapor · ${tgl(r.created_at)}</div>
         </div>
         <span class="badge bg-red-lt">dilaporkan</span>
       </div>

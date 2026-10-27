@@ -474,7 +474,7 @@ export function renderJualPage(user: any): string {
 </html>`;
 }
 
-export function renderListingDetail(user: any, p: any, seller: any): string {
+export function renderListingDetail(user: any, p: any, seller: any, adminView = false): string {
   let keys: string[] = [];
   try { keys = JSON.parse(p.photos || '[]'); } catch { keys = []; }
   const photosHtml = keys.map((k, i) => `
@@ -537,6 +537,10 @@ export function renderListingDetail(user: any, p: any, seller: any): string {
       </a>
     </div>
 
+    ${adminView ? `<div style="border:3px solid #B45309;background:#FFFBEB;padding:10px 12px;margin-bottom:12px;box-shadow:4px 4px 0 #0B192C;">
+      <div style="font:800 12px 'DM Sans';color:#7C2D12;">MODE ADMIN — ${p.status === 'hidden' ? 'LISTING DISEMBUNYIKAN' : 'PRATINJAU OWNER'}</div>
+      <div style="font:600 11.5px 'DM Sans';color:#7C2D12;margin-top:3px;">Halaman ini tidak terlihat publik. Dipakai owner untuk memeriksa buku sebelum memutuskan.</div>
+    </div>` : ''}
     <a href="/pasar" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;color:var(--blue-primary);text-decoration:none;margin-bottom:10px;">
       <svg class="ico" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg> Pasar Buku
     </a>
