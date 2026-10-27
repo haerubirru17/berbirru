@@ -51,7 +51,17 @@ function stats(label: string, s: any): string {
   return `<div class="meta">${label}: ${Number(s?.selesai || 0)} transaksi selesai · ${Number(s?.sengketa || 0)} sengketa · akun sejak ${tgl(s?.sejak) || '—'}</div>`;
 }
 
-export function renderOwnerPage(disputes: any[], withdrawals: any[], calonPenjual: any[] = []): string {
+const AKSI_LABEL: Record<string, string> = {
+  seller_approve: 'Setujui penjual',
+  seller_reject: 'Tolak penjual',
+  dispute_refund: 'Refund pembeli',
+  dispute_release: 'Lepas dana ke penjual',
+  withdrawal_pay: 'Cairkan saldo',
+  withdrawal_reject: 'Tolak pencairan',
+  sweep: 'Sweep manual',
+};
+
+export function renderOwnerPage(disputes: any[], withdrawals: any[], calonPenjual: any[] = [], audit: any[] = []): string {
   const dispCards = (disputes || []).map((o) => `
     <div class="st-card">
       <div class="lbl">Sengketa · ${tgl(o.updated_at)}</div>
@@ -143,6 +153,7 @@ ${PASAR_BASE_CSS}
 <div class="wrap">
   <div class="page-head"><h1>Owner</h1><p>Putuskan sengketa dan cairkan saldo penjual. Setiap keputusan menyimpan alasan sebagai bukti.</p></div>
   <div class="err" id="err"></div>
+  <button class="btn" id="swp" onclick="sweep()" style="margin:0 0 14px;max-width:280px;">Jalankan sweep sekarang</button>
 
   <div class="st-big" style="margin:18px 0 10px;">Verifikasi Penjual</div>
   ${sellerCards}
@@ -152,6 +163,16 @@ ${PASAR_BASE_CSS}
 
   <div class="st-big" style="margin:26px 0 10px;">Pencairan Menunggu</div>
   ${wdCards}
+
+  <div class="st-big" style="margin:26px 0 10px;">Jejak Tindakan</div>
+  <div class="st-card">
+    ${audit.length ? audit.map((a) => `
+      <div style="padding:8px 0;border-bottom:1.5px dashed #CBD5E1;">
+        <div class="lbl">${tgl(a.created_at)} · ${escapeHtml(AKSI_LABEL[a.action] || a.action)}</div>
+        <div class="st-sub">${escapeHtml(a.target_type === 'system' || !a.target_id ? 'Sistem' : (a.target_type === 'order' ? 'Order ' : a.target_type === 'user' ? 'Akun ' : 'Kotak ') + a.target_id)}</div>
+        ${a.note ? `<div class="st-sub">“${escapeHtml(a.note)}”</div>` : ''}
+      </div>`).join('') : '<div class="st-sub">Belum ada tindakan.</div>'}
+  </div>
 </div>
 <script>
 function err(t){document.getElementById('err').textContent=t||''}
@@ -197,6 +218,16 @@ async function lacak(id,btn){
     box.innerHTML='<div class="ok">Status kurir: '+esc(j.status||'-')+'</div>'+rows+(rows?'':'<div class="l">Belum ada riwayat.</div>');
   }catch(e){ box.innerHTML='<div class="bad">Gagal menghubungi kurir.</div>' }
   btn.disabled=false;
+}
+async function sweep(){
+  const btn=document.getElementById('swp'); btn.disabled=true;
+  err('');
+  try{
+    const r=await fetch('/api/owner/sweep',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok){err(j.error||'Gagal.');btn.disabled=false;return}
+    alert('Sweep selesai: '+j.hasil); location.reload();
+  }catch(e){err('Gagal menghubungi server.');btn.disabled=false}
 }
 async function settle(id,decision,btn){
   const note=val('wnote-'+id), ref=val('wref-'+id);

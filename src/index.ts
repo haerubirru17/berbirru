@@ -1649,7 +1649,10 @@ app.get('/owner', async (c) => {
     w.riwayat_pencairan = { jumlah: Number(hist?.n || 0), total: Number(hist?.total || 0) };
   }
 
-  return c.html(renderOwnerPage(disputes, withdrawals, calon.results || []));
+  const audit = await c.env.DB.prepare(
+    `SELECT action, target_type, target_id, note, created_at FROM owner_actions ORDER BY created_at DESC LIMIT 25`
+  ).all();
+  return c.html(renderOwnerPage(disputes, withdrawals, calon.results || [], audit.results || []));
 });
 
 app.post('/api/owner/orders/:id/resolve', async (c) => {
@@ -1670,6 +1673,7 @@ app.post('/api/owner/orders/:id/resolve', async (c) => {
     ).bind(note, o.id).run();
     if ((res.meta?.changes || 0) === 0) return c.json({ error: 'Sengketa sudah diputuskan' }, 409);
     await logOrderEvent(c.env.DB, o.id, 'owner', 'disputed', 'refunded', note || 'Owner: dana dikembalikan ke pembeli');
+    await logOwnerAction(c.env.DB, me?.email, 'dispute_refund', 'order', o.id, note);
     return c.json({ ok: true });
   }
 
@@ -1688,6 +1692,7 @@ app.post('/api/owner/orders/:id/resolve', async (c) => {
     throw e;
   }
   if (!(r[0].meta?.changes || 0)) return c.json({ error: 'Sengketa sudah diputuskan' }, 409);
+  await logOwnerAction(c.env.DB, me?.email, 'dispute_release', 'order', o.id, note);
   return c.json({ ok: true });
 });
 
@@ -1714,6 +1719,7 @@ app.post('/api/owner/sellers/:id/review', async (c) => {
       await c.env.DB.prepare('UPDATE users SET shop_slug = ? WHERE id = ? AND shop_slug IS NULL').bind(slug, c.req.param('id')).run();
     }
   }
+  await logOwnerAction(c.env.DB, me?.email, approve ? 'seller_approve' : 'seller_reject', 'user', c.req.param('id'), reason || null);
   return c.json({ ok: true });
 });
 
@@ -1741,11 +1747,28 @@ app.post('/api/owner/withdrawals/:id/settle', async (c) => {
     await c.env.DB.prepare("INSERT INTO ledger (user_id, order_id, delta, kind) VALUES (?, NULL, ?, 'withdraw')")
       .bind(w.user_id, -Number(w.amount)).run();
   }
+  await logOwnerAction(c.env.DB, me?.email, decision === 'pay' ? 'withdrawal_pay' : 'withdrawal_reject', 'withdrawal', id, note + (ref ? ' · ref ' + ref : ''));
   return c.json({ ok: true });
+});
+
+// Picu sweep manual (owner): cron bisa gagal diam-diam, ini jalan keluar daruratnya.
+app.post('/api/owner/sweep', async (c) => {
+  const me = await getAuthUser(c);
+  if (!isOwner(c.env, me)) return c.json({ error: 'Tidak ditemukan' }, 404);
+  const hasil = await sweepOrders(c.env.DB, c.env);
+  await logOwnerAction(c.env.DB, me?.email, 'sweep', 'system', null, hasil);
+  return c.json({ ok: true, hasil });
 });
 
 // Cron sweep per jam: expire order tak dibayar; handed D+5 tanpa gesekan → done;
 // anti-resi-hantu: handed ekspedisi D+1, resi nggak ketemu di kurir → flag disputes.
+// Jejak audit: satu baris per keputusan owner, tak bisa dihapus dari UI.
+async function logOwnerAction(db: any, email: string | undefined | null, action: string, targetType: string | null, targetId: string | null, note: string | null) {
+  await db.prepare(
+    "INSERT INTO owner_actions (id, owner_email, action, target_type, target_id, note) VALUES (?,?,?,?,?,?)"
+  ).bind(crypto.randomUUID(), email || '?', action, targetType, targetId, note).run();
+}
+
 async function sweepOrders(db: any, env: any): Promise<string> {
   const exp = await db.prepare(
     "UPDATE orders SET status = 'expired', updated_at = datetime('now') WHERE status = 'created' AND created_at < datetime('now', '-48 hours')"
