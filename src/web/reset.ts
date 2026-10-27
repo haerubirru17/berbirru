@@ -36,16 +36,15 @@ export function renderResetPage(siteKey = ''): string {
   <h1>Atur Ulang Sandi</h1>
   <p class="sub">Kami kirim kode ke emailmu, lalu kamu tentukan sandi baru. Semua perangkat lain akan keluar otomatis.</p>
   <div class="msg" id="msg"></div>
+  <div class="cf-turnstile" data-sitekey="${sk}" data-theme="light"></div>
 
   <div class="step on" id="s1">
     <div class="f"><label>Email akun</label><input id="email" type="email" inputmode="email" placeholder="nama@email.com" autocomplete="email"></div>
-    <div class="cf-turnstile" data-sitekey="${sk}" data-theme="light"></div>
     <button id="b1" onclick="kirim()">Kirim kode</button>
   </div>
 
   <div class="step" id="s2">
     <div class="f"><label>Kode 6 angka</label><input id="otp" inputmode="numeric" maxlength="6" placeholder="••••••" style="letter-spacing:6px;text-align:center;font-size:22px"></div>
-    <div class="cf-turnstile" data-sitekey="${sk}" data-theme="light"></div>
     <button id="b2" onclick="cek()">Verifikasi kode</button>
     <p class="hint">Tidak menerima kode? <a href="javascript:void(0)" onclick="ulang()">Kirim ulang</a></p>
   </div>
