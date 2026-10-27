@@ -251,6 +251,18 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
       return el ? el.value : '';
     }
 
+    // Token Turnstile sekali pakai. Setelah OTP dikirim, widget harus menyelesaikan
+    // tantangan baru sebelum verifikasi — jadi tunggu token segar, jangan kirim kosong.
+    async function tungguToken(widgetId, maxMs) {
+      const mulai = Date.now();
+      while (Date.now() - mulai < (maxMs || 12000)) {
+        const t = getTurnstileToken(widgetId);
+        if (t) return t;
+        await new Promise(r => setTimeout(r, 250));
+      }
+      return '';
+    }
+
     // Token Turnstile single-use: habis dikirim (walau server menolaknya), widget
     // harus di-reset agar attempt berikutnya mint token baru — kalau tidak, retry
     // selamanya kirim token hangus dan gagal "kedaluwarsa".
@@ -282,6 +294,8 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
         document.getElementById('otpStep1').style.display = 'none';
         document.getElementById('otpStep2').style.display = 'block';
         bbToast(data.message || 'Kode OTP berhasil dikirim!', 'success');
+        // token sudah terpakai untuk kirim OTP → minta token baru untuk langkah verifikasi
+        try { if (window.turnstile) window.turnstile.reset('#turnstileOtpWidget'); } catch (e) {}
       } catch (err) {
         resetTurnstile();
         bbToast(err.message || 'Terjadi kesalahan.', 'error');
@@ -296,7 +310,7 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
       const otp = document.getElementById('otpCodeInput').value.trim();
       if (!otp || otp.length !== 6) return bbToast('Masukkan 6 digit kode OTP!', 'warning');
 
-      const turnstileToken = getTurnstileToken('turnstileOtpWidget');
+      let turnstileToken = getTurnstileToken('turnstileOtpWidget') || await tungguToken('turnstileOtpWidget', 12000);
       const newPwd = (document.getElementById('otpNewPassword') || {}).value || '';
       const payload = { email, otp, turnstile_token: turnstileToken };
       if (newPwd) payload.new_password = newPwd;
