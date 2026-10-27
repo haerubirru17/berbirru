@@ -31,7 +31,7 @@ import { renderPasarSaya } from './web/pasarSaya';
 import { renderTokoPublikPage } from './web/tokoPublik';
 import { renderOwnerPage } from './web/owner';
 import { createQrisTransaction, getQrisStatus, verifyWebhook, KlikQrisEnv } from './klikqris';
-import { providerAmountMatches, settlementAmounts, PASAR_FEE } from './lib/pasar-settlement';
+import { providerAmountMatches, settlementAmounts, PASAR_FEE, WITHDRAW_MIN, withdrawFee, withdrawTotal } from './lib/pasar-settlement';
 import { validasiPenerima, normalisasiHp } from './lib/alamat';
 import { slugToko, slugUnik } from './lib/toko';
 import { sendOtpEmail } from './mail';
@@ -1168,14 +1168,14 @@ app.get('/pasar/saya', async (c) => {
        FROM listings WHERE seller_id = ? ORDER BY created_at DESC LIMIT 60`
   ).bind(user.id).all() : { results: [] as any[] };
 
-  const saldo = approved ? await sellerBalance(c.env.DB, user.id) : 0;
+  const saldo = await sellerBalance(c.env.DB, user.id);
   let ledger: any[] = [], wd: any[] = [];
-  if (approved && tab === 'saldo') {
+  if (tab === 'saldo') {
     ledger = (await c.env.DB.prepare(
       'SELECT delta, kind, order_id, created_at FROM ledger WHERE user_id = ? ORDER BY id DESC LIMIT 20'
     ).bind(user.id).all()).results || [];
     wd = (await c.env.DB.prepare(
-      'SELECT id, amount, status, method, account, requested_at, paid_at FROM withdrawals WHERE user_id = ? ORDER BY requested_at DESC LIMIT 20'
+      'SELECT id, amount, fee, kind, status, method, account, requested_at, paid_at FROM withdrawals WHERE user_id = ? ORDER BY requested_at DESC LIMIT 20'
     ).bind(user.id).all()).results || [];
   }
 
@@ -1204,7 +1204,8 @@ app.get('/pasar/saya', async (c) => {
   // "Uangku di mana" versi penjual: dana yang sudah dibayar tapi belum jadi saldo.
   const tahanRows = await c.env.DB.prepare(
     `SELECT id, price, shipping, qris_final_amount, status, updated_at FROM orders
-      WHERE seller_id = ? AND status IN ('paid','handed','disputed') ORDER BY updated_at DESC LIMIT 20`
+      WHERE ${approved ? 'seller_id' : 'buyer_id'} = ? AND status IN ('paid','handed','disputed')
+      ORDER BY updated_at DESC LIMIT 20`
   ).bind(user.id).all();
   const belumPernahBeli = (beliRows.results || []).length === 0;
   const tabFinal = tab || (approved && (perluKirim > 0 || belumPernahBeli) ? 'toko' : 'pesanan');
@@ -1259,7 +1260,7 @@ app.get('/pasar/:id/beli', async (c) => {
     .bind(c.req.param('id')).first();
   if (!p) return c.notFound();
   if (p.seller_id === user.id) return c.redirect(`/pasar/${p.id}`);
-  return c.html(renderCheckoutPage(user, p));
+  return c.html(renderCheckoutPage(user, p, await sellerBalance(c.env.DB, user.id)));
 });
 
 app.post('/api/pasar/orders', async (c) => {
@@ -1318,6 +1319,41 @@ app.post('/api/pasar/orders', async (c) => {
   const id = crypto.randomUUID();
   const qrisOrderId = `BBR-${id.slice(0, 8)}-${Date.now()}`;
   const total = Number(p.price) + shipping;
+
+  // Bayar pakai saldo: hanya boleh kalau saldo MENUTUP SELURUH tagihan (harga + ongkir).
+  // Tidak ada pembayaran campuran — supaya refund tidak perlu dibelah.
+  if (body.use_saldo === true) {
+    const saldo = await sellerBalance(c.env.DB, me.id);
+    if (saldo < total) {
+      return c.json({ error: `Saldo ${saldo.toLocaleString('id-ID')} tidak cukup untuk tagihan ${total.toLocaleString('id-ID')}. Bayar penuh dengan QRIS.` }, 409);
+    }
+    const r = await c.env.DB.batch([
+      c.env.DB.prepare(
+        `INSERT INTO orders (id, listing_id, buyer_id, seller_id, price, shipping, status, kesepakatan,
+           qris_final_amount, paid_with, courier_code, courier_name, service, eta,
+           dest_district_id, dest_district_name, dest_address, receiver_name, receiver_phone, postal_code)
+         SELECT ?,?,?,?,?,?,'paid',?,?,'saldo',?,?,?,?,?,?,?,?,?,?
+         WHERE ? <= (SELECT COALESCE(SUM(delta),0) FROM ledger WHERE user_id = ?)
+                  - (SELECT COALESCE(SUM(amount + fee),0) FROM withdrawals WHERE user_id = ? AND status = 'requested')`
+      ).bind(id, p.id, me.id, p.seller_id, p.price, shipping, kesepakatan, total,
+        picked.courier, picked.courierName, picked.service, picked.eta, destId, destName || null, destAddress,
+        receiverName, receiverPhone, postalCode, total, me.id, me.id),
+      // Potong saldo sekali saja (NOT EXISTS = idempoten kalau request diulang).
+      c.env.DB.prepare(
+        `INSERT INTO ledger (user_id, order_id, delta, kind)
+         SELECT buyer_id, id, -qris_final_amount, 'purchase' FROM orders
+          WHERE id = ? AND status = 'paid'
+            AND NOT EXISTS (SELECT 1 FROM ledger WHERE order_id = ? AND kind = 'purchase')`
+      ).bind(id, id),
+      c.env.DB.prepare("UPDATE listings SET status = 'sold' WHERE id = ? AND status = 'active'").bind(p.id),
+      c.env.DB.prepare("INSERT INTO order_events (order_id, actor, from_st, to_st, note) VALUES (?,?,?,?,?)")
+        .bind(id, 'buyer', null, 'created', 'Dibayar penuh dengan saldo'),
+    ]);
+    if ((r[0].meta?.changes || 0) === 0) return c.json({ error: 'Saldo tidak cukup untuk tagihan ini' }, 409);
+    await logOrderEvent(c.env.DB, id, 'system', 'created', 'paid', 'Pembayaran saldo terverifikasi');
+    await notifyOrder(c.env.DB, { userId: p.seller_id, actorId: me.id, type: 'order_paid', orderId: id });
+    return c.json({ ok: true, id, paid_with: 'saldo' });
+  }
 
   const qris = await createQrisTransaction(c.env as unknown as KlikQrisEnv, {
     orderId: qrisOrderId, amount: total, description: `Pasar Buku: ${p.title.slice(0, 60)}`,
@@ -1584,7 +1620,6 @@ app.post('/pasar/order/:id/dispute', async (c) => {
 });
 
 // ---- Saldo penjual: lihat, tarik (min 40rb), riwayat ----
-const WITHDRAW_MIN = 40_000; // owner-approved design 2026-10-18 (0005)
 
 const isOwner = (env: Env, u: any): boolean =>
   !!u && !!env.OWNER_EMAIL && String(u.email || '').toLowerCase() === env.OWNER_EMAIL.toLowerCase();
@@ -1593,7 +1628,7 @@ const isOwner = (env: Env, u: any): boolean =>
 async function sellerBalance(db: any, userId: string): Promise<number> {
   const row: any = await db.prepare(
     `SELECT (SELECT COALESCE(SUM(delta),0) FROM ledger WHERE user_id = ?1)
-          - (SELECT COALESCE(SUM(amount),0) FROM withdrawals WHERE user_id = ?2 AND status = 'requested') AS bal`
+          - (SELECT COALESCE(SUM(amount + fee),0) FROM withdrawals WHERE user_id = ?2 AND status = 'requested') AS bal`
   ).bind(userId, userId).first();
   return Number(row?.bal || 0);
 }
@@ -1609,6 +1644,9 @@ app.post('/api/saldo/withdraw', async (c) => {
   if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
   const body: any = await c.req.json().catch(() => null);
   const amount = Number(body?.amount);
+  const kind: 'seller' | 'buyer' = me.seller_status === 'approved' ? 'seller' : 'buyer';
+  const fee = withdrawFee(kind, amount);
+  const total = withdrawTotal(kind, amount);
   const method = ['qris', 'bank', 'ewallet'].includes(body?.method) ? body.method : 'qris';
   const account = String(body?.account || '').trim().slice(0, 120);
   if (!Number.isSafeInteger(amount) || amount < WITHDRAW_MIN) {
@@ -1617,14 +1655,15 @@ app.post('/api/saldo/withdraw', async (c) => {
   if (account.length < 4) return c.json({ error: 'Tulis tujuan pencairan (no. QRIS/rekening/e-wallet)' }, 400);
   const id = crypto.randomUUID();
   // Cek saldo menyatu di statement INSERT: double-tap tak bisa bikin saldo minus.
+  // Reservasi = jumlah ditarik + biaya, supaya biaya tidak bisa dipakai dua kali.
   const res = await c.env.DB.prepare(
-    `INSERT INTO withdrawals (id, user_id, amount, method, account, status)
-     SELECT ?,?,?,?,?, 'requested'
+    `INSERT INTO withdrawals (id, user_id, amount, fee, kind, method, account, status)
+     SELECT ?,?,?,?,?,?,?, 'requested'
      WHERE ? <= (SELECT COALESCE(SUM(delta),0) FROM ledger WHERE user_id = ?)
-              - (SELECT COALESCE(SUM(amount),0) FROM withdrawals WHERE user_id = ? AND status = 'requested')`
-  ).bind(id, me.id, amount, method, account, amount, me.id, me.id).run();
-  if ((res.meta?.changes || 0) === 0) return c.json({ error: 'Saldo tidak cukup untuk penarikan ini' }, 409);
-  return c.json({ ok: true, id });
+              - (SELECT COALESCE(SUM(amount + fee),0) FROM withdrawals WHERE user_id = ? AND status = 'requested')`
+  ).bind(id, me.id, amount, fee, kind, method, account, total, me.id, me.id).run();
+  if ((res.meta?.changes || 0) === 0) return c.json({ error: 'Saldo tidak cukup untuk jumlah + biaya tarik' }, 409);
+  return c.json({ ok: true, id, fee, net: amount });
 });
 
 // ---- Pesanan pembeli ----
@@ -1807,18 +1846,23 @@ app.post('/api/owner/orders/:id/resolve', async (c) => {
   if (!o) return c.json({ error: 'Sengketa tidak ditemukan' }, 404);
 
   if (decision === 'refund') {
-    // Refund = transfer nyata ke pembeli. Tanpa ref & nominal, status ini bohong.
-    const ref = String(body?.transfer_ref || '').trim().slice(0, 80);
-    if (ref.length < 4) return c.json({ error: 'Isi referensi transfer refund (min 4 karakter)' }, 400);
+    // Refund = saldo pembeli (bisa dipakai belanja lagi atau ditarik). Uang tidak keluar dari sistem.
     const nominal = Number(o.qris_final_amount || (Number(o.price) + Number(o.shipping || 0)));
-    const res = await c.env.DB.prepare(
-      `UPDATE orders SET status = 'refunded', resolution_note = ?, refund_ref = ?, refund_amount = ?,
-         refunded_at = datetime('now'), resolved_at = datetime('now'), updated_at = datetime('now')
-       WHERE id = ? AND status = 'disputed'`
-    ).bind(note, ref, nominal, o.id).run();
-    if ((res.meta?.changes || 0) === 0) return c.json({ error: 'Sengketa sudah diputuskan' }, 409);
-    await logOrderEvent(c.env.DB, o.id, 'owner', 'disputed', 'refunded', `${note || 'Dana dikembalikan'} · refund ${ref} Rp${nominal.toLocaleString('id-ID')}`);
-    await logOwnerAction(c.env.DB, me?.email, 'dispute_refund', 'order', o.id, `${note} · ref ${ref} · Rp${nominal}`);
+    const ref = String(body?.transfer_ref || '').trim().slice(0, 80) || null;
+    const r = await c.env.DB.batch([
+      c.env.DB.prepare(
+        `UPDATE orders SET status = 'refunded', resolution_note = ?, refund_ref = ?, refund_amount = ?,
+           refunded_at = datetime('now'), resolved_at = datetime('now'), updated_at = datetime('now')
+         WHERE id = ? AND status = 'disputed'`
+      ).bind(note, ref, nominal, o.id),
+      // Kredit hanya kalau update di atas benar-benar terjadi (idempoten, tidak dobel).
+      c.env.DB.prepare(
+        "INSERT INTO ledger (user_id, order_id, delta, kind) SELECT ?,?,?,? FROM orders WHERE id = ? AND status = 'refunded'"
+      ).bind(o.buyer_id, o.id, nominal, 'refund', o.id),
+    ]);
+    if ((r[0].meta?.changes || 0) === 0) return c.json({ error: 'Sengketa sudah diputuskan' }, 409);
+    await logOrderEvent(c.env.DB, o.id, 'owner', 'disputed', 'refunded', `${note || 'Dana dikembalikan'} · saldo pembeli +Rp${nominal.toLocaleString('id-ID')}`);
+    await logOwnerAction(c.env.DB, me?.email, 'dispute_refund', 'order', o.id, `${note} · saldo pembeli Rp${nominal}`);
     return c.json({ ok: true });
   }
 
@@ -1889,8 +1933,15 @@ app.post('/api/owner/withdrawals/:id/settle', async (c) => {
   if ((res.meta?.changes || 0) === 0) return c.json({ error: 'Permintaan sudah diproses' }, 409);
 
   if (decision === 'pay') {
-    await c.env.DB.prepare("INSERT INTO ledger (user_id, order_id, delta, kind) VALUES (?, NULL, ?, 'withdraw')")
-      .bind(w.user_id, -Number(w.amount)).run();
+    const rows: any[] = [
+      c.env.DB.prepare("INSERT INTO ledger (user_id, order_id, delta, kind) VALUES (?, NULL, ?, 'withdraw')")
+        .bind(w.user_id, -Number(w.amount)),
+    ];
+    if (Number(w.fee) > 0) {
+      rows.push(c.env.DB.prepare("INSERT INTO ledger (user_id, order_id, delta, kind) VALUES (?, NULL, ?, 'withdraw_fee')")
+        .bind(w.user_id, -Number(w.fee)));
+    }
+    await c.env.DB.batch(rows);
   }
   await logOwnerAction(c.env.DB, me?.email, decision === 'pay' ? 'withdrawal_pay' : 'withdrawal_reject', 'withdrawal', id, note + (ref ? ' · ref ' + ref : ''));
   return c.json({ ok: true });

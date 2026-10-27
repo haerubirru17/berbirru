@@ -40,7 +40,7 @@ export function posisiDana(o: any, peran: 'pembeli' | 'penjual'): Posisi {
   }
   if (st === 'refunded') {
     return peran === 'pembeli'
-      ? { judul: `Dikembalikan: ${rp(Number(o?.refund_amount || ditahan))}`, isi: `Owner sudah transfer balik${o?.refund_ref ? ` (ref ${o.refund_ref})` : ''}. Cek mutasi rekening/e-walletmu.`, tone: 'hijau' }
+      ? { judul: `Saldo kamu +${rp(Number(o?.refund_amount || ditahan))}`, isi: 'Dana sudah masuk Saldo. Bisa dipakai belanja buku lain (asal menutup seluruh tagihan) atau ditarik ke rekening.', tone: 'hijau' }
       : { judul: 'Dana kembali ke pembeli', isi: 'Uang ini tidak pernah masuk saldomu — direkber lalu dikembalikan. Tidak ada potongan untukmu.', tone: 'abu' };
   }
   return { judul: 'Status dana tidak dikenal', isi: `Status pesanan: ${st}`, tone: 'abu' };

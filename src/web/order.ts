@@ -84,9 +84,9 @@ export function renderOrderPage(o: any, p: any, photos: string[], viewer: any): 
         <button class="btn b-blue" style="margin-top:8px;" onclick="kirimUlasan()">Kirim ulasan</button>`;
   } else if (st === 'refunded') {
     actions = `<div class="st-sub">Dana dikembalikan ke pembeli. Penjual tidak menerima saldo untuk pesanan ini.</div>
-      <div class="sum-row" style="margin-top:8px;"><span>Nominal refund</span><span><b>${rupiah(Number(o.refund_amount || total))}</b></span></div>
-      <div class="sum-row"><span>Referensi transfer</span><span>${escapeHtml(o.refund_ref || '—')}</span></div>
-      <div class="sum-row"><span>Dikirim</span><span>${o.refunded_at ? escapeHtml(String(o.refunded_at)) : '—'}</span></div>`;
+      <div class="sum-row" style="margin-top:8px;"><span>Masuk saldo</span><span><b>${rupiah(Number(o.refund_amount || total))}</b></span></div>
+      <div class="sum-row"><span>Waktu</span><span>${o.refunded_at ? escapeHtml(String(o.refunded_at)) : '—'}</span></div>
+      <div class="sum-row"><span>Status</span><span>Bisa dipakai belanja atau ditarik</span></div>`;
   }
 
   return `<!DOCTYPE html>

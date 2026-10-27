@@ -90,6 +90,7 @@ export function renderPasarSaya(user: any, tab: string, sub: string, d: HubData)
       ]
     : [
         { key: 'pesanan', label: 'Pesanan', count: String(Object.values(ringkasBeli(d.pesanan.orders)).reduce((a, b) => a + b, 0)) },
+        { key: 'saldo', label: 'Saldo', count: 'Rp' + Number(d.saldo.balance || 0).toLocaleString('id-ID') },
         { key: 'aktivitas', label: 'Aktivitas', count: String(d.aktivitas.items.length), dot: d.aktivitas.unread },
       ];
   const aktif = tabs.some((t) => t.key === tab) ? tab : 'pesanan';

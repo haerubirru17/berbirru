@@ -30,8 +30,8 @@ const sang = posisiDana(o('disputed'), 'pembeli');
 assert(sang.tone === 'merah' && /ditahan/i.test(sang.judul), 'disputed: dana ditahan');
 
 // refund: nominal + referensi, dan penjual diberi tahu tidak pernah masuk saldo
-const ref = posisiDana(o('refunded', { refund_amount: 92000, refund_ref: 'BCA-8891' }), 'pembeli');
-assert(/92\.000/.test(ref.judul) && /BCA-8891/.test(ref.isi), 'refunded/pembeli: nominal + ref');
+const ref = posisiDana(o('refunded', { refund_amount: 92000 }), 'pembeli');
+assert(/92\.000/.test(ref.judul) && /Saldo/.test(ref.isi), 'refunded/pembeli: masuk saldo');
 const refp = posisiDana(o('refunded', { refund_amount: 92000, refund_ref: 'BCA-8891' }), 'penjual');
 assert(/tidak pernah masuk saldo/i.test(refp.isi), 'refunded/penjual: tak pernah masuk saldo');
 

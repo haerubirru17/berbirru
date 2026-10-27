@@ -31,7 +31,7 @@ const PAGE_CSS = `
   @media(max-width:420px){.paybar{padding:9px 14px}.paybar button{padding:9px 12px}.wrap{padding-top:8px}.grid3{grid-template-columns:1fr}}
 `;
 
-export function renderCheckoutPage(user: any, p: any): string {
+export function renderCheckoutPage(user: any, p: any, saldo = 0): string {
   const u = user || {};
   const harga = Number(p.price);
   let couriers: string[] = [];
@@ -93,6 +93,14 @@ ${PASAR_BASE_CSS}
 </div>
 
 <div style="font:600 10.5px/1.5 'DM Sans';color:#64748B;margin:0 0 90px">*Biaya layanan QRIS dihitung otomatis oleh penyedia pembayaran (bukan oleh BERBIRRU) dan tampil di halaman pesanan.</div>
+<div id="saldoBox" style="display:none;background:#FEF3C7;border:2.5px solid #0B192C;box-shadow:4px 5px 0 #26364A;padding:12px;margin:0 0 90px;">
+  <label style="display:flex;gap:9px;align-items:flex-start;font:800 13px 'DM Sans';">
+    <input type="checkbox" id="fSaldo" onchange="pakaiSaldo()" style="width:20px;height:20px;margin-top:1px;">
+    <span>Pakai saldo <b id="lblSaldo">${rupiah(saldo)}</b></span>
+  </label>
+  <div id="saldoHint" style="font:600 11px/1.5 'DM Sans';color:#78350F;margin-top:6px;"></div>
+</div>
+
 <div class="paybar">
   <div><div class="l">Total bayar*</div><div class="t" id="lblTotalBar">${rupiah(harga)}</div></div>
   <button type="button" id="btnBayar" onclick="pay()" disabled>Bayar via QRIS</button>
@@ -100,6 +108,7 @@ ${PASAR_BASE_CSS}
 
 <script>
 var HARGA = ${harga};
+var SALDO = ${Number(saldo) || 0};
 var LISTING = '${p.id}';
 var pilihan = null;
 var labelKec = '';
@@ -151,6 +160,26 @@ function pilih(o,box){
   var tot=HARGA+o.price;
   el('lblTotal').textContent=rp(tot); el('lblTotalBar').textContent=rp(tot);
   el('btnBayar').disabled=false;
+  aturSaldo(tot);
+}
+
+// Saldo hanya boleh dipakai kalau MENUTUP SELURUH tagihan (harga + ongkir).
+function aturSaldo(tot){
+  var box=el('saldoBox'), cb=el('fSaldo'), hint=el('saldoHint');
+  if(SALDO<=0){box.style.display='none';cb.checked=false;return}
+  box.style.display='block';
+  var cukup = SALDO>=tot;
+  cb.disabled=!cukup;
+  if(!cukup){cb.checked=false;}
+  hint.textContent = cukup
+    ? 'Saldo cukup untuk seluruh tagihan — tidak perlu QRIS. Sisa saldo '+rp(SALDO-tot)+'.'
+    : 'Saldo '+rp(SALDO)+' belum menutup tagihan '+rp(tot)+'. Tidak bisa dipakai — bayar penuh via QRIS.';
+  pakaiSaldo();
+}
+
+function pakaiSaldo(){
+  var cb=el('fSaldo'), b=el('btnBayar');
+  b.textContent = (cb.checked ? 'Bayar dengan saldo' : 'Bayar via QRIS');
 }
 
 el('btnOngkir').onclick=async function(){
@@ -207,7 +236,7 @@ async function pay(){
     if(r.ok&&j.ok){location.href='/pasar/order/'+j.id;return}
     err(j.error||'Gagal membuat pesanan');
   }catch(e){err('Gagal membuat pesanan. Coba lagi.')}
-  b.disabled=false; b.textContent='Bayar via QRIS';
+  b.disabled=false; pakaiSaldo();
 }
 // isi otomatis alamat tersimpan (kalau ada)
 (async function prefill(){

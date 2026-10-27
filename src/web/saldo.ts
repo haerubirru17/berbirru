@@ -1,6 +1,7 @@
 // Saldo penjual + tarik dana. Saldo = ledger terkumpul − permintaan tarik yang masih diproses.
 import { escapeHtml } from '../lib/sanitize';
 import { PASAR_BASE_CSS, rupiah } from './pasar';
+import { WITHDRAW_MIN, withdrawFee } from '../lib/pasar-settlement';
 
 const PAGE_CSS = `
   .wrap{width:min(680px,calc(100% - 28px));margin:auto;padding:18px 0 120px}
@@ -28,8 +29,11 @@ const WD: Record<string, string> = { requested: 'Diproses owner', paid: 'Sudah d
 const METHOD: Record<string, string> = { qris: 'QRIS', bank: 'Rekening bank', ewallet: 'E-wallet' };
 
 export function renderSaldoPage(user: any, balance: number, ledger: any[], withdrawals: any[], embed = false, ditahan: any[] = []): string {
-  const minTarik = 40000;
-  const bisa = balance >= minTarik;
+  const peran: 'penjual' | 'pembeli' = user?.seller_status === 'approved' ? 'penjual' : 'pembeli';
+  const minTarik = WITHDRAW_MIN;
+  const kind: 'seller' | 'buyer' = peran === 'penjual' ? 'seller' : 'buyer';
+  const feeMin = withdrawFee(kind, minTarik);
+  const bisa = balance >= minTarik + feeMin;
   // Saldo negatif hanya mungkin kalau ledger tak konsisten — tetap tampilkan jujur, jangan "Rp-40.000".
   const balTxt = balance < 0 ? '−' + rupiah(Math.abs(balance)) : rupiah(balance);
 
@@ -52,19 +56,25 @@ export function renderSaldoPage(user: any, balance: number, ledger: any[], withd
 
   const inner = `<div class="wrap">
   ${embed ? '' : `<a class="back" href="/pasar/saya?tab=pesanan">&larr; Pasar Saya</a>`}
-  <div class="page-head"><h1>Saldo</h1><p>Hasil penjualan bukumu. Fee rekber Rp5.000 per pesanan sudah dipotong; ongkir utuh untukmu.</p></div>
+  <div class="page-head"><h1>Saldo</h1><p>${peran === 'penjual'
+    ? 'Hasil penjualan bukumu. Fee rekber Rp5.000 per pesanan sudah dipotong; ongkir utuh untukmu.'
+    : 'Uang refund kamu. Bisa dipakai belanja lagi (asal saldo menutup seluruh tagihan) atau ditarik ke rekening.'}</p></div>
 
   <div class="st-card">
-    <div class="lbl">Dana ditahan rekber</div>
+    <div class="lbl">${peran === 'penjual' ? 'Dana ditahan rekber' : 'Uangmu di rekber'}</div>
     <div class="big" style="font:400 26px 'Archivo Black';color:#92400E;margin:6px 0 2px;">${rupiah(ditahan.reduce((a: number, o: any) => a + Number(o.qris_final_amount || Number(o.price) + Number(o.shipping || 0)), 0))}</div>
-    <div class="hint" style="font-size:11.5px;font-weight:600;color:#64748B;">Uang pembeli yang sudah masuk tapi belum jadi saldo — cair setelah pembeli konfirmasi terima (otomatis D+5, resi wajib terverifikasi).</div>
+    <div class="hint" style="font-size:11.5px;font-weight:600;color:#64748B;">${peran === 'penjual'
+      ? 'Uang pembeli yang sudah masuk tapi belum jadi saldo — cair setelah pembeli konfirmasi terima (otomatis D+5, resi wajib terverifikasi).'
+      : 'Uangmu yang masih ditahan rekber — belum kembali jadi saldo sampai pesanan selesai atau sengketa diputuskan.'}</div>
     ${(ditahan.length ? ditahan.map((o: any) => `<div class="row"><div>${({ paid: 'Sudah dibayar', handed: 'Dikirim', disputed: 'Sengketa' } as any)[o.status] || o.status}<div class="t">${escapeHtml(String(o.id).slice(0, 12))}…</div></div><div class="pos">${rupiah(Number(o.qris_final_amount || Number(o.price) + Number(o.shipping || 0)))}</div></div>`).join('') : '<div class="empty" style="padding:10px 0;font-size:11.5px;">Tidak ada dana ditahan.</div>')}
   </div>
 
   <div class="st-card">
     <div class="lbl">Saldo bisa ditarik</div>
     <div class="bal">${balTxt}</div>
-    <div class="st-sub">Minimal tarik ${rupiah(minTarik)}. Permintaan diproses owner 1×24 jam.</div>
+    <div class="st-sub">Minimal tarik ${rupiah(minTarik)}. ${peran === 'penjual'
+      ? `Biaya tarik ${rupiah(withdrawFee(kind, minTarik))} (${rupiah(withdrawFee(kind, 200000))} untuk penarikan ≥${rupiah(200000)}).`
+      : 'Tanpa biaya tarik.'} Permintaan diproses owner 1×24 jam.</div>
   </div>
 
   <div class="st-card">
@@ -78,7 +88,10 @@ export function renderSaldoPage(user: any, balance: number, ledger: any[], withd
         <option value="ewallet">E-wallet (GoPay/OVO/DANA)</option>
       </select>
       <input class="fld" id="wdAccount" placeholder="No. QRIS / nomor rekening / nomor e-wallet" ${bisa ? '' : 'disabled'}>
-      <button class="btn b-blue" type="submit" ${bisa ? '' : 'disabled style="opacity:.5"'}>${bisa ? 'Ajukan Pencairan' : `Saldo belum cukup (min ${rupiah(minTarik)})`}</button>
+      <div class="st-sub" id="wdInfo" style="margin-top:10px;">${peran === 'penjual'
+        ? 'Biaya tarik: Rp3.500 (Rp7.500 bila ≥ Rp200.000). Saldo harus menutup jumlah + biaya.'
+        : 'Tanpa biaya tarik.'}</div>
+      <button class="btn b-blue" type="submit" ${bisa ? '' : 'disabled style="opacity:.5"'}>${bisa ? 'Ajukan Pencairan' : `Saldo belum cukup (min ${rupiah(minTarik + feeMin)} termasuk biaya)`}</button>
     </form>
     <div class="err" id="err"></div>
   </div>
@@ -102,6 +115,10 @@ async function tarik(ev){
   const method=document.getElementById('wdMethod').value;
   const account=document.getElementById('wdAccount').value.trim();
   if(!amount){err('Isi jumlah yang mau ditarik.');return false}
+  const fee=${peran === 'pembeli' ? 0 : 0}; // dihitung server; di sini hanya cek kasar
+  const minTotal=${minTarik + feeMin};
+  if(amount<${minTarik}){err('Minimal tarik '+rupiah(${minTarik})+'.');return false}
+  if(amount+ (${peran}==='pembeli'?0:(amount>=200000?7500:3500)) > ${Number(balance)}){err('Saldo tidak cukup untuk jumlah + biaya tarik.');return false}
   const r=await fetch('/api/saldo/withdraw',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount,method,account})});
   const j=await r.json().catch(()=>({}));
   if(!r.ok){err(j.error||'Gagal mengajukan pencairan.');return false}
