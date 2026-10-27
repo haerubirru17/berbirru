@@ -901,15 +901,18 @@ app.get('/api/users/:pen_name', async (c) => {
   const user: any = await c.env.DB.prepare('SELECT id, pen_name, city, bio, avatar_key, cover_key, display_name, created_at FROM users WHERE pen_name = ? LIMIT 1').bind(penName).first();
   if (!user) return c.json({ error: 'Penulis tidak ditemukan' }, 404);
 
-  const postsCount = await c.env.DB.prepare('SELECT COUNT(*) as c FROM posts WHERE author_id = ?').bind(user.id).first('c') || 0;
-  const likesCount = await c.env.DB.prepare('SELECT COALESCE(SUM(likes_count), 0) as s FROM posts WHERE author_id = ?').bind(user.id).first('s') || 0;
-  const savesCount = await c.env.DB.prepare('SELECT COALESCE(SUM(saves_count), 0) as s FROM posts WHERE author_id = ?').bind(user.id).first('s') || 0;
+  // Angka profil orang lain hanya menghitung warkah publik — jumlah warkah privat
+  // pun tidak perlu bocor. Penulis sendiri melihat angka penuh.
+  const viewer = await getAuthUser(c);
+  const visOnly = viewer && viewer.id === user.id ? '' : " AND visibility = 'public'";
+  const postsCount = await c.env.DB.prepare(`SELECT COUNT(*) as c FROM posts WHERE author_id = ?${visOnly}`).bind(user.id).first('c') || 0;
+  const likesCount = await c.env.DB.prepare(`SELECT COALESCE(SUM(likes_count), 0) as s FROM posts WHERE author_id = ?${visOnly}`).bind(user.id).first('s') || 0;
+  const savesCount = await c.env.DB.prepare(`SELECT COALESCE(SUM(saves_count), 0) as s FROM posts WHERE author_id = ?${visOnly}`).bind(user.id).first('s') || 0;
   const followersCount = await c.env.DB.prepare('SELECT COUNT(*) as c FROM follows WHERE following_id = ?').bind(user.id).first('c') || 0;
   const followingCount = await c.env.DB.prepare('SELECT COUNT(*) as c FROM follows WHERE follower_id = ?').bind(user.id).first('c') || 0;
 
   // status follow viewer — buat toggle tombol di profil (anonim/akun sendiri = false)
   let isFollowing = false;
-  const viewer = await getAuthUser(c);
   if (viewer && viewer.id !== user.id) {
     isFollowing = Boolean(await c.env.DB.prepare('SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?').bind(viewer.id, user.id).first());
   }
@@ -2477,6 +2480,9 @@ app.get('/chain/:id', async (c) => {
     'SELECT p.*, u.pen_name FROM posts p JOIN users u ON p.author_id = u.id WHERE p.id = ?'
   ).bind(id).first();
   if (!target) return c.redirect('/feed');
+  // Warkah privat = hanya penulisnya. Tanpa guard ini, tautan /chain/<id> jadi
+  // pintu belakang yang membocorkan isi privat ke siapa pun (termasuk guest).
+  if (target.visibility === 'private' && (!user || user.id !== target.author_id)) return c.notFound();
 
   // Naik ke root rantai. Root mati (parent_id menunjuk mayat) → target jadi root, orphans=true.
   let orphans = false;
@@ -2490,11 +2496,13 @@ app.get('/chain/:id', async (c) => {
     else { orphans = true; }
   }
 
+  const vis = visibilityClause(user);
   const { results } = await c.env.DB.prepare(
-    // saat yatim, anak-anak tetap menunjuk induk yang sudah dihapus — kueri pakai id mayat itu
+    // saat yatim, anak-anak tetap menunjuk induk yang sudah dihapus — kueri pakai id mayat itu.
+    // Balasan privat milik orang lain tidak boleh ikut tampil di rantai publik.
     `SELECT p.*, u.pen_name FROM posts p JOIN users u ON p.author_id = u.id
-     WHERE p.parent_id = ? ORDER BY p.created_at ASC LIMIT 50`
-  ).bind(orphans ? target.parent_id : root.id).all();
+     WHERE p.parent_id = ? AND ${vis.sql} ORDER BY p.created_at ASC LIMIT 50`
+  ).bind(orphans ? target.parent_id : root.id, ...vis.binds).all();
 
   return c.html(renderChainPage({ user, root, rootAuthor, orphans, children: results || [] }));
 });
