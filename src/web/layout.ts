@@ -40,6 +40,16 @@ export function renderBottomNav(
       </a>`
       // Belum punya toko: label jujur "Buka Toko" + tanda +, menuju pengajuan (bukan halaman kosong).
       + (() => {
+        // Owner: pintu ke dashboard admin (bukan pengajuan toko), dengan badge antrean.
+        if (currentUser && currentUser.is_owner) {
+          const n = Number(currentUser.owner_pending || 0);
+          return `
+      <a href="/owner" class="bnav-item" style="position:relative">
+        <span class="bnav-ico"><svg viewBox="0 0 24 24">${icoToko}</svg></span>
+        <span class="bnav-lbl">Admin</span>
+        ${n > 0 ? `<span class="bnav-count">${n > 99 ? '99+' : n}</span>` : ''}
+      </a>`;
+        }
         const punya = currentUser && currentUser.seller_status === 'approved';
         const nunggu = currentUser && currentUser.seller_status === 'pending';
         const label = punya ? 'Toko' : nunggu ? 'Menunggu' : 'Buka Toko';
@@ -64,6 +74,7 @@ export function renderBottomNav(
 
   return `
   <style>
+    .bnav-count{position:absolute;top:1px;right:13px;min-width:16px;height:16px;padding:0 4px;border-radius:9px;background:#B42318;color:#fff;font:900 9px 'DM Sans';display:grid;place-items:center;line-height:1}
     body:has(> nav.bnav){padding-bottom:92px}
     .bnav{position:fixed;left:0;right:0;bottom:0;z-index:75;background:#fff;border-top:2.5px solid #0B192C;
       padding:7px 10px calc(7px + env(safe-area-inset-bottom));box-shadow:0 -4px 0 rgba(11,25,44,.06)}

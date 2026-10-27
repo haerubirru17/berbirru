@@ -322,7 +322,7 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Kode OTP salah');
         resetTurnstile();
-        window.location.href = '/feed';
+        window.location.href = '/setelah-masuk';
       } catch (err) {
         bbToast(err.message || 'Terjadi kesalahan.', 'error');
       } finally {
@@ -363,7 +363,7 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
           return;
         }
 
-        window.location.href = '/feed';
+        window.location.href = '/setelah-masuk';
       } catch (err) {
         resetTurnstile();
         bbToast(err.message || 'Terjadi kesalahan.', 'error');

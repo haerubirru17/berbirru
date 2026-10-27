@@ -72,7 +72,7 @@ function cardImage(photos: string): string {
   return `<div class="card-img"><img src="/media/${escapeHtml(String(first).split('?')[0])}?v=${Date.now()}" alt="Foto buku" loading="lazy"></div>`;
 }
 
-export function renderPasarPage(user: any, listings: any[], f: { q?: string; cond?: string; sort?: string; max?: number } = {}, pg: { hal?: number; perPage?: number; total?: number } = {}): string {
+export function renderPasarPage(user: any, listings: any[], f: { q?: string; cond?: string; sort?: string; max?: number } = {}, pg: { hal?: number; perPage?: number; total?: number } = {}, owner?: { pending: number }): string {
   const q = f.q || '', cond = f.cond || '', sort = f.sort || 'baru', max = Number(f.max || 0);
   const adaFilter = !!(q || cond || max || sort !== 'baru');
   const hal = Math.max(1, Number(pg.hal || 1));
@@ -124,6 +124,10 @@ export function renderPasarPage(user: any, listings: any[], f: { q?: string; con
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,700;1,6..72,500&family=Roboto+Mono:wght@600;700&display=swap" rel="stylesheet">
   <style>${BASE_CSS}
+    .admstrip{display:flex;justify-content:space-between;align-items:center;gap:10px;border:3px solid #0B192C;background:#FDE047;box-shadow:4px 5px 0 #26364A;padding:11px 13px;margin:0 0 14px}
+    .admstrip b{display:block;font:900 12.5px 'DM Sans';letter-spacing:-.01em}
+    .admstrip span{display:block;font:700 10px 'Roboto Mono';letter-spacing:.05em;color:#3F3F0F;margin-top:2px}
+    .admstrip a{border:2.5px solid #0B192C;background:#0B192C;color:#fff;text-decoration:none;font:900 11.5px 'DM Sans';padding:8px 10px;white-space:nowrap}
     .pasar-top{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:22px}.pasar-top .sec-title{font-size:clamp(42px,7vw,66px)}
     .btn-jual{min-height:48px;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--yellow);color:var(--ink);border:var(--line);padding:11px 18px;font-weight:900;text-decoration:none;box-shadow:var(--small-shadow);cursor:pointer;white-space:nowrap}.btn-jual:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #26364A}
     .pf{display:grid;grid-template-columns:1fr 150px 130px 130px auto;gap:8px;margin:0 0 10px;align-items:center}
@@ -145,6 +149,10 @@ export function renderPasarPage(user: any, listings: any[], f: { q?: string; con
 </head>
 <body>
   <div class="container">
+    ${owner ? `<div class="admstrip">
+      <div><b>Mode admin — kamu melihat pasar sebagai owner</b><span>${owner.pending > 0 ? `${owner.pending} PERLU KEPUTUSAN MENUNGGU` : 'TIDAK ADA ANTREAN'}</span></div>
+      <a href="/owner">Buka dashboard →</a>
+    </div>` : ''}
     <div class="pasar-top">
       <div><div class="sec-title" style="margin:0;">Pasar Buku</div><p style="margin:7px 0 0;color:#52627A;font-weight:600">Jual beli buku fisik dengan rekber.</p></div>
     </div>
