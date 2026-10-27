@@ -65,3 +65,28 @@ export function ringkasBeli(orders: any[]): Record<KelompokBeli, number> {
   }
   return r;
 }
+
+// ── Slug toko publik: stabil, aman URL, tidak bergantung pen_name ──
+export function slugToko(nama: string): string {
+  const dasar = String(nama || '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40)
+    .replace(/-+$/g, '');
+  return dasar || 'toko';
+}
+
+// Tambah sufiks angka kalau sudah dipakai. `terpakai` = daftar slug yang sudah ada.
+export function slugUnik(nama: string, terpakai: Iterable<string>): string {
+  const dasar = slugToko(nama);
+  const set = new Set(Array.from(terpakai, (x) => String(x || '').toLowerCase()));
+  if (!set.has(dasar)) return dasar;
+  for (let i = 2; i < 1000; i++) {
+    const calon = `${dasar.slice(0, 36)}-${i}`;
+    if (!set.has(calon)) return calon;
+  }
+  return `${dasar.slice(0, 30)}-${Date.now().toString(36)}`;
+}

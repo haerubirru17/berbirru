@@ -43,6 +43,13 @@ const SHELL_CSS = `
   .akt-bar .lbl{font:700 10px 'Roboto Mono';color:#64748B;letter-spacing:.04em;text-transform:uppercase}
   .akt-bar button{font:900 10.5px 'DM Sans';background:#fff;border:2px solid #0B192C;padding:5px 9px;box-shadow:2px 2px 0 #26364A;cursor:pointer}
   .akt-bar button:active{transform:translate(1px,2px);box-shadow:none}
+  .shop-link{background:#fff;border:2.5px solid #0B192C;box-shadow:4px 5px 0 #26364A;padding:12px;margin-top:4px}
+  .shop-link .sl-t{font:800 9.5px 'Roboto Mono';color:#64748B;letter-spacing:.05em;text-transform:uppercase}
+  .shop-link .sl-u{font:700 12px 'Roboto Mono';color:#0F3E99;margin-top:5px;overflow-wrap:anywhere}
+  .shop-link .sl-b{display:flex;gap:8px;margin-top:9px}
+  .shop-link .sl-b a,.shop-link .sl-b button{flex:1;min-height:38px;display:inline-flex;align-items:center;justify-content:center;
+    border:2px solid #0B192C;background:#fff;font:900 11px 'DM Sans';color:#0B192C;text-decoration:none;cursor:pointer;box-shadow:2px 2px 0 #26364A}
+  .shop-link .sl-b a{background:#1D61E7;color:#fff}
   .jual-cta{display:block;text-align:center;font:800 11px 'DM Sans';color:#0B192C;text-decoration:none;
     background:#FFFDF2;border:2px dashed #94A3B8;padding:11px;margin-top:4px}
   .locked-box{background:#FFFDF2;border:2.5px solid #0B192C;box-shadow:4px 5px 0 #26364A;padding:16px}
@@ -131,6 +138,12 @@ ${BRAND_HEADER}
   <div class="hub-tabs" style="grid-template-columns:repeat(${tabs.length},1fr)">${tabBar}</div>
 </div>
 <div class="hub-body">${isi}</div>
+${approved && user.shop_slug ? `<div class="wrap" style="padding-top:0"><div class="shop-link">
+      <div class="sl-t">Toko publik</div>
+      <div class="sl-u">berbirru.com/toko/${escapeHtml(user.shop_slug)}</div>
+      <div class="sl-b"><a href="/toko/${escapeHtml(user.shop_slug)}">Lihat</a><button type="button" onclick="salinToko(this)">Salin link</button></div>
+    </div>
+    <script>function salinToko(b){var u='https://'+location.host+'/toko/${escapeHtml(user.shop_slug)}';if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(u).then(function(){b.textContent='Tersalin ✓'},function(){prompt('Salin:',u)})}else{prompt('Salin:',u)}}</script></div>` : ''}
 ${approved ? '' : `<div class="wrap" style="padding-top:0"><a class="jual-cta" href="/pasar">Mau jual buku juga? Ajukan verifikasi &rsaquo;</a></div>`}
 </body></html>`;
 }

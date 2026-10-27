@@ -27,10 +27,12 @@ import { renderCheckoutPage } from './web/checkout';
 import { renderOrderPage } from './web/order';
 import { renderVerifikasiPage } from './web/verifikasi';
 import { renderPasarSaya } from './web/pasarSaya';
+import { renderTokoPublikPage } from './web/tokoPublik';
 import { renderOwnerPage } from './web/owner';
 import { createQrisTransaction, getQrisStatus, verifyWebhook, KlikQrisEnv } from './klikqris';
 import { providerAmountMatches, settlementAmounts, PASAR_FEE } from './lib/pasar-settlement';
 import { validasiPenerima, normalisasiHp } from './lib/alamat';
+import { slugToko, slugUnik } from './lib/toko';
 import { sendOtpEmail } from './mail';
 import { OG_IMAGE_BASE64 } from './assets';
 import { VENDOR_SWEETALERT2_JS, VENDOR_SWEETALERT2_CSS } from './vendor';
@@ -237,7 +239,7 @@ app.use('*', async (c, next) => {
 });
 
 // ---- AUTH HELPERS ----
-async function getAuthUser(c: any): Promise<{ id: string; email: string; pen_name: string; city: string; avatar_key: string | null; cover_key: string | null; display_name: string | null; bio: string; seller_status?: string; seller_full_name?: string | null; seller_phone?: string | null; seller_note?: string | null; seller_reject_reason?: string | null; shop_name?: string | null;
+async function getAuthUser(c: any): Promise<{ id: string; email: string; pen_name: string; city: string; avatar_key: string | null; cover_key: string | null; display_name: string | null; bio: string; seller_status?: string; seller_full_name?: string | null; seller_phone?: string | null; seller_note?: string | null; seller_reject_reason?: string | null; shop_name?: string | null; shop_slug?: string | null;
   addr_receiver?: string | null; addr_phone?: string | null; addr_postal?: string | null; addr_text?: string | null;
   addr_province_id?: string | null; addr_province_name?: string | null; addr_city_id?: string | null;
   addr_city_name?: string | null; addr_district_id?: string | null; addr_district_name?: string | null } | null> {
@@ -247,7 +249,7 @@ async function getAuthUser(c: any): Promise<{ id: string; email: string; pen_nam
     // Baris OTP pending (`otp_<hash>`, token_hash NULL) BUKAN sesi: tanpa filter ini,
     // cookie berisi hash OTP lolos sebagai sesi valid (temuan Strix #28).
     // vuln-0005: lookup via SHA-256(token) — plaintext token tak tersimpan di DB.
-    'SELECT u.id, u.email, u.pen_name, u.city, u.avatar_key, u.cover_key, u.display_name, u.bio, u.seller_status, u.seller_full_name, u.seller_phone, u.seller_note, u.seller_reject_reason, u.shop_name, u.addr_receiver, u.addr_phone, u.addr_postal, u.addr_text, u.addr_province_id, u.addr_province_name, u.addr_city_id, u.addr_city_name, u.addr_district_id, u.addr_district_name FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token_hash = ? AND s.expires_at > datetime("now") LIMIT 1'
+    'SELECT u.id, u.email, u.pen_name, u.city, u.avatar_key, u.cover_key, u.display_name, u.bio, u.seller_status, u.seller_full_name, u.seller_phone, u.seller_note, u.seller_reject_reason, u.shop_name, u.shop_slug, u.addr_receiver, u.addr_phone, u.addr_postal, u.addr_text, u.addr_province_id, u.addr_province_name, u.addr_city_id, u.addr_city_name, u.addr_district_id, u.addr_district_name FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token_hash = ? AND s.expires_at > datetime("now") LIMIT 1'
   ).bind(await sha256hex(token)).first();
   return session || null;
 }
@@ -1047,6 +1049,31 @@ app.get('/pasar/jual', async (c) => {
   return c.html(renderJualPage(user));
 });
 
+// ---- Toko publik penjual: /toko/<slug> (bisa dibagikan, tanpa login) ----
+app.get('/toko/:slug', async (c) => {
+  const slug = String(c.req.param('slug') || '').toLowerCase().slice(0, 60);
+  if (!/^[a-z0-9-]{1,60}$/.test(slug)) return c.notFound();
+  const toko: any = await c.env.DB.prepare(
+    `SELECT id, pen_name, shop_name, city, created_at, shop_slug FROM users
+      WHERE shop_slug = ? AND seller_status = 'approved' LIMIT 1`
+  ).bind(slug).first();
+  if (!toko) return c.notFound();
+  const rows = await c.env.DB.prepare(
+    `SELECT id, title, price, cond, photos FROM listings
+      WHERE seller_id = ? AND status = 'active' ORDER BY created_at DESC LIMIT 60`
+  ).bind(toko.id).all();
+  const done: any = await c.env.DB.prepare(
+    "SELECT COUNT(*) AS n FROM orders WHERE seller_id = ? AND status = 'completed'"
+  ).bind(toko.id).first();
+  const me = await getAuthUser(c);
+  const baseUrl = new URL(c.req.url).origin;
+  return c.html(renderTokoPublikPage(
+    { ...toko, transaksi_selesai: Number(done?.n || 0) },
+    rows.results || [],
+    { isOwner: !!me && me.id === toko.id, baseUrl },
+  ));
+});
+
 // ---- Pusat Pasar Buku: pesanan + toko + saldo + aktivitas dalam satu halaman ----
 app.get('/pasar/saya', async (c) => {
   const user = await getAuthUser(c);
@@ -1117,7 +1144,7 @@ app.get('/pasar/:id', async (c) => {
   ).bind(c.req.param('id')).first();
   if (!p) return c.notFound();
   const seller: any = await c.env.DB.prepare(
-    'SELECT pen_name, display_name, city, avatar_key, shop_name, seller_status FROM users WHERE id = ?'
+    'SELECT pen_name, display_name, city, avatar_key, shop_name, shop_slug, seller_status FROM users WHERE id = ?'
   ).bind(p.seller_id).first();
   if (!seller) return c.notFound();
   return c.html(renderListingDetail(user, p, seller));
@@ -1678,6 +1705,15 @@ app.post('/api/owner/sellers/:id/review', async (c) => {
      WHERE id=? AND seller_status='pending'`
   ).bind(approve ? 'approved' : 'rejected', approve ? null : reason, reason, c.req.param('id')).run();
   if ((res.meta?.changes || 0) === 0) return c.json({ error: 'Pengajuan tidak ditemukan' }, 404);
+  if (approve) {
+    // Buat slug toko publik sekali saja; link yang sudah dibagikan tidak boleh mati.
+    const u: any = await c.env.DB.prepare('SELECT shop_name, shop_slug FROM users WHERE id = ?').bind(c.req.param('id')).first();
+    if (u?.shop_name && !u.shop_slug) {
+      const dipakai = await c.env.DB.prepare('SELECT shop_slug FROM users WHERE shop_slug IS NOT NULL').all();
+      const slug = slugUnik(u.shop_name, (dipakai.results || []).map((x: any) => x.shop_slug));
+      await c.env.DB.prepare('UPDATE users SET shop_slug = ? WHERE id = ? AND shop_slug IS NULL').bind(slug, c.req.param('id')).run();
+    }
+  }
   return c.json({ ok: true });
 });
 

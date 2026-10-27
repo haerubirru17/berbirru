@@ -1,5 +1,5 @@
 // Cek runnable: npm test
-import { kelompokDari, kelompokPesanan, ringkasToko, kelompokBeliDari, kelompokPesananBeli, ringkasBeli } from '../src/lib/toko.ts';
+import { slugToko, slugUnik, kelompokDari, kelompokPesanan, ringkasToko, kelompokBeliDari, kelompokPesananBeli, ringkasBeli } from '../src/lib/toko.ts';
 
 const assert = (cond: unknown, msg: string) => { if (!cond) throw new Error('GAGAL: ' + msg); };
 
@@ -56,3 +56,13 @@ assert(kelompokBeliDari('cancelled') === 'selesai', 'cancelled masuk grup selesa
 assert(kelompokPesananBeli(beli, 'kirim').map((o) => o.id).join(',') === 'd,f', 'sengketa ikut tampil di tab Dikirim');
 
 console.log('OK — dashboard toko: pengelompokan status & ringkasan lolos');
+
+// slug toko publik
+assert(slugToko('Warkah Bekas Cibiru') === 'warkah-bekas-cibiru', 'spasi jadi tanda hubung');
+assert(slugToko('Toko & Buku  Uji!!') === 'toko-buku-uji', 'tanda baca & spasi ganda dibersihkan');
+assert(slugToko('   ') === 'toko', 'nama kosong dapat fallback');
+assert(slugToko('A'.repeat(60)).length <= 40, 'panjang dibatasi 40');
+assert(slugUnik('Warkah', ['warkah']) === 'warkah-2', 'bentrok dapat sufiks -2');
+assert(slugUnik('Warkah', ['warkah', 'warkah-2']) === 'warkah-3', 'bentrok beruntun naik');
+
+console.log('OK — slug toko publik lolos');

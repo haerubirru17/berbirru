@@ -525,7 +525,8 @@ export function renderListingDetail(user: any, p: any, seller: any): string {
         <a class="seller-ava" href="/u/${escapeHtml(seller.pen_name)}">${seller.avatar_key ? `<img src="/media/${escapeHtml(String(seller.avatar_key).split('?')[0])}" alt="">` : escapeHtml((seller.display_name || seller.pen_name || '?').charAt(0).toUpperCase())}</a>
         <div style="flex:1;">
           ${seller.shop_name ? `<div style="font-size:10px;font-weight:900;color:var(--blue-deep);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">${escapeHtml(seller.shop_name)}</div>` : ''}
-          <a class="seller-name" href="/u/${escapeHtml(seller.pen_name)}">${escapeHtml(seller.display_name || seller.pen_name)}</a>
+          <a class="seller-name" href="${seller.shop_slug ? '/toko/' + escapeHtml(seller.shop_slug) : '/u/' + escapeHtml(seller.pen_name)}">${escapeHtml(seller.display_name || seller.pen_name)}</a>
+          ${seller.shop_slug ? `<a href="/toko/${escapeHtml(seller.shop_slug)}" style="display:inline-block;margin-top:4px;font:800 10px 'DM Sans';color:#1D61E7;text-decoration:none;">Lihat semua buku toko &rsaquo;</a>` : ''}
           <div class="seller-city">${seller.city ? escapeHtml(seller.city) : 'Indonesia'}</div>
         </div>
       </div>
