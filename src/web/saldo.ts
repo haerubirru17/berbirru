@@ -1,6 +1,6 @@
 // Saldo penjual + tarik dana. Saldo = ledger terkumpul − permintaan tarik yang masih diproses.
 import { escapeHtml } from '../lib/sanitize';
-import { BRAND_HEADER, PASAR_BASE_CSS, rupiah } from './pasar';
+import { PASAR_BASE_CSS, rupiah } from './pasar';
 
 const PAGE_CSS = `
   .wrap{width:min(680px,calc(100% - 28px));margin:auto;padding:18px 0 120px}
@@ -109,7 +109,7 @@ async function tarik(ev){
 ${PASAR_BASE_CSS}
 <style>${PAGE_CSS}</style></head>
 <body>
-${BRAND_HEADER}${inner}
+${inner}
 </body></html>`;
 }
 export { PAGE_CSS as SALDO_CSS };

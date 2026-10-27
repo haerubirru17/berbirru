@@ -1,7 +1,8 @@
 // Pusat Pasar Buku — satu halaman untuk pesanan, toko, saldo, dan aktivitas transaksi.
 // Isi tiap tab memakai renderer yang sudah ada (mode embed), jadi tidak ada duplikasi markup.
 import { escapeHtml } from '../lib/sanitize';
-import { BRAND_HEADER, PASAR_BASE_CSS } from './pasar';
+import { renderBottomNav } from './layout';
+import { PASAR_BASE_CSS } from './pasar';
 import { renderPesananPage, PESANAN_CSS } from './pesanan';
 import { ringkasBeli } from '../lib/toko';
 import { renderTokoPage, TOKO_CSS } from './toko';
@@ -124,7 +125,6 @@ export function renderPasarSaya(user: any, tab: string, sub: string, d: HubData)
 ${PASAR_BASE_CSS}
 <style>${SHELL_CSS}${PESANAN_CSS}${TOKO_CSS}${SALDO_CSS}</style></head>
 <body>
-${BRAND_HEADER}
 <div class="wrap hub-top">
   <div class="hub-head">
     <div style="min-width:0;">
@@ -145,5 +145,6 @@ ${approved && user.shop_slug ? `<div class="wrap" style="padding-top:0"><div cla
     </div>
     <script>function salinToko(b){var u='https://'+location.host+'/toko/${escapeHtml(user.shop_slug)}';if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(u).then(function(){b.textContent='Tersalin ✓'},function(){prompt('Salin:',u)})}else{prompt('Salin:',u)}}</script></div>` : ''}
 ${approved ? '' : `<div class="wrap" style="padding-top:0"><a class="jual-cta" href="/pasar">Mau jual buku juga? Ajukan verifikasi &rsaquo;</a></div>`}
+${renderBottomNav('pasar', user, false)}
 </body></html>`;
 }

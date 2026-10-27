@@ -56,18 +56,6 @@ export const TRACK_URLS: Record<string, (resi: string) => string> = {
 export const trackUrl = (kurir: string, resi: string): string =>
   (TRACK_URLS[kurir] || ((r: string) => `https://www.google.com/search?q=${encodeURIComponent(kurir + ' ' + r)}`))(resi);
 
-// Brand header — salinan utuh blok .brand-header login.ts (hukum keras: utuh atau nggak sama sekali).
-export const BRAND_HEADER = `
-    <div class="brand-header">
-      <a href="/" class="brand-wrap">
-        <div class="brand-badge">
-          <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-          <h1>BERBIRRU</h1>
-        </div>
-        <span class="brand-com-tag">.com</span>
-      </a>
-    </div>`;
-
 const COND_LABEL: Record<string, string> = {
   'baru': 'Baru',
   'bekas_bagus': 'Bekas — Bagus',

@@ -1,6 +1,6 @@
 // Halaman toko publik penjual: /toko/<slug>
 import { escapeHtml } from '../lib/sanitize';
-import { BRAND_HEADER, PASAR_BASE_CSS, rupiah } from './pasar';
+import { PASAR_BASE_CSS, rupiah } from './pasar';
 
 const PAGE_CSS = `
   .wrap{width:min(1080px,calc(100% - 28px));margin:auto;padding:18px 0 60px}
@@ -89,7 +89,6 @@ export function renderTokoPublikPage(toko: any, listings: any[], opts: { isOwner
 ${PASAR_BASE_CSS}
 <style>${PAGE_CSS}</style></head>
 <body>
-${BRAND_HEADER}
 <div class="wrap">
   <div class="shop-head">
     <h1 class="shop-name">${escapeHtml(toko.shop_name)}</h1>

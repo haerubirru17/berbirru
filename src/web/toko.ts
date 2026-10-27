@@ -2,7 +2,7 @@
 // Hanya untuk penjual approved; gate-nya di route (/toko), bukan di sini.
 import { escapeHtml } from '../lib/sanitize';
 import { PASAR_FEE } from '../lib/pasar-settlement';
-import { BRAND_HEADER, PASAR_BASE_CSS, rupiah } from './pasar';
+import { PASAR_BASE_CSS, rupiah } from './pasar';
 import { kelompokPesanan, ringkasToko, type Kelompok } from '../lib/toko';
 
 const PAGE_CSS = `
@@ -209,7 +209,7 @@ async function setListing(id, status, btn){
 ${PASAR_BASE_CSS}
 <style>${PAGE_CSS}</style></head>
 <body>
-${BRAND_HEADER}${inner}
+${inner}
 </body></html>`;
 }
 export { PAGE_CSS as TOKO_CSS };

@@ -1,7 +1,7 @@
 // Halaman owner: putuskan sengketa (refund / lepas dana) + setujui pencairan saldo penjual.
 // Setiap keputusan WAJIB disertai catatan — itu satu-satunya bukti kalau nanti ada protes.
 import { escapeHtml } from '../lib/sanitize';
-import { BRAND_HEADER, PASAR_BASE_CSS, rupiah } from './pasar';
+import { PASAR_BASE_CSS, rupiah } from './pasar';
 
 const PAGE_CSS = `
   .wrap{width:min(760px,calc(100% - 28px));margin:auto;padding:18px 0 120px}
@@ -140,7 +140,6 @@ ${escapeHtml(u.seller_note)}` : ''}</div>
 ${PASAR_BASE_CSS}
 <style>${PAGE_CSS}</style></head>
 <body>
-${BRAND_HEADER}
 <div class="wrap">
   <div class="page-head"><h1>Owner</h1><p>Putuskan sengketa dan cairkan saldo penjual. Setiap keputusan menyimpan alasan sebagai bukti.</p></div>
   <div class="err" id="err"></div>

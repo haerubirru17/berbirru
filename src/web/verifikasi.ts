@@ -1,6 +1,6 @@
 // Gerbang verifikasi penjual. Sebelum approved, /pasar/jual menampilkan status ini, bukan form jual.
 import { escapeHtml } from '../lib/sanitize';
-import { BRAND_HEADER, PASAR_BASE_CSS } from './pasar';
+import { PASAR_BASE_CSS } from './pasar';
 
 const PAGE_CSS = `
   .wrap{width:min(620px,calc(100% - 28px));margin:auto;padding:18px 0 120px}
@@ -70,7 +70,6 @@ export function renderVerifikasiPage(user: any): string {
 ${PASAR_BASE_CSS}
 <style>${PAGE_CSS}</style></head>
 <body>
-${BRAND_HEADER}
 <div class="wrap">
   <div class="page-head"><h1>Jual Buku</h1><p>Verifikasi penjual diperlukan sebelum buku bisa dipasang.</p></div>
   ${isi}

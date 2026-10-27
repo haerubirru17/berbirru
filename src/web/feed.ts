@@ -56,6 +56,8 @@ export function renderFeedPage(user: any = null): string {
     .feed-search input { flex: 1; min-width: 0; font: inherit; font-size: 13px; font-weight: 700; padding: 9px 12px; border: var(--border-thin); border-radius: var(--radius-sm); background: var(--bg-card); color: var(--ink); box-shadow: var(--small-shadow); outline: none; }
     .feed-search input:focus { border-color: var(--blue-primary); }
     .feed-search button { background: var(--blue-primary); color: #fff; border: var(--border-thin); border-radius: var(--radius-sm); width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center; box-shadow: var(--shadow-hard-sm); cursor: pointer; }
+    .feed-search button.btn-tulis { background: var(--yellow); color: var(--ink); }
+    .feed-search button.btn-tulis svg { stroke: var(--ink); }
     .feed-search button svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; }
     .feed-search button:active { transform: translate(1px, 1px); box-shadow: none; }
     .mode-tab {
@@ -377,6 +379,9 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
     <div class="feed-search" role="search">
       <input type="search" id="feedSearchInput" placeholder="Cari @nama_pena atau kata kunci…" autocomplete="off" aria-label="Cari penulis atau warkah">
       <button type="button" onclick="feedSearch()" aria-label="Cari"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+      <button type="button" class="btn-tulis" onclick="typeof openStudioModal==='function' ? openStudioModal() : (location.href='/feed?action=compose')" aria-label="Tulis warkah" title="Tulis warkah">
+        <svg viewBox="0 0 24 24"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.4 2.6a2.1 2.1 0 1 1 3 3L12 15l-4 1 1-4Z"/></svg>
+      </button>
     </div>
 
     <div class="feed-sticky">

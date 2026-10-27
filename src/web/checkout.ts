@@ -3,7 +3,7 @@
 // server mengutip ulang saat order dibuat (lihat POST /api/pasar/orders).
 
 import { escapeHtml } from '../lib/sanitize';
-import { BRAND_HEADER, PASAR_BASE_CSS, rupiah } from './pasar';
+import { PASAR_BASE_CSS, rupiah } from './pasar';
 
 const PAGE_CSS = `
   .wrap{width:min(680px,calc(100% - 28px));margin:auto;padding:18px 0 130px}.page-head{margin:8px 0 22px}.page-head h1{margin:0 0 8px;font:700 clamp(40px,7vw,64px)/.95 'Newsreader';letter-spacing:-.04em}.page-head p{margin:0;color:#52627A;line-height:1.6}
@@ -45,7 +45,6 @@ export function renderCheckoutPage(user: any, p: any): string {
 ${PASAR_BASE_CSS}
 <style>${PAGE_CSS}</style></head>
 <body>
-${BRAND_HEADER}
 <div class="wrap">
   <div class="page-head"><h1>Checkout</h1><p>Pilih alamat &amp; layanan kurir, lalu bayar sekali lewat QRIS.</p></div>
   <div class="err" id="err"></div>

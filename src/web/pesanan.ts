@@ -1,7 +1,7 @@
 // Daftar pesanan pembeli — satu tempat untuk melihat & melanjutkan pembayaran.
 import { escapeHtml } from '../lib/sanitize';
 import { PASAR_FEE } from '../lib/pasar-settlement';
-import { BRAND_HEADER, PASAR_BASE_CSS, rupiah } from './pasar';
+import { PASAR_BASE_CSS, rupiah } from './pasar';
 import { kelompokPesananBeli, ringkasBeli, type KelompokBeli } from '../lib/toko';
 
 const PAGE_CSS = `
@@ -94,7 +94,7 @@ export function renderPesananPage(user: any, orders: any[], tab: string, embed =
 ${PASAR_BASE_CSS}
 <style>${PAGE_CSS}</style></head>
 <body>
-${BRAND_HEADER}${inner}
+${inner}
 </body></html>`;
 }
 export { PAGE_CSS as PESANAN_CSS };
