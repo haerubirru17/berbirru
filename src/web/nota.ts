@@ -37,14 +37,15 @@ const CSS = `
   .stk{width:80mm;height:115mm;background:#fff;border:1px solid var(--ink);padding:2.4mm;position:relative;display:flex;flex-direction:column;box-shadow:7px 8px 0 #3A3227}
   .stk:before{content:'';position:absolute;inset:1.5mm;border:.5px solid var(--ink);pointer-events:none}
   .stk-in{position:relative;display:flex;flex-direction:column;height:100%;padding:1.6mm 1.8mm}
-  .stk .head{display:flex;justify-content:space-between;align-items:flex-start;gap:2mm}
-  .stk .atas{font:400 5.4pt 'IM Fell English';letter-spacing:.3em;text-transform:uppercase;padding-top:1mm}
-  .stk .marks{display:flex;align-items:flex-start;gap:1.2mm}
-  .stk h1{margin:1.4mm 0 0;font:400 10pt 'IM Fell DW Pica';letter-spacing:0;text-transform:uppercase;line-height:1.2;white-space:nowrap;text-align:center}
-  .stk .it{font:italic 400 5.4pt/1.4 'IM Fell English';margin-top:.6mm;white-space:nowrap;text-align:center}
-  .stk .stamp{width:9.6mm;height:11.4mm;border:.7px dashed var(--ink);display:grid;place-items:center;transform:rotate(2deg);background:#fff}
+  .stk .head{position:relative;text-align:center}
+  .stk .atas{font:400 5.4pt 'IM Fell English';letter-spacing:.3em;text-transform:uppercase;text-align:left;padding-top:.4mm}
+  /* prangko & cap pos sengaja menimpa judul — seperti cap basah di kertas lama */
+  .stk .marks{position:absolute;top:-1.6mm;right:-1mm;z-index:3;pointer-events:none}
+  .stk h1{margin:1mm 0 0;font:400 13.4pt 'IM Fell DW Pica';letter-spacing:.02em;text-transform:uppercase;line-height:1.15;white-space:nowrap;text-align:center;position:relative;z-index:2}
+  .stk .it{font:italic 400 5.8pt/1.4 'IM Fell English';margin-top:.8mm;white-space:nowrap;text-align:center}
+  .stk .stamp{position:absolute;top:0;right:0;width:9.6mm;height:11.4mm;border:.7px dashed var(--ink);display:grid;place-items:center;transform:rotate(4deg);background:transparent;opacity:.9}
   .stk .stamp .in2{border:.4px solid var(--ink);width:7.6mm;height:9.4mm;display:grid;place-items:center;padding:.2mm;text-align:center;font:400 3.5pt/1.2 'IM Fell DW Pica';letter-spacing:0;text-transform:uppercase}
-  .stk .postmark{width:9.5mm;height:9.5mm;border:.8px solid var(--ink);border-radius:50%;display:grid;place-items:center;text-align:center;transform:rotate(-8deg);font:400 3.6pt/1.2 'IM Fell English';letter-spacing:.06em}
+  .stk .postmark{position:absolute;top:1.2mm;right:9.4mm;width:10mm;height:10mm;border:.8px solid var(--ink);border-radius:50%;display:grid;place-items:center;text-align:center;transform:rotate(-13deg);font:400 3.7pt/1.2 'IM Fell English';letter-spacing:.06em;opacity:.9}
   .stk .rule{display:flex;align-items:center;gap:1.4mm;margin:1.4mm 0 1.2mm}
   .stk .rule:before,.stk .rule:after{content:'';flex:1;border-top:.8px solid var(--ink)}
   .stk .rule span{font:400 6pt 'IM Fell English';letter-spacing:.2em}
@@ -134,9 +135,9 @@ export function renderNotaPengiriman(o: any, p: any, seller: any): string {
           <div class="postmark">CILEGON<br>${tglPendek(o.created_at).replace(/ · /g, '·')}<br>2026</div>
           <div class="stamp"><div class="in2">Berbirru<br>Rekber<br>2026</div></div>
         </div>
+        <h1>Nota Pengiriman</h1>
+        <div class="it">“Setiap buku punya jalan pulangnya”</div>
       </div>
-      <h1>Nota Pengiriman</h1>
-      <div class="it">“Setiap buku punya jalan pulangnya”</div>
 
       <div class="rule"><span>✦</span></div>
 
