@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS posts (
   content TEXT NOT NULL,
   title TEXT,
   parent_id TEXT, -- NULL for original warkah, or post_id for estafet chains
+  visibility TEXT NOT NULL DEFAULT 'public', -- 'public' | 'private'
   likes_count INTEGER DEFAULT 0,
   saves_count INTEGER DEFAULT 0,
   chains_count INTEGER DEFAULT 0,

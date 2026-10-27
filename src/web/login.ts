@@ -13,18 +13,11 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
   <meta property="og:image" content="https://berbirru.com/og-image.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800;900&family=Space+Grotesk:wght@600;700;800&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,700;1,6..72,500&family=Roboto+Mono:wght@600;700&display=swap" rel="stylesheet">
   ${turnstileSiteKey ? '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>' : ''}
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --bg-main: #F0F6FE; --bg-card: #FFFFFF; --bg-blue-subtle: #E0EEFD;
-      --ink: #0B192C; --shadow-ink: #1E293B; --blue-primary: #1D61E7;
-      --accent-yellow: #FDE047;
-      --border-thick: 3px solid var(--ink); --border-med: 2.5px solid var(--ink);
-      --shadow-hard: 4px 4px 0 var(--shadow-ink); --shadow-hard-lg: 6px 6px 0 var(--shadow-ink); --shadow-hard-sm: 2.5px 2.5px 0 var(--shadow-ink);
-      --radius: 16px; --radius-sm: 10px;
-    }
+    :root{--blue:#1D61E7;--deep:#0F3E99;--ink:#0B192C;--paper:#FFF9E9;--white:#FFFEF8;--yellow:#FDE047;--coral:#FF735F;--mint:#88E6BD;--soft:#E0EEFD;--red:#EF4444;--green:#059669;--line:3px solid var(--ink);--thin:2px solid var(--ink);--shadow:6px 7px 0 #26364A;--small-shadow:3px 4px 0 #26364A;--bg-main:var(--paper);--bg-card:#fff;--bg-blue-subtle:var(--soft);--shadow-ink:#26364A;--blue-primary:var(--blue);--blue-deep:var(--deep);--blue-light:#60A5FA;--accent-yellow:var(--yellow);--border-thick:var(--line);--border-med:3px solid var(--ink);--border-thin:var(--thin);--shadow-hard:var(--small-shadow);--shadow-hard-lg:var(--shadow);--shadow-hard-sm:2px 3px 0 #26364A;--radius:0;--radius-sm:0}
     body {
       font-family: 'DM Sans', -apple-system, sans-serif;
       background-color: var(--paper, #FBF8F3); color: var(--ink); min-height: 100vh;
@@ -39,10 +32,10 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
       color: #FFFFFF; padding: 6px 14px; border: var(--border-thick); border-radius: var(--radius);
       box-shadow: var(--shadow-hard); transform: rotate(-1deg); position: relative; z-index: 2;
     }
-    .brand-badge h1 { margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 800; letter-spacing: 0.5px; color: #FFFFFF; line-height: 1; }
+    .brand-badge h1 { margin: 0; font-family: 'Archivo Black', sans-serif; font-size: 19px; font-weight: 800; letter-spacing: 0.5px; color: #FFFFFF; line-height: 1; }
     .brand-badge svg { width: 16px; height: 16px; stroke: #FFFFFF; stroke-width: 2; fill: none; flex-shrink: 0; }
     .brand-com-tag {
-      font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 900;
+      font-family: 'Archivo Black', sans-serif; font-size: 26px; font-weight: 900;
       color: var(--blue-primary); position: relative; display: inline-block;
       transform: rotate(2deg); margin-left: 4px; margin-top: 2px; z-index: 1; line-height: 1;
       padding-bottom: 3px;
@@ -60,7 +53,7 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
       background: var(--bg-blue-subtle);
     }
     .auth-tab {
-      padding: 12px; font-family: 'Space Grotesk', sans-serif; font-size: 13.5px; font-weight: 800;
+      padding: 12px; font-family: 'Archivo Black', sans-serif; font-size: 13.5px; font-weight: 800;
       text-align: center; background: transparent; color: #64748B; border: none; cursor: pointer;
       display: flex; justify-content: center; align-items: center; gap: 6px; transition: background 0.1s ease;
     }
@@ -157,7 +150,7 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
 
     <!-- 2. Form Masuk dengan Kode OTP 6-Digit -->
     <div class="auth-card" id="otpAuthCard" style="display:none;">
-      <div style="padding:14px;background:#E0EEFD;border-bottom:var(--border-thick);font-family:'Space Grotesk';font-size:14px;font-weight:800;color:var(--blue-primary);display:flex;align-items:center;gap:6px;">
+      <div style="padding:14px;background:#E0EEFD;border-bottom:var(--border-thick);font-family:'Archivo Black';font-size:14px;font-weight:800;color:var(--blue-primary);display:flex;align-items:center;gap:6px;">
         <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         <span>Verifikasi Kode OTP</span>
       </div>
@@ -190,7 +183,7 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
           </p>
           <div class="form-group">
             <label class="form-label">Kode OTP 6-Digit</label>
-            <input type="text" id="otpCodeInput" maxlength="6" class="form-input" style="letter-spacing:6px;text-align:center;font-size:22px;font-family:'Space Grotesk',monospace;font-weight:800;" placeholder="••••••" required>
+            <input type="text" id="otpCodeInput" maxlength="6" class="form-input" style="letter-spacing:6px;text-align:center;font-size:22px;font-family:'Archivo Black',monospace;font-weight:800;" placeholder="••••••" required>
           </div>
           <div class="form-group">
             <label class="form-label">Kata Sandi Baru (untuk aktivasi akun — sandi pendaftar pertama dimatikan)</label>
