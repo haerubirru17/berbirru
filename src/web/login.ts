@@ -186,7 +186,7 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
             <input type="text" id="otpCodeInput" maxlength="6" class="form-input" style="letter-spacing:6px;text-align:center;font-size:22px;font-family:'Archivo Black',monospace;font-weight:800;" placeholder="••••••" required>
           </div>
           <div class="form-group">
-            <label class="form-label">Kata Sandi Baru (untuk aktivasi akun — sandi pendaftar pertama dimatikan)</label>
+            <label class="form-label">Kata Sandi Baru <span style="font-weight:600;text-transform:none;letter-spacing:0;">(opsional — hanya untuk akun yang belum aktif)</span></label>
             <input type="password" id="otpNewPassword" class="form-input" placeholder="Minimal 8 karakter" autocomplete="new-password">
           </div>
           <button type="button" class="btn-submit-auth" id="btnVerifyOtp" style="background:#059669;" onclick="handleVerifyOtp()">
