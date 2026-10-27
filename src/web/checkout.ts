@@ -31,7 +31,7 @@ const PAGE_CSS = `
   @media(max-width:420px){.paybar{padding:9px 14px}.paybar button{padding:9px 12px}.wrap{padding-top:8px}.grid3{grid-template-columns:1fr}}
 `;
 
-export function renderCheckoutPage(user: any, p: any, saldo = 0): string {
+export function renderCheckoutPage(user: any, p: any, saldo = 0, addresses: any[] = []): string {
   const u = user || {};
   const harga = Number(p.price);
   let couriers: string[] = [];
@@ -48,6 +48,17 @@ ${PASAR_BASE_CSS}
 <div class="wrap">
   <div class="page-head"><h1>Checkout</h1><p>Pilih alamat &amp; layanan kurir, lalu bayar sekali lewat QRIS.</p></div>
   <div class="err" id="err"></div>
+
+  ${addresses.length ? `<div class="kw-card">
+    <div class="sec-t">Dikirim ke</div>
+    <select class="inp" id="fAlamatPilih" onchange="pakaiAlamat(this.value)">
+      ${addresses.map((a: any) => `<option value="${escapeHtml(a.id)}"${a.is_default ? ' selected' : ''}>${escapeHtml((a.label || 'Alamat') + ' — ' + (a.district_name || a.city_name || a.receiver))}</option>`).join('')}
+      <option value="__baru__">+ Alamat baru (isi manual)</option>
+    </select>
+    <div class="hint">Alamat utama dipakai otomatis. Pilih “Alamat baru” untuk mengisi sendiri.</div>
+    <div class="hint"><a href="/akun/alamat" style="color:#1D61E7;font-weight:800;">Kelola alamat</a></div>
+    <script>var ALAMAT = ${JSON.stringify(addresses.map((a: any) => ({ id: a.id, receiver: a.receiver, phone: a.phone, postal: a.postal, text: a.text, p: a.province_id, k: a.city_id, c: a.district_id })))};</script>
+  </div>` : ''}
 
   <div class="kw-card">
     <div class="sec-t">Alamat Pengiriman</div>
@@ -238,20 +249,42 @@ async function pay(){
   }catch(e){err('Gagal membuat pesanan. Coba lagi.')}
   b.disabled=false; pakaiSaldo();
 }
+async function isiWilayahTunggu(sel,parent,label,val){
+  await isiWilayah(sel,parent,label);
+  if(val) sel.value=val;
+}
+async function pakaiAlamat(id){
+  var a=(typeof ALAMAT!=='undefined'?ALAMAT:[]).filter(function(x){return x.id===id})[0];
+  el('fNama').value = a ? a.receiver : '';
+  el('fHp').value = a ? a.phone : '';
+  el('fPos').value = a ? a.postal : '';
+  el('fAlamat').value = a ? a.text : '';
+  resetOngkir();
+  if(!a){ return }
+  await isiWilayahTunggu(el('fProv'),null,'Provinsi',a.p);
+  el('fProv').onchange(); // isi kota
+  await isiWilayahTunggu(el('fKab'),a.p,'Kota/Kabupaten',a.k);
+  el('fKab').onchange(); // isi kecamatan
+  await isiWilayahTunggu(el('fKec'),a.k,'Kecamatan',a.c);
+  el('fKec').onchange();
+}
 // isi otomatis alamat tersimpan (kalau ada)
 (async function prefill(){
+  if(el('fAlamatPilih') && el('fAlamatPilih').value){
+    await pakaiAlamat(el('fAlamatPilih').value);
+    return;
+  }
   var P='${escapeHtml(String(u.addr_province_id || ''))}',
       K='${escapeHtml(String(u.addr_city_id || ''))}',
       C='${escapeHtml(String(u.addr_district_id || ''))}';
   if(!P) return;
   try{
-    var selP=el('fProv');
-    for(var i=0;i<40;i++){ if(selP.options.length>1) break; await new Promise(function(r){setTimeout(r,250)}); }
-    selP.value=P; selP.dispatchEvent(new Event('change'));
-    for(var j=0;j<40;j++){ if(el('fKab').options.length>1) break; await new Promise(function(r){setTimeout(r,250)}); }
-    el('fKab').value=K; el('fKab').dispatchEvent(new Event('change'));
-    for(var k=0;k<40;k++){ if(el('fKec').options.length>1) break; await new Promise(function(r){setTimeout(r,250)}); }
-    el('fKec').value=C; el('fKec').dispatchEvent(new Event('change'));
+    await isiWilayahTunggu(el('fProv'),null,'Provinsi',P);
+    el('fProv').onchange();
+    await isiWilayahTunggu(el('fKab'),P,'Kota/Kabupaten',K);
+    el('fKab').onchange();
+    await isiWilayahTunggu(el('fKec'),K,'Kecamatan',C);
+    el('fKec').onchange();
   }catch(e){}
 })();
 </script>

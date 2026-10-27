@@ -22,7 +22,8 @@ import { renderSearchPage } from './web/search';
 import { renderProfilePage } from './web/profile';
 import { renderNotificationsPage } from './web/notifications';
 import { renderChainPage } from './web/chain';
-import { renderAkunPage, renderAlamatPage } from './web/akun';
+import { renderAkunPage } from './web/akun';
+import { renderAlamatListPage, renderAlamatFormPage } from './web/alamat';
 import { renderPasarPage, renderJualPage, renderEditListingPage, renderListingDetail } from './web/pasar';
 import { renderCheckoutPage } from './web/checkout';
 import { renderOrderPage } from './web/order';
@@ -1081,25 +1082,142 @@ app.get('/akun', async (c) => {
   return c.html(renderAkunPage(user, refunds.results || []));
 });
 
+// ---- Buku alamat (maks 5, satu utama) ----
+const bacaAlamat = (f: any) => {
+  const t = (v: any, n: number) => String(v ?? '').trim().slice(0, n);
+  const a = {
+    label: t(f.label, 20) || null,
+    receiver: t(f.receiver, 60),
+    phone: String(f.phone ?? '').replace(/[^0-9+]/g, '').slice(0, 20),
+    postal: String(f.postal ?? '').replace(/\D/g, '').slice(0, 5),
+    text: t(f.text, 300),
+    province_id: t(f.province_id, 12) || null, province_name: t(f.province_name, 60) || null,
+    city_id: t(f.city_id, 12) || null, city_name: t(f.city_name, 60) || null,
+    district_id: t(f.district_id, 12) || null, district_name: t(f.district_name, 60) || null,
+    utama: String(f.utama ?? '') === '1',
+  };
+  const salah = a.receiver.length < 3 ? 'Nama penerima minimal 3 karakter.'
+    : a.phone.replace(/\D/g, '').length < 9 ? 'Nomor HP minimal 9 angka.'
+    : !a.district_id ? 'Pilih kecamatan tujuan.'
+    : a.postal.length !== 5 ? 'Kode pos harus 5 angka.'
+    : a.text.length < 10 ? 'Alamat lengkap minimal 10 karakter.' : '';
+  return { a, salah };
+};
+
+// Cerminkan alamat utama ke users.addr_* — kode lama (checkout/order) masih membacanya.
+const cerminUtama = (db: D1Database, userId: string, a: any) => db.prepare(
+  `UPDATE users SET addr_receiver = ?, addr_phone = ?, addr_postal = ?, addr_text = ?,
+     addr_province_id = ?, addr_province_name = ?, addr_city_id = ?, addr_city_name = ?,
+     addr_district_id = ?, addr_district_name = ? WHERE id = ?`
+).bind(a.receiver, a.phone, a.postal, a.text, a.province_id, a.province_name,
+  a.city_id, a.city_name, a.district_id, a.district_name, userId);
+
 app.get('/akun/alamat', async (c) => {
   const user = await getAuthUser(c);
   if (!user) return c.redirect('/login');
-  return c.html(renderAlamatPage(user, c.req.query('ok') ? 'Alamat tersimpan.' : ''));
+  const rows = await c.env.DB.prepare(
+    'SELECT * FROM addresses WHERE user_id = ? ORDER BY is_default DESC, created_at ASC'
+  ).bind(user.id).all();
+  const pesan = c.req.query('ok') === 'baru' ? 'Alamat baru tersimpan.' : c.req.query('ok') ? 'Perubahan tersimpan.' : '';
+  return c.html(renderAlamatListPage(user, rows.results || [], pesan));
+});
+
+app.get('/akun/alamat/baru', async (c) => {
+  const user = await getAuthUser(c);
+  if (!user) return c.redirect('/login');
+  const n: any = await c.env.DB.prepare('SELECT COUNT(*) AS n FROM addresses WHERE user_id = ?').bind(user.id).first();
+  if (Number(n?.n || 0) >= 5) return c.redirect('/akun/alamat');
+  return c.html(renderAlamatFormPage(user, { receiver: user.addr_receiver, phone: user.addr_phone }));
 });
 
 app.post('/akun/alamat', async (c) => {
   const user = await getAuthUser(c);
   if (!user) return c.redirect('/login');
   const f: any = await c.req.parseBody();
-  const receiver = String(f.receiver || '').trim().slice(0, 60);
-  const phone = String(f.phone || '').replace(/[^0-9+]/g, '').slice(0, 20);
-  const postal = String(f.postal || '').replace(/\D/g, '').slice(0, 5);
-  const text = String(f.text || '').trim().slice(0, 300);
-  const sah = receiver.length >= 3 && phone.replace(/\D/g, '').length >= 9 && postal.length === 5 && text.length >= 10;
-  if (!sah) return c.html(renderAlamatPage({ ...user, addr_receiver: receiver, addr_phone: phone, addr_postal: postal, addr_text: text }), 400);
-  await c.env.DB.prepare(
-    'UPDATE users SET addr_receiver = ?, addr_phone = ?, addr_postal = ?, addr_text = ? WHERE id = ?'
-  ).bind(receiver, phone, postal, text, user.id).run();
+  const { a, salah } = bacaAlamat(f);
+  if (salah) return c.html(renderAlamatFormPage(user, a, salah), 400);
+  const n: any = await c.env.DB.prepare('SELECT COUNT(*) AS n FROM addresses WHERE user_id = ?').bind(user.id).first();
+  if (Number(n?.n || 0) >= 5) return c.redirect('/akun/alamat');
+
+  const id = crypto.randomUUID();
+  const utama = a.utama || Number(n?.n || 0) === 0;
+  await c.env.DB.batch([
+    ...(utama ? [c.env.DB.prepare('UPDATE addresses SET is_default = 0 WHERE user_id = ?').bind(user.id)] : []),
+    c.env.DB.prepare(
+      `INSERT INTO addresses (id, user_id, label, receiver, phone, postal, text,
+        province_id, province_name, city_id, city_name, district_id, district_name, is_default)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+    ).bind(id, user.id, a.label, a.receiver, a.phone, a.postal, a.text, a.province_id,
+      a.province_name, a.city_id, a.city_name, a.district_id, a.district_name, utama ? 1 : 0),
+    ...(utama ? [cerminUtama(c.env.DB, user.id, a)] : []),
+  ]);
+  return c.redirect('/akun/alamat?ok=baru');
+});
+
+app.get('/akun/alamat/:id/ubah', async (c) => {
+  const user = await getAuthUser(c);
+  if (!user) return c.redirect('/login');
+  const a: any = await c.env.DB.prepare('SELECT * FROM addresses WHERE id = ? AND user_id = ?')
+    .bind(c.req.param('id'), user.id).first();
+  if (!a) return c.notFound();
+  return c.html(renderAlamatFormPage(user, a));
+});
+
+app.post('/akun/alamat/:id', async (c) => {
+  const user = await getAuthUser(c);
+  if (!user) return c.redirect('/login');
+  const lama: any = await c.env.DB.prepare('SELECT * FROM addresses WHERE id = ? AND user_id = ?')
+    .bind(c.req.param('id'), user.id).first();
+  if (!lama) return c.notFound();
+  const f: any = await c.req.parseBody();
+  const { a, salah } = bacaAlamat(f);
+  if (salah) return c.html(renderAlamatFormPage(user, { ...a, id: lama.id }, salah), 400);
+  const utama = a.utama || Number(lama.is_default) === 1;
+  await c.env.DB.batch([
+    ...(utama && !lama.is_default ? [c.env.DB.prepare('UPDATE addresses SET is_default = 0 WHERE user_id = ?').bind(user.id)] : []),
+    c.env.DB.prepare(
+      `UPDATE addresses SET label = ?, receiver = ?, phone = ?, postal = ?, text = ?,
+         province_id = ?, province_name = ?, city_id = ?, city_name = ?, district_id = ?, district_name = ?,
+         is_default = ?, updated_at = datetime('now') WHERE id = ? AND user_id = ?`
+    ).bind(a.label, a.receiver, a.phone, a.postal, a.text, a.province_id, a.province_name,
+      a.city_id, a.city_name, a.district_id, a.district_name, utama ? 1 : 0, lama.id, user.id),
+    ...(utama ? [cerminUtama(c.env.DB, user.id, a)] : []),
+  ]);
+  return c.redirect('/akun/alamat?ok=1');
+});
+
+app.post('/akun/alamat/:id/utama', async (c) => {
+  const user = await getAuthUser(c);
+  if (!user) return c.redirect('/login');
+  const a: any = await c.env.DB.prepare('SELECT * FROM addresses WHERE id = ? AND user_id = ?')
+    .bind(c.req.param('id'), user.id).first();
+  if (!a) return c.notFound();
+  await c.env.DB.batch([
+    c.env.DB.prepare('UPDATE addresses SET is_default = 0 WHERE user_id = ?').bind(user.id),
+    c.env.DB.prepare('UPDATE addresses SET is_default = 1 WHERE id = ?').bind(a.id),
+    cerminUtama(c.env.DB, user.id, a),
+  ]);
+  return c.redirect('/akun/alamat?ok=1');
+});
+
+app.post('/akun/alamat/:id/hapus', async (c) => {
+  const user = await getAuthUser(c);
+  if (!user) return c.redirect('/login');
+  const a: any = await c.env.DB.prepare('SELECT * FROM addresses WHERE id = ? AND user_id = ?')
+    .bind(c.req.param('id'), user.id).first();
+  if (!a) return c.notFound();
+  await c.env.DB.prepare('DELETE FROM addresses WHERE id = ? AND user_id = ?').bind(a.id, user.id).run();
+  if (Number(a.is_default) === 1) {
+    const sisa: any = await c.env.DB.prepare(
+      'SELECT * FROM addresses WHERE user_id = ? ORDER BY created_at ASC LIMIT 1'
+    ).bind(user.id).first();
+    if (sisa) {
+      await c.env.DB.batch([
+        c.env.DB.prepare('UPDATE addresses SET is_default = 1 WHERE id = ?').bind(sisa.id),
+        cerminUtama(c.env.DB, user.id, sisa),
+      ]);
+    }
+  }
   return c.redirect('/akun/alamat?ok=1');
 });
 
@@ -1273,7 +1391,10 @@ app.get('/pasar/:id/beli', async (c) => {
     .bind(c.req.param('id')).first();
   if (!p) return c.notFound();
   if (p.seller_id === user.id) return c.redirect(`/pasar/${p.id}`);
-  return c.html(renderCheckoutPage(user, p, await sellerBalance(c.env.DB, user.id)));
+  const addr = await c.env.DB.prepare(
+    'SELECT * FROM addresses WHERE user_id = ? ORDER BY is_default DESC, created_at ASC LIMIT 5'
+  ).bind(user.id).all();
+  return c.html(renderCheckoutPage(user, p, await sellerBalance(c.env.DB, user.id), addr.results || []));
 });
 
 app.post('/api/pasar/orders', async (c) => {
@@ -1393,14 +1514,35 @@ app.post('/api/pasar/orders', async (c) => {
     throw e;
   }
   if (body.save_address) {
+    const pId = String(body.dest_province_id || '').slice(0, 20) || null;
+    const pNm = String(body.dest_province_name || '').slice(0, 120) || null;
+    const cId = String(body.dest_city_id || '').slice(0, 20) || null;
+    const cNm = String(body.dest_city_name || '').slice(0, 120) || null;
+    // Cermin ke users.addr_* (kode lama) + masukkan ke buku alamat kalau belum ada & masih < 5.
     await c.env.DB.prepare(
       `UPDATE users SET addr_receiver = ?, addr_phone = ?, addr_postal = ?, addr_text = ?,
          addr_province_id = ?, addr_province_name = ?, addr_city_id = ?, addr_city_name = ?,
          addr_district_id = ?, addr_district_name = ? WHERE id = ?`
-    ).bind(receiverName, receiverPhone, postalCode, destAddress,
-      String(body.dest_province_id || '').slice(0, 20) || null, String(body.dest_province_name || '').slice(0, 120) || null,
-      String(body.dest_city_id || '').slice(0, 20) || null, String(body.dest_city_name || '').slice(0, 120) || null,
+    ).bind(receiverName, receiverPhone, postalCode, destAddress, pId, pNm, cId, cNm,
       destId, destName || null, me.id).run();
+
+    const sama: any = await c.env.DB.prepare(
+      'SELECT id FROM addresses WHERE user_id = ? AND district_id = ? AND text = ? LIMIT 1'
+    ).bind(me.id, destId, destAddress).first();
+    if (!sama) {
+      const jml: any = await c.env.DB.prepare('SELECT COUNT(*) AS n FROM addresses WHERE user_id = ?').bind(me.id).first();
+      if (Number(jml?.n || 0) < 5) {
+        await c.env.DB.batch([
+          c.env.DB.prepare('UPDATE addresses SET is_default = 0 WHERE user_id = ?').bind(me.id),
+          c.env.DB.prepare(
+            `INSERT INTO addresses (id, user_id, label, receiver, phone, postal, text,
+               province_id, province_name, city_id, city_name, district_id, district_name, is_default)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,1)`
+          ).bind(crypto.randomUUID(), me.id, 'Alamat baru', receiverName, receiverPhone, postalCode,
+            destAddress, pId, pNm, cId, cNm, destId, destName || null),
+        ]);
+      }
+    }
   }
   return c.json({ ok: true, id });
 });
