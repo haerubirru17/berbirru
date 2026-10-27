@@ -66,6 +66,8 @@ export function renderTokoPublikPage(toko: any, listings: any[], opts: { isOwner
   const url = `${opts.baseUrl}/toko/${toko.shop_slug}`;
   const bukuAktif = listings.length;
   const selesai = Number(toko.transaksi_selesai || 0);
+  const ulasanN = Number(toko.ulasan_n || 0);
+  const ulasanAvg = Number(toko.ulasan_avg || 0);
   const sejak = toko.created_at ? new Date(String(toko.created_at).replace(' ', 'T') + 'Z').toLocaleDateString('id-ID', { month: 'short', year: 'numeric' }) : '—';
 
   let fotoOg = `${opts.baseUrl}/og-image.png`;
@@ -104,6 +106,7 @@ ${PASAR_BASE_CSS}
     <div class="stats">
       <div class="stat"><b>${bukuAktif}</b><span>Buku aktif</span></div>
       <div class="stat"><b>${selesai}</b><span>Transaksi selesai</span></div>
+      ${ulasanN ? `<div class="stat"><b>${ulasanAvg.toFixed(1).replace('.', ',')} ★</b><span>${ulasanN} ulasan</span></div>` : ''}
     </div>
   </div>
 

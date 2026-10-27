@@ -1035,10 +1035,29 @@ app.post('/api/pasar/ongkir', async (c) => {
 
 app.get('/pasar', async (c) => {
   const user = await getAuthUser(c);
-  const listings = await c.env.DB.prepare(
-    "SELECT id, seller_id, title, cond, price, shipping_flat, photos FROM listings WHERE status = 'active' ORDER BY created_at DESC LIMIT 100"
-  ).all();
-  return c.html(renderPasarPage(user, listings.results || []));
+  // Filter dicari di server: 100 judul pun tetap satu query, tanpa JS.
+  const q = String(c.req.query('q') || '').trim().slice(0, 60);
+  const cond = ['baru', 'bekas_bagus', 'bekas_layak'].includes(String(c.req.query('cond') || '')) ? String(c.req.query('cond')) : '';
+  const sort = ['baru', 'murah', 'mahal'].includes(String(c.req.query('sort') || '')) ? String(c.req.query('sort')) : 'baru';
+  const max = Math.max(0, Math.min(100_000_000, Number.parseInt(String(c.req.query('max') || '0'), 10) || 0));
+
+  let sql = "SELECT id, seller_id, title, cond, price, shipping_flat, photos FROM listings WHERE status = 'active'";
+  const binds: any[] = [];
+  if (q) {
+    const pola = '%' + q.replace(/[\\%_]/g, '\\$&') + '%';
+    sql += " AND (title LIKE ? ESCAPE '\\' OR author LIKE ? ESCAPE '\\')";
+    binds.push(pola, pola);
+  }
+  if (cond) { sql += ' AND cond = ?'; binds.push(cond); }
+  if (max) { sql += ' AND price <= ?'; binds.push(max); }
+  sql += sort === 'murah' ? ' ORDER BY price ASC, created_at DESC'
+    : sort === 'mahal' ? ' ORDER BY price DESC, created_at DESC'
+    : ' ORDER BY created_at DESC';
+  sql += ' LIMIT 100';
+
+  const stmt = c.env.DB.prepare(sql);
+  const listings = binds.length ? await stmt.bind(...binds).all() : await stmt.all();
+  return c.html(renderPasarPage(user, listings.results || [], { q, cond, sort, max }));
 });
 
 app.get('/pasar/jual', async (c) => {
@@ -1065,10 +1084,13 @@ app.get('/toko/:slug', async (c) => {
   const done: any = await c.env.DB.prepare(
     "SELECT COUNT(*) AS n FROM orders WHERE seller_id = ? AND status = 'completed'"
   ).bind(toko.id).first();
+  const rate: any = await c.env.DB.prepare(
+    'SELECT COUNT(*) AS n, AVG(stars) AS avg FROM reviews WHERE seller_id = ?'
+  ).bind(toko.id).first();
   const me = await getAuthUser(c);
   const baseUrl = new URL(c.req.url).origin;
   return c.html(renderTokoPublikPage(
-    { ...toko, transaksi_selesai: Number(done?.n || 0) },
+    { ...toko, transaksi_selesai: Number(done?.n || 0), ulasan_n: Number(rate?.n || 0), ulasan_avg: Number(rate?.avg || 0) },
     rows.results || [],
     { isOwner: !!me && me.id === toko.id, baseUrl },
   ));
@@ -1286,6 +1308,9 @@ app.get('/pasar/order/:id', async (c) => {
   if (!p) return c.notFound();
   const ev = await c.env.DB.prepare('SELECT actor, note, to_st, created_at FROM order_events WHERE order_id = ? ORDER BY id').bind(o.id).all();
   o.events = ev.results || [];
+  const rv: any = await c.env.DB.prepare('SELECT stars, body FROM reviews WHERE order_id = ?').bind(o.id).first();
+  o.review_stars = rv ? Number(rv.stars) : 0;
+  o.review_body = rv?.body || '';
   let photos: string[] = [];
   try { photos = JSON.parse(p.photos || '[]'); } catch { photos = []; }
   return c.html(renderOrderPage(o, p, photos, user));
@@ -1341,6 +1366,43 @@ const KURIR_MAP: Record<string, string> = { 'JNE': 'jne', 'J&T': 'jnt', 'SiCepat
 // Penjual tandai serah: mode "cod" (COD/antar/kurir sendiri) atau "ekspedisi"
 // (kurir + resi WAJIB → bukti trackable pembeli + admin). Guard WHERE status='paid' (idempoten).
 // Daftar kurir + URL lacak = TRACK_URLS di src/web/pasar.ts (satu sumber).
+// Pembeli membatalkan pesanan yang belum dibayar (stok belum terkunci).
+app.post('/api/pasar/order/:id/cancel', async (c) => {
+  const me = await getAuthUser(c);
+  if (!me) return c.json({ error: 'Masuk dulu' }, 401);
+  const o: any = await c.env.DB.prepare('SELECT id, buyer_id, status FROM orders WHERE id = ?').bind(c.req.param('id')).first();
+  if (!o || o.buyer_id !== me.id) return c.json({ error: 'Pesanan tidak ditemukan' }, 404);
+  if (o.status !== 'created') return c.json({ error: 'Pesanan sudah dibayar — pakai tombol Ada Masalah' }, 409);
+  const res = await c.env.DB.prepare(
+    "UPDATE orders SET status = 'cancelled', updated_at = datetime('now') WHERE id = ? AND status = 'created'"
+  ).bind(o.id).run();
+  if ((res.meta?.changes || 0) === 0) return c.json({ error: 'Pesanan sudah berubah status' }, 409);
+  await logOrderEvent(c.env.DB, o.id, 'buyer', 'created', 'cancelled', 'Dibatalkan pembeli sebelum dibayar');
+  return c.json({ ok: true });
+});
+
+// Ulasan hanya dari pembeli, hanya setelah selesai, sekali per pesanan (UNIQUE order_id).
+app.post('/api/pasar/order/:id/review', async (c) => {
+  const me = await getAuthUser(c);
+  if (!me) return c.json({ error: 'Masuk dulu' }, 401);
+  const o: any = await c.env.DB.prepare('SELECT id, buyer_id, seller_id, listing_id, status FROM orders WHERE id = ?').bind(c.req.param('id')).first();
+  if (!o || o.buyer_id !== me.id) return c.json({ error: 'Pesanan tidak ditemukan' }, 404);
+  if (o.status !== 'completed') return c.json({ error: 'Ulasan bisa ditulis setelah pesanan selesai' }, 409);
+  const body: any = await c.req.json().catch(() => ({}));
+  const stars = Number(body?.stars || 0);
+  if (!(stars >= 1 && stars <= 5)) return c.json({ error: 'Pilih bintang 1–5' }, 400);
+  const teks = String(body?.body || '').trim().slice(0, 300);
+  try {
+    await c.env.DB.prepare(
+      'INSERT INTO reviews (id, order_id, listing_id, seller_id, buyer_id, stars, body) VALUES (?,?,?,?,?,?,?)'
+    ).bind(crypto.randomUUID(), o.id, o.listing_id, o.seller_id, me.id, stars, teks || null).run();
+  } catch (e: any) {
+    if (String(e?.message || e).includes('UNIQUE')) return c.json({ error: 'Pesanan ini sudah kamu ulas' }, 409);
+    throw e;
+  }
+  return c.json({ ok: true });
+});
+
 app.post('/pasar/order/:id/handover', async (c) => {
   const me = await getAuthUser(c);
   if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);

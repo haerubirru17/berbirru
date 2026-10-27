@@ -40,7 +40,8 @@ export function renderOrderPage(o: any, p: any, photos: string[], viewer: any): 
   // ---- blok aksi ----
   let actions = '';
   if (st === 'created' && isBuyer) {
-    actions = `<a class="btn b-yellow" href="${escapeHtml(o.qris_url || '#')}" id="btn-qris">Buka QRIS & Bayar</a>`;
+    actions = `<a class="btn b-yellow" href="${escapeHtml(o.qris_url || '#')}" id="btn-qris">Buka QRIS & Bayar</a>
+      <button class="btn b-ghost" style="margin-top:8px;" onclick="batalkan()">Batalkan pesanan</button>`;
   } else if (st === 'paid' && isSeller) {
     actions = `<button class="btn b-blue" onclick="showHandover()">Tandai Sudah Diserahkan</button>
       <div id="handover-box" style="display:none;margin-top:10px;background:#fff;border:2.5px solid #0B192C;border-radius:12px;padding:12px;">
@@ -66,6 +67,15 @@ export function renderOrderPage(o: any, p: any, photos: string[], viewer: any): 
   } else if (st === 'completed' && isSeller) {
     actions = `<div class="st-sub">Saldo bertambah Rp${(Number(o.price) - 5000 + Number(o.shipping)).toLocaleString('id-ID')} (fee rekber Rp5.000 dipotong).</div>
       <a class="btn b-ghost" style="text-align:center;" href="/saldo">Lihat Saldo & Tarik Dana</a>`;
+  } else if (st === 'completed' && isBuyer) {
+    actions = Number(o.review_stars) > 0
+      ? `<div class="st-sub">Ulasanmu: <b>${'★'.repeat(Number(o.review_stars))}${'☆'.repeat(5 - Number(o.review_stars))}</b>${o.review_body ? ` — “${escapeHtml(o.review_body)}”` : ''}</div>`
+      : `<div class="st-sub" style="margin-bottom:8px;">Bagaimana bukunya? Ulasan membantu pembeli lain.</div>
+        <div class="chip-pick" id="rvStars">
+          ${[1, 2, 3, 4, 5].map((n) => `<button type="button" class="chip${n === 5 ? ' on' : ''}" data-n="${n}" onclick="pilihBintang(${n})">${n} ★</button>`).join('')}
+        </div>
+        <textarea id="rvBody" maxlength="300" placeholder="Ceritakan kondisi buku & pelayanan penjual (opsional)" style="width:100%;min-height:70px;margin-top:8px;border:2.5px solid #0B192C;padding:9px;font:600 13px 'DM Sans';border-radius:10px;"></textarea>
+        <button class="btn b-blue" style="margin-top:8px;" onclick="kirimUlasan()">Kirim ulasan</button>`;
   } else if (st === 'refunded') {
     actions = `<div class="st-sub">Owner memutuskan dana dikembalikan ke pembeli. Penjual tidak menerima saldo untuk pesanan ini.</div>`;
   }
@@ -154,6 +164,9 @@ function hmodeBox(){const eksp=document.querySelector('input[name=hmode]:checked
 async function handover(){try{const m=document.querySelector('input[name=hmode]:checked').value;await post(location.pathname+'/handover',{mode:m,kurir:(document.getElementById('kurir')||{}).value,resi:(document.getElementById('resi')||{}).value});location.reload();}catch(e){alerterr(e)}}
 async function receive(){try{await post(location.pathname+'/receive');location.reload();}catch(e){alerterr(e)}}
 async function sendDispute(){try{await post(location.pathname+'/dispute',{note:document.getElementById('dispute-note').value});location.reload();}catch(e){alerterr(e)}}
+let rvN=5;function pilihBintang(n){rvN=n;document.querySelectorAll('#rvStars .chip').forEach(function(b){b.classList.toggle('on',Number(b.dataset.n)===n)})}
+async function batalkan(){if(!confirm('Batalkan pesanan ini? Buku akan dilepas lagi.'))return;try{await post('/api/pasar/order/'+${JSON.stringify(o.id)}+'/cancel');location.reload();}catch(e){alerterr(e)}}
+async function kirimUlasan(){try{await post('/api/pasar/order/'+${JSON.stringify(o.id)}+'/review',{stars:rvN,body:(document.getElementById('rvBody')||{}).value||''});location.reload();}catch(e){alerterr(e)}}
 async function cekStatus(){const b=document.getElementById('track-box');b.innerHTML='<div class="st-sub">Menghubungi kurir…</div>';try{const j=await post(location.pathname+'/track');if(j.ok){b.innerHTML='<div style="margin-top:10px;border:2.5px solid #0B192C;border-radius:10px;padding:10px;background:#fff;"><div style="font-weight:800;">'+(j.status||'-')+'</div>'+(j.desc?'<div class="st-sub">'+j.desc+'</div>':'')+(j.history||[]).slice(0,3).map(h=>'<div class="st-sub" style="border-top:1px dashed #CBD5E1;margin-top:6px;padding-top:6px;">'+h.date+' — '+h.desc+'</div>').join('')+'</div>';}else{b.innerHTML='<div class="st-sub">'+j.error+' — coba "Buka Web Kurir".</div>';}}catch(e){alerterr(e);b.innerHTML='';}}
 function alerterr(e){const el=document.getElementById('err');el.textContent=e.message;el.style.display='block';}
 // polling status kalau masih menunggu bayar
