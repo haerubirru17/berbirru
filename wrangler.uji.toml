@@ -27,6 +27,9 @@ KLIKQRIS_API_URL = "https://klikqris.com/api/sandbox/qris/create"
 KLIKQRIS_CALLBACK_URL = "https://berbirru-uji.haerubirru17.workers.dev/api/klikqris/webhook"
 # BINDERBYTE_KEY disimpan sebagai Worker Secret, bukan di Git.
 
+[assets]
+directory = "./public"
+
 [observability]
 enabled = true
 

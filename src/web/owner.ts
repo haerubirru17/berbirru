@@ -1,54 +1,48 @@
-// Halaman owner: putuskan sengketa (refund / lepas dana) + setujui pencairan saldo penjual.
-// Setiap keputusan WAJIB disertai catatan — itu satu-satunya bukti kalau nanti ada protes.
+// Halaman owner — konsol admin (Tabler, dual mode terang/gelap).
+// Isi & alur keputusan tidak berubah: setiap keputusan wajib bercatatan sebagai bukti.
 import { escapeHtml } from '../lib/sanitize';
-import { PASAR_BASE_CSS, rupiah } from './pasar';
+import { rupiah } from './pasar';
 
 const PAGE_CSS = `
-  .wrap{width:min(760px,calc(100% - 28px));margin:auto;padding:18px 0 120px}
-  .page-head{margin:8px 0 22px}.page-head h1{margin:0 0 8px;font:700 clamp(36px,6vw,56px)/.95 'Newsreader';letter-spacing:-.04em}
-  .page-head p{margin:0;color:#52627A;line-height:1.6}
-  .st-card{background:#fff;border:3px solid #0B192C;box-shadow:6px 7px 0 #26364A;padding:18px;margin-bottom:16px}
-  .st-big{font:700 20px 'Newsreader'}.st-sub{font-size:12px;font-weight:600;color:#475569;margin-top:6px;line-height:1.55}
-  .kw{background:#FFFDF2;border:2px solid #0B192C;padding:10px 12px;font-size:12px;font-weight:600;line-height:1.6;color:#334155;margin-top:10px;word-break:break-word}
-  .sum-row{display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;padding:3px 0;color:#334155}
-  .sum-row.tot{border-top:2px dashed #0B192C;margin-top:8px;padding-top:9px;font:400 15px 'Archivo Black';color:#0F3E99}
-  .btns{display:flex;gap:10px;margin-top:12px}
-  .btn{flex:1;min-height:46px;border:3px solid #0B192C;padding:10px 12px;font-size:13px;font-weight:900;cursor:pointer;box-shadow:3px 4px 0 #26364A;font-family:inherit;background:#fff;color:#0B192C}
-  .btn.b-blue{background:#1D61E7;color:#fff}.btn.b-red{background:#B42318;color:#fff}
-  .btn.b-green{background:#0F7A3D;color:#fff}.btn:active{transform:translate(2px,3px);box-shadow:none}
-  .lbl{font:700 10px 'Roboto Mono';color:#64748B;letter-spacing:.06em;text-transform:uppercase}
-  .empty{color:#64748B;font-size:12.5px;font-weight:600;padding:10px 0}
-  .err{color:#B42318;font-weight:700;font-size:12.5px;margin-top:10px}
-  .ev{margin-top:12px;border:2px dashed #94A3B8;background:#F8FAFC;padding:0}
-  .ev>summary{cursor:pointer;padding:9px 12px;font:800 10.5px 'DM Sans';letter-spacing:.02em;color:#0F3E99;list-style:none}
-  .ev>summary::-webkit-details-marker{display:none}
-  .ev>summary::before{content:'▸ ';font-size:11px}
-  .ev[open]>summary::before{content:'▾ '}
-  .ev .in{padding:0 12px 12px}
-  .tl{list-style:none;margin:0;padding:0}
-  .tl li{position:relative;padding:4px 0 4px 14px;font-size:11.5px;font-weight:600;color:#334155;line-height:1.5}
-  .tl li::before{content:'';position:absolute;left:2px;top:10px;width:6px;height:6px;background:#1D61E7;border:1px solid #0B192C}
-  .tl .t{font:700 9.5px 'Roboto Mono';color:#64748B}
-  .meta{font:700 10.5px 'Roboto Mono';color:#475569;margin-top:8px;line-height:1.7}
-  .warn{background:#FEF3C7;border:2px solid #B45309;color:#7C2D12;font:800 11px 'DM Sans';padding:8px 10px;margin-top:8px}
-  .inp{width:100%;margin-top:6px;min-height:44px;padding:9px 11px;border:2.5px solid #0B192C;background:#fff;font:600 12.5px 'DM Sans';color:#0B192C;outline:none;box-sizing:border-box}
-  textarea.inp{min-height:64px;resize:vertical}
-  .inp:focus{box-shadow:3px 3px 0 #1D61E7}
-  .field{margin-top:12px}
+  body{background:var(--tblr-bg-surface-secondary)}
+  .navbar-vertical.navbar-expand-lg{width:238px;position:sticky;top:0;height:100vh;border-right:1px solid var(--tblr-border-color);padding-top:2px}
+  .navbar-vertical .navbar-collapse{display:block!important}
+  .page-wrapper{display:grid;grid-template-columns:238px minmax(0,1fr);align-items:start}
+  .brandmark{width:30px;height:30px;border-radius:8px;background:linear-gradient(140deg,#3DD6D0,#1D61E7);display:grid;place-items:center;font-weight:800;color:#04121F;font-size:14px}
+  .badge-owner{background:#1D61E7;color:#fff;font-weight:700;letter-spacing:.06em}
+  .num{font-variant-numeric:tabular-nums;font-weight:700;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .muted{color:var(--tblr-secondary);font-size:.78rem;line-height:1.45}
+  .table td,.table th{vertical-align:middle}
+  .table-sm td,.table-sm th{padding:.5rem .6rem}
+  .sect{scroll-margin-top:70px}
+  .navmobile{display:none;gap:6px;overflow-x:auto;padding:8px 12px;border-bottom:1px solid var(--tblr-border-color);background:var(--tblr-bg-surface);position:sticky;top:0;z-index:20}
+  .navmobile a{white-space:nowrap;font-size:13px;font-weight:600;color:var(--tblr-secondary);text-decoration:none;padding:6px 10px;border-radius:8px;background:var(--tblr-bg-surface-secondary)}
+  .navmobile a.on{background:#1D61E7;color:#fff}
   .trk{margin-top:8px}
-  .trk .row{border-left:3px solid #1D61E7;padding:5px 0 5px 10px;margin-bottom:6px;background:#F8FAFC}
-  .trk .d{font:700 9.5px 'Roboto Mono';color:#64748B}
-  .trk .m{font:700 11.5px 'DM Sans';color:#0B192C;line-height:1.45}
-  .trk .l{font:600 10.5px 'DM Sans';color:#475569}
-  .trk .bad{color:#B42318;font-weight:800;font-size:11.5px}
-  .trk .ok{color:#0F7A3D;font-weight:800;font-size:11.5px}
+  .trk .row{border-left:3px solid #1D61E7;padding:5px 0 5px 10px;margin-bottom:6px;background:var(--tblr-bg-surface-secondary);border-radius:0 6px 6px 0}
+  .trk .d{font-weight:700;font-size:.68rem;color:var(--tblr-secondary)}
+  .trk .m{font-weight:600;font-size:.78rem}
+  .trk .l{font-size:.72rem;color:var(--tblr-secondary)}
+  .trk .bad{color:#D63939;font-weight:700;font-size:.78rem}
+  .trk .ok{color:#2FB344;font-weight:700;font-size:.78rem}
+  @media(max-width:991px){
+    .page-wrapper{grid-template-columns:minmax(0,1fr)}
+    .navbar-vertical.navbar-expand-lg{display:none}
+    .navmobile{display:flex}
+  }
+  @media(max-width:576px){
+    .h1{font-size:1.25rem}.card-body{padding:.8rem}.page-header .btn-list{flex-wrap:nowrap;overflow-x:auto}
+  }
 `;
+
+// Terapkan tema sebelum paint: simpan pilihan, default ikut preferensi sistem.
+const THEME_JS = `(function(){try{var t=localStorage.getItem('owner-theme')||(window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.setAttribute('data-bs-theme',t)}catch(e){document.documentElement.setAttribute('data-bs-theme','dark')}})();`;
 
 const rp = (n: any) => rupiah(Number(n || 0));
 const tgl = (s: any) => escapeHtml(String(s || '').slice(0, 16).replace('T', ' '));
 
 function stats(label: string, s: any): string {
-  return `<div class="meta">${label}: ${Number(s?.selesai || 0)} transaksi selesai · ${Number(s?.sengketa || 0)} sengketa · akun sejak ${tgl(s?.sejak) || '—'}</div>`;
+  return `<div class="muted">${label}: ${Number(s?.selesai || 0)} transaksi selesai · ${Number(s?.sengketa || 0)} sengketa · akun sejak ${tgl(s?.sejak) || '—'}</div>`;
 }
 
 const AKSI_LABEL: Record<string, string> = {
@@ -59,6 +53,8 @@ const AKSI_LABEL: Record<string, string> = {
   withdrawal_pay: 'Cairkan saldo',
   withdrawal_reject: 'Tolak pencairan',
   sweep: 'Sweep manual',
+  listing_remove: 'Sembunyikan buku',
+  listing_ignore: 'Abaikan laporan',
 };
 
 const ALASAN: Record<string, string> = {
@@ -70,150 +66,276 @@ const ALASAN: Record<string, string> = {
 };
 
 export function renderOwnerPage(disputes: any[], withdrawals: any[], calonPenjual: any[] = [], audit: any[] = [], liab: { saldo?: number; escrow?: number; fee?: number } = {}, laporan: any[] = []): string {
-  const dispCards = (disputes || []).map((o) => `
-    <div class="st-card">
-      <div class="lbl">Sengketa · ${tgl(o.updated_at)}</div>
-      <div class="st-big">${escapeHtml(o.title || 'Buku')}</div>
-      <div class="st-sub">Pembeli @${escapeHtml(o.buyer_name || '?')} · Penjual @${escapeHtml(o.seller_name || '?')}</div>
-      <div class="kw">${escapeHtml(o.kesepakatan || '—')}</div>
-      ${o.kurir && o.resi ? `<div class="st-sub">${escapeHtml(o.kurir)} · resi ${escapeHtml(o.resi)} · ${Number(o.resi_verified) ? 'terverifikasi kurir' : 'BELUM terverifikasi'}</div>
-      <button class="btn b-blue" style="margin-top:8px" onclick="lacak('${escapeHtml(o.id)}',this)">Lihat riwayat pengiriman (${escapeHtml(o.kurir)})</button>
-      <div class="trk" id="trk-${escapeHtml(o.id)}"></div>` : '<div class="st-sub">Tanpa ekspedisi (COD / antar langsung)</div>'}
-      <div class="sum-row"><span>Harga buku</span><span>${rp(o.price)}</span></div>
-      <div class="sum-row"><span>Ongkir</span><span>${rp(o.shipping)}</span></div>
-      <div class="sum-row tot"><span>Dana ditahan</span><span>${rp(o.qris_final_amount || Number(o.price) + Number(o.shipping || 0))}</span></div>
-
-      <details class="ev"><summary>Lihat bukti &amp; riwayat (${(o.events || []).length} kejadian)</summary>
-        <div class="in">
-          ${o.receiver_name ? `<div class="meta">Penerima: ${escapeHtml(o.receiver_name)} · ${escapeHtml(o.receiver_phone || '—')} · ${escapeHtml(o.dest_district_name || '')} ${escapeHtml(o.postal_code || '')}</div>
-          <div class="st-sub" style="margin-top:4px;">${escapeHtml(o.dest_address || '')}</div>` : ''}
-          <div class="meta">Tujuan: ${escapeHtml(o.dest_district_name || o.dest_district_id || '—')}</div>
-          <div class="meta">Dibayar: ${rp(o.qris_final_amount || Number(o.price) + Number(o.shipping || 0))} · Kurir: ${escapeHtml(o.courier_name || o.kurir || '—')} ${escapeHtml(o.service || '')}</div>
-          ${stats('Pembeli', o.buyer_stats)}
-          ${stats('Penjual', o.seller_stats)}
-          <ul class="tl">${(o.events || []).map((e: any) => `<li><span class="t">${tgl(e.created_at)} · ${escapeHtml(e.actor || '?')}${e.from_st ? ' ' + escapeHtml(e.from_st) + ' →' : ''} ${escapeHtml(e.to_st || '')}</span><br>${escapeHtml(e.note || '')}</li>`).join('') || '<li>Belum ada riwayat.</li>'}</ul>
+  const dispRows = (disputes || []).map((o) => `
+    <tr>
+      <td>
+        <div class="fw-bold">${escapeHtml(o.title || 'Buku')}</div>
+        <div class="muted">${escapeHtml(o.id)} · ${tgl(o.updated_at)}<br>${escapeHtml(o.kesepakatan || '—')}</div>
+      </td>
+      <td>
+        <div class="fw-bold">@${escapeHtml(o.buyer_name || '?')}</div><div class="muted">pembeli</div>
+        <div class="fw-bold mt-2">@${escapeHtml(o.seller_name || '?')}</div><div class="muted">penjual</div>
+      </td>
+      <td>
+        <div class="num">${rp(o.qris_final_amount || Number(o.price) + Number(o.shipping || 0))}</div>
+        <div class="muted">${rp(o.price)} + ${rp(o.shipping)} ongkir</div>
+      </td>
+      <td>
+        ${o.kurir && o.resi
+          ? `<span class="badge ${Number(o.resi_verified) ? 'bg-cyan-lt' : 'bg-yellow-lt'}">${Number(o.resi_verified) ? 'terverifikasi' : 'belum terverifikasi'}</span>
+             <div class="muted mt-1">${escapeHtml(o.kurir)} · ${escapeHtml(o.resi)}</div>
+             <button class="btn btn-sm btn-outline-secondary mt-1" onclick="lacak('${escapeHtml(o.id)}',this)">Riwayat kirim</button>
+             <div class="trk" id="trk-${escapeHtml(o.id)}"></div>`
+          : '<div class="muted">Tanpa ekspedisi</div>'}
+      </td>
+      <td class="d-none d-lg-table-cell">
+        <details>
+          <summary class="small text-secondary">Bukti &amp; riwayat (${(o.events || []).length})</summary>
+          <div class="mt-2">
+            ${o.receiver_name ? `<div class="muted">Penerima: ${escapeHtml(o.receiver_name)} · ${escapeHtml(o.receiver_phone || '—')} · ${escapeHtml(o.dest_district_name || '')} ${escapeHtml(o.postal_code || '')}</div>
+            <div class="small">${escapeHtml(o.dest_address || '')}</div>` : ''}
+            <div class="muted mt-1">Kurir: ${escapeHtml(o.courier_name || o.kurir || '—')} ${escapeHtml(o.service || '')}</div>
+            ${stats('Pembeli', o.buyer_stats)}
+            ${stats('Penjual', o.seller_stats)}
+            <ul class="list-unstyled mt-2 mb-0">
+              ${(o.events || []).map((e: any) => `<li class="mb-1"><span class="muted">${tgl(e.created_at)} · ${escapeHtml(e.actor || '?')}${e.from_st ? ' ' + escapeHtml(e.from_st) + ' →' : ''} ${escapeHtml(e.to_st || '')}</span><br><span class="small">${escapeHtml(e.note || '')}</span></li>`).join('') || '<li class="muted">Belum ada riwayat.</li>'}
+            </ul>
+          </div>
+        </details>
+      </td>
+      <td class="w-1">
+        <input class="form-control form-control-sm mb-2" id="note-${escapeHtml(o.id)}" maxlength="300" placeholder="Alasan keputusan (wajib)">
+        <div class="btn-list flex-nowrap">
+          <button class="btn btn-sm btn-outline-danger" onclick="resolve('${escapeHtml(o.id)}','refund',this)">Refund</button>
+          <button class="btn btn-sm btn-outline-success" onclick="resolve('${escapeHtml(o.id)}','release',this)">Lepas</button>
         </div>
-      </details>
+      </td>
+    </tr>`).join('');
 
-      <div class="field"><label class="lbl">Alasan keputusan (wajib)</label>
-        <textarea class="inp" id="note-${escapeHtml(o.id)}" maxlength="300" placeholder="Contoh: resi terverifikasi & pembeli tidak respons 3 hari."></textarea>
-      </div>
-      <div class="btns">
-        <button class="btn b-red" onclick="resolve('${escapeHtml(o.id)}','refund',this)">Refund ke Saldo Pembeli</button>
-        <button class="btn b-green" onclick="resolve('${escapeHtml(o.id)}','release',this)">Lepas ke Penjual</button>
-      </div>
-    </div>`).join('') || `<div class="empty">Tidak ada sengketa menunggu.</div>`;
-
-  const wdCards = (withdrawals || []).map((w) => `
-    <div class="st-card">
-      <div class="lbl">${w.kind === 'buyer' ? 'Pencairan Pembeli (refund)' : 'Pencairan Penjual'} · ${tgl(w.requested_at)}</div>
-      <div class="st-big">${rp(w.amount)}</div>
-      <div class="st-sub">@${escapeHtml(w.pen_name || '?')} · ${escapeHtml(w.method || 'qris')} · ${escapeHtml(w.account || '—')}</div>
-      <div class="sum-row" style="margin-top:8px;"><span>Transfer ke pengguna</span><span><b>${rp(w.amount)}</b></span></div>
-      ${Number(w.fee) > 0
-        ? `<div class="sum-row"><span>Biaya tarik (masuk kas)</span><span>${rp(w.fee)}</span></div>
-           <div class="sum-row"><span>Total saldo terpakai</span><span>${rp(Number(w.amount) + Number(w.fee))}</span></div>`
-        : '<div class="sum-row"><span>Biaya tarik</span><span>Rp0 (pembeli)</span></div>'}
-      ${Number(w.sengketa_aktif) > 0 ? `<div class="warn">⚠ Ada ${Number(w.sengketa_aktif)} sengketa aktif milik penjual ini — jangan cairkan sebelum diputuskan.</div>` : ''}
-
-      <details class="ev"><summary>Lihat rincian saldo &amp; riwayat</summary>
-        <div class="in">
-          <div class="sum-row"><span>Saldo saat ini</span><span>${rp(w.saldo)}</span></div>
-          <div class="sum-row"><span>Diminta</span><span>${rp(w.amount)}</span></div>
-          ${(w.ledger_ringkas || []).map((l: any) => `<div class="sum-row"><span>${escapeHtml(l.kind)}</span><span>${rp(l.total)}</span></div>`).join('') || '<div class="st-sub">Belum ada mutasi saldo.</div>'}
-          <div class="meta">Riwayat pencairan selesai: ${Number(w.riwayat_pencairan?.jumlah || 0)}× · total ${rp(w.riwayat_pencairan?.total)}</div>
-          <div class="meta">Sengketa aktif: ${Number(w.sengketa_aktif)}</div>
+  const wdRows = (withdrawals || []).map((w) => `
+    <tr>
+      <td>
+        <div class="fw-bold">@${escapeHtml(w.pen_name || '?')}</div>
+        <div class="muted">${escapeHtml(w.method || 'qris')} · ${escapeHtml(w.account || '—')} · ${tgl(w.requested_at)}</div>
+      </td>
+      <td><span class="badge ${w.kind === 'buyer' ? 'bg-cyan-lt' : 'bg-green-lt'}">${w.kind === 'buyer' ? 'pembeli · refund' : 'penjual'}</span></td>
+      <td><div class="num">${rp(w.amount)}</div></td>
+      <td>
+        <div class="num">${Number(w.fee) > 0 ? rp(w.fee) : 'Rp0'}</div>
+        <div class="muted">${Number(w.fee) > 0 ? 'masuk kas' : 'bebas biaya'}</div>
+      </td>
+      <td class="d-none d-lg-table-cell">
+        <details>
+          <summary class="small text-secondary">Rincian saldo</summary>
+          <div class="mt-2">
+            <div class="muted">Saldo saat ini: <b class="num text-body">${rp(w.saldo)}</b></div>
+            <div class="muted">Total terpakai: <b class="num text-body">${rp(Number(w.amount) + Number(w.fee))}</b></div>
+            ${(w.ledger_ringkas || []).map((l: any) => `<div class="muted">${escapeHtml(l.kind)}: ${rp(l.total)}</div>`).join('') || '<div class="muted">Belum ada mutasi.</div>'}
+            <div class="muted mt-1">Pencairan selesai: ${Number(w.riwayat_pencairan?.jumlah || 0)}× · ${rp(w.riwayat_pencairan?.total)}</div>
+            <div class="muted">Sengketa aktif: ${Number(w.sengketa_aktif)}</div>
+          </div>
+        </details>
+        ${Number(w.sengketa_aktif) > 0 ? `<span class="badge bg-red-lt mt-1">${Number(w.sengketa_aktif)} sengketa aktif</span>` : ''}
+      </td>
+      <td class="w-1">
+        <input class="form-control form-control-sm mb-1" id="wnote-${escapeHtml(w.id)}" maxlength="300" placeholder="Catatan keputusan (wajib)">
+        <input class="form-control form-control-sm mb-2" id="wref-${escapeHtml(w.id)}" maxlength="80" placeholder="Ref / bukti transfer">
+        <div class="btn-list flex-nowrap">
+          <button class="btn btn-sm btn-success" onclick="settle('${escapeHtml(w.id)}','pay',this)">Sudah ditransfer</button>
+          <button class="btn btn-sm btn-outline-danger" onclick="settle('${escapeHtml(w.id)}','reject',this)">Tolak</button>
         </div>
-      </details>
-
-      <div class="field"><label class="lbl">Catatan keputusan (wajib)</label>
-        <textarea class="inp" id="wnote-${escapeHtml(w.id)}" maxlength="300" placeholder="Contoh: transfer BCA 26/10 14:20, nama penerima cocok."></textarea>
-      </div>
-      <div class="field"><label class="lbl">Referensi / bukti transfer (wajib untuk transfer)</label>
-        <input class="inp" id="wref-${escapeHtml(w.id)}" maxlength="80" placeholder="No. referensi / 4 digit terakhir / ID transaksi">
-      </div>
-      <div class="btns">
-        <button class="btn b-green" onclick="settle('${escapeHtml(w.id)}','pay',this)">Sudah Ditransfer</button>
-        <button class="btn b-red" onclick="settle('${escapeHtml(w.id)}','reject',this)">Tolak</button>
-      </div>
-    </div>`).join('') || `<div class="empty">Tidak ada permintaan pencairan.</div>`;
-
-  const laporCards = (laporan || []).map((r) => `
-    <div class="st-card">
-      <div class="lbl">Laporan · ${tgl(r.created_at)} · ${Number(r.jumlah)} pelapor</div>
-      <div class="st-big">${escapeHtml(r.title || 'Buku')}</div>
-      <div class="st-sub">Penjual @${escapeHtml(r.seller_name || '?')} · ${rp(r.price)} · rekam jejak: ${Number(r.trx_selesai)} transaksi selesai, ${Number(r.sengketa)} sengketa</div>
-      <div class="kw">${(r.items || []).map((i: any) => `${escapeHtml(ALASAN[i.reason] || i.reason)} — @${escapeHtml(i.reporter)}${i.note ? `\n“${escapeHtml(i.note)}”` : ''}`).join('\n\n')}</div>
-      <div class="field"><label class="lbl">Catatan keputusan (wajib)</label>
-        <textarea class="inp" id="rnote-${escapeHtml(r.listing_id)}" maxlength="300" placeholder="Contoh: foto tidak sesuai, 3 pelapor berbeda, buku disembunyikan."></textarea>
-      </div>
-      <div class="btns">
-        <button class="btn b-red" onclick="putusLaporan('${escapeHtml(r.listing_id)}','hide',this)">Sembunyikan Buku</button>
-        <button class="btn" onclick="putusLaporan('${escapeHtml(r.listing_id)}','ignore',this)">Abaikan Laporan</button>
-      </div>
-    </div>`).join('') || `<div class="empty">Tidak ada laporan listing.</div>`;
+      </td>
+    </tr>`).join('');
 
   const sellerCards = (calonPenjual || []).map((u) => `
-    <div class="st-card">
-      <div class="lbl">Pengajuan · ${tgl(u.seller_applied_at)}</div>
-      <div class="st-big">${escapeHtml(u.shop_name || '(tanpa nama toko)')}</div>
-      <div class="st-sub">${escapeHtml(u.seller_full_name || u.pen_name)} · @${escapeHtml(u.pen_name)} · ${escapeHtml(u.city || '-')} · ${Number(u.listing_aktif || 0)} listing aktif</div>
-      <div class="kw">WA: ${escapeHtml(u.seller_phone || '—')}
-Pemilik rekening: ${escapeHtml(u.seller_bank_name || '—')}
-Tujuan pencairan: ${escapeHtml(u.seller_bank_account || '—')}${u.seller_note ? `
+    <div class="list-group-item">
+      <div class="d-flex justify-content-between align-items-start gap-2">
+        <div>
+          <div class="fw-bold">${escapeHtml(u.shop_name || '(tanpa nama toko)')}</div>
+          <div class="muted">${escapeHtml(u.seller_full_name || u.pen_name)} · @${escapeHtml(u.pen_name)} · ${escapeHtml(u.city || '-')} · ${Number(u.listing_aktif || 0)} listing aktif</div>
+        </div>
+        <span class="badge bg-yellow-lt">menunggu</span>
+      </div>
+      <div class="row g-2 mt-1 muted">
+        <div class="col-sm-4">WA: <span class="text-body">${escapeHtml(u.seller_phone || '—')}</span></div>
+        <div class="col-sm-4">Rekening: <span class="text-body">${escapeHtml(u.seller_bank_name || '—')} ${escapeHtml(u.seller_bank_account || '')}</span></div>
+        <div class="col-sm-4">Pengajuan: <span class="text-body">${tgl(u.seller_applied_at)}</span></div>
+      </div>
+      ${u.seller_note ? `<div class="small text-secondary mt-1">${escapeHtml(u.seller_note)}</div>` : ''}
+      <div class="input-group input-group-sm mt-2">
+        <input class="form-control" id="snote-${escapeHtml(u.id)}" maxlength="200" placeholder="Catatan verifikasi">
+        <button class="btn btn-success" onclick="reviewSeller('${escapeHtml(u.id)}','approve',this)">Setujui</button>
+        <button class="btn btn-outline-danger" onclick="reviewSeller('${escapeHtml(u.id)}','reject',this)">Tolak</button>
+      </div>
+    </div>`).join('');
 
-${escapeHtml(u.seller_note)}` : ''}</div>
-      <div class="field"><label class="lbl">Catatan verifikasi</label>
-        <input class="inp" id="snote-${escapeHtml(u.id)}" maxlength="200" placeholder="Contoh: WA dicek 26/10, nama rekening cocok.">
+  const laporCards = (laporan || []).map((r) => `
+    <div class="list-group-item">
+      <div class="d-flex justify-content-between align-items-start gap-2">
+        <div>
+          <div class="fw-bold">${escapeHtml(r.title || 'Buku')}</div>
+          <div class="muted">@${escapeHtml(r.seller_name || '?')} · ${rp(r.price)} · ${Number(r.jumlah)} pelapor · ${tgl(r.created_at)}</div>
+        </div>
+        <span class="badge bg-red-lt">dilaporkan</span>
       </div>
-      <div class="btns">
-        <button class="btn b-green" onclick="reviewSeller('${escapeHtml(u.id)}','approve',this)">Setujui</button>
-        <button class="btn b-red" onclick="reviewSeller('${escapeHtml(u.id)}','reject',this)">Tolak</button>
+      <div class="muted mt-1">Rekam jejak: ${Number(r.trx_selesai)} transaksi selesai · ${Number(r.sengketa)} sengketa</div>
+      <div class="border-start border-3 ps-2 mt-2 small text-secondary">
+        ${(r.items || []).map((i: any) => `“${escapeHtml(ALASAN[i.reason] || i.reason)}” — @${escapeHtml(i.reporter)}${i.note ? `<br><span class="muted">${escapeHtml(i.note)}</span>` : ''}`).join('<br>')}
       </div>
-    </div>`).join('') || `<div class="empty">Tidak ada pengajuan penjual.</div>`;
+      <input class="form-control form-control-sm mt-2" id="rnote-${escapeHtml(r.listing_id)}" maxlength="300" placeholder="Catatan keputusan (wajib)">
+      <div class="btn-list mt-2">
+        <button class="btn btn-sm btn-danger" onclick="putusLaporan('${escapeHtml(r.listing_id)}','hide',this)">Sembunyikan buku</button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="putusLaporan('${escapeHtml(r.listing_id)}','ignore',this)">Abaikan laporan</button>
+      </div>
+    </div>`).join('');
+
+  const auditRows = (audit || []).map((a) => `
+    <div class="list-group-item">
+      <span class="muted num me-2">${tgl(a.created_at)}</span>
+      <span class="fw-semibold">${escapeHtml(AKSI_LABEL[a.action] || a.action)}</span>
+      <span class="muted">· ${escapeHtml(a.target_type === 'system' || !a.target_id ? 'Sistem' : (a.target_type === 'order' ? 'Order ' : a.target_type === 'user' ? 'Akun ' : 'Kotak ') + a.target_id)}</span>
+      ${a.note ? `<div class="small text-secondary">“${escapeHtml(a.note)}”</div>` : ''}
+    </div>`).join('');
+
+  const jmlSengketa = (disputes || []).length;
+  const jmlCair = (withdrawals || []).length;
+  const jmlVerif = (calonPenjual || []).length;
+  const jmlLapor = (laporan || []).length;
 
   return `<!DOCTYPE html>
-<html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="id" data-bs-theme="dark"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Owner — Pasar Buku BERBIRRU</title>
-${PASAR_BASE_CSS}
+<script>${THEME_JS}</script>
+<link rel="stylesheet" href="/assets/tabler.min.css">
 <style>${PAGE_CSS}</style></head>
 <body>
-<div class="wrap">
-  <div class="page-head"><h1>Owner</h1><p>Putuskan sengketa dan cairkan saldo penjual. Setiap keputusan menyimpan alasan sebagai bukti.</p></div>
-  <div class="err" id="err"></div>
-  <button class="btn" id="swp" onclick="sweep()" style="margin:0 0 14px;max-width:280px;">Jalankan sweep sekarang</button>
-
-  <div class="st-big" style="margin:18px 0 10px;">Kewajiban Saldo</div>
-  <div class="st-card">
-    <div class="sum-row"><span>Saldo pengguna (bisa ditarik)</span><span><b>${rp(liab.saldo || 0)}</b></span></div>
-    <div class="sum-row"><span>Dana ditahan rekber (escrow)</span><span><b>${rp(liab.escrow || 0)}</b></span></div>
-    <div class="sum-row"><span>Biaya rekber terkumpul</span><span><b>${rp(liab.fee || 0)}</b></span></div>
-    <div class="st-sub">Saldo + escrow = uang orang lain yang harus tersedia di rekeningmu. Siapkan minimal angka itu.</div>
+<header class="navbar navbar-expand-md d-print-none">
+  <div class="container-xl">
+    <div class="navbar-brand navbar-brand-autodark d-flex align-items-center gap-2">
+      <span class="brandmark">B</span><span class="fw-bold">Berbirru</span>
+      <span class="badge badge-owner ms-1">OWNER</span>
+    </div>
+    <div class="navbar-nav flex-row order-md-last align-items-center gap-2">
+      <button class="btn btn-sm btn-ghost-secondary" id="themeBtn" onclick="toggleTheme()" title="Ganti mode terang/gelap" aria-label="Ganti mode terang/gelap">☾</button>
+      <span class="muted d-none d-md-inline">haeru@berbirru.com</span>
+      <span class="avatar avatar-sm">HD</span>
+    </div>
   </div>
+</header>
 
-  <div class="st-big" style="margin:18px 0 10px;">Verifikasi Penjual</div>
-  ${sellerCards}
+<nav class="navmobile">
+  <a class="on" href="#ringkasan">Ringkasan</a>
+  <a href="#sengketa">Sengketa (${jmlSengketa})</a>
+  <a href="#pencairan">Pencairan (${jmlCair})</a>
+  <a href="#verifikasi">Verifikasi (${jmlVerif})</a>
+  <a href="#laporan">Laporan (${jmlLapor})</a>
+  <a href="#jejak">Jejak</a>
+</nav>
 
-  <div class="st-big" style="margin:26px 0 10px;">Laporan Listing</div>
-  ${laporCards}
+<div class="page-wrapper">
+  <aside class="navbar navbar-vertical navbar-expand-lg">
+    <div class="container-fluid">
+      <div class="collapse navbar-collapse show" id="owner-sidebar">
+        <ul class="navbar-nav pt-lg-2">
+          <li class="nav-item active"><a class="nav-link" href="#ringkasan"><span class="nav-link-title">Ringkasan</span></a></li>
+          <li class="nav-item"><a class="nav-link" href="#sengketa"><span class="nav-link-title">Sengketa</span><span class="badge bg-yellow text-dark ms-auto">${jmlSengketa}</span></a></li>
+          <li class="nav-item"><a class="nav-link" href="#pencairan"><span class="nav-link-title">Pencairan</span><span class="badge bg-blue-lt ms-auto">${jmlCair}</span></a></li>
+          <li class="nav-item"><a class="nav-link" href="#verifikasi"><span class="nav-link-title">Verifikasi</span><span class="badge bg-blue-lt ms-auto">${jmlVerif}</span></a></li>
+          <li class="nav-item"><a class="nav-link" href="#laporan"><span class="nav-link-title">Laporan</span><span class="badge bg-red-lt ms-auto">${jmlLapor}</span></a></li>
+          <li class="nav-item"><a class="nav-link" href="#jejak"><span class="nav-link-title">Jejak tindakan</span></a></li>
+        </ul>
+      </div>
+    </div>
+  </aside>
 
-  <div class="st-big" style="margin:26px 0 10px;">Sengketa Menunggu</div>
-  ${dispCards}
+  <div class="page-body">
+    <div class="container-xl">
+      <div class="page-header mb-3 sect" id="ringkasan">
+        <div class="row align-items-center">
+          <div class="col">
+            <h2 class="page-title">Ringkasan Pasar Buku</h2>
+            <div class="text-secondary mt-1">Setiap keputusan menyimpan alasan dan tampil di jejak tindakan.</div>
+          </div>
+          <div class="col-auto ms-auto d-print-none">
+            <div class="btn-list">
+              <button class="btn btn-outline-secondary" id="swp" onclick="sweep()">Sweep manual</button>
+              <button class="btn btn-primary" onclick="location.reload()">Muat ulang</button>
+            </div>
+          </div>
+        </div>
+        <div class="text-danger fw-bold small mt-2" id="err"></div>
+      </div>
 
-  <div class="st-big" style="margin:26px 0 10px;">Pencairan Menunggu</div>
-  ${wdCards}
+      <div class="row row-cards mb-3">
+        <div class="col-6 col-lg-3"><div class="card"><div class="card-body">
+          <div class="subheader">Escrow ditahan</div><div class="h1 mb-1 num">${rp(liab.escrow || 0)}</div><div class="muted">dana pesanan berjalan</div>
+        </div></div></div>
+        <div class="col-6 col-lg-3"><div class="card"><div class="card-body">
+          <div class="subheader">Saldo pengguna</div><div class="h1 mb-1 num">${rp(liab.saldo || 0)}</div><div class="muted">bisa ditarik kapan saja</div>
+        </div></div></div>
+        <div class="col-6 col-lg-3"><div class="card"><div class="card-body">
+          <div class="subheader">Biaya rekber</div><div class="h1 mb-1 num">${rp(liab.fee || 0)}</div><div class="muted">terkumpul (kas)</div>
+        </div></div></div>
+        <div class="col-6 col-lg-3"><div class="card"><div class="card-body">
+          <div class="subheader text-yellow">Perlu keputusan</div><div class="h1 mb-1 num text-yellow">${jmlSengketa + jmlCair + jmlVerif + jmlLapor}</div>
+          <div class="muted">${jmlSengketa} sengketa · ${jmlCair} cair · ${jmlVerif} verif · ${jmlLapor} lapor</div>
+        </div></div></div>
+      </div>
 
-  <div class="st-big" style="margin:26px 0 10px;">Jejak Tindakan</div>
-  <div class="st-card">
-    ${audit.length ? audit.map((a) => `
-      <div style="padding:8px 0;border-bottom:1.5px dashed #CBD5E1;">
-        <div class="lbl">${tgl(a.created_at)} · ${escapeHtml(AKSI_LABEL[a.action] || a.action)}</div>
-        <div class="st-sub">${escapeHtml(a.target_type === 'system' || !a.target_id ? 'Sistem' : (a.target_type === 'order' ? 'Order ' : a.target_type === 'user' ? 'Akun ' : 'Kotak ') + a.target_id)}</div>
-        ${a.note ? `<div class="st-sub">“${escapeHtml(a.note)}”</div>` : ''}
-      </div>`).join('') : '<div class="st-sub">Belum ada tindakan.</div>'}
+      <div class="card mb-3 sect" id="sengketa">
+        <div class="card-header"><h3 class="card-title">Sengketa menunggu <span class="badge bg-yellow text-dark ms-2">${jmlSengketa}</span></h3></div>
+        ${jmlSengketa ? `<div class="table-responsive"><table class="table table-vcenter card-table table-sm">
+          <thead><tr><th>Pesanan</th><th>Pihak</th><th>Dana ditahan</th><th>Resi</th><th class="d-none d-lg-table-cell">Bukti</th><th class="w-1">Keputusan</th></tr></thead>
+          <tbody>${dispRows}</tbody>
+        </table></div>` : `<div class="card-body text-secondary">Tidak ada sengketa menunggu.</div>`}
+        <div class="card-footer muted">Refund menambah saldo pembeli (bukan transfer bank). Catatan wajib minimal 5 karakter.</div>
+      </div>
+
+      <div class="card mb-3 sect" id="pencairan">
+        <div class="card-header"><h3 class="card-title">Pencairan menunggu <span class="badge bg-blue-lt ms-2">${jmlCair}</span></h3></div>
+        ${jmlCair ? `<div class="table-responsive"><table class="table table-vcenter card-table table-sm">
+          <thead><tr><th>Pemohon</th><th>Jenis</th><th>Transfer</th><th>Biaya</th><th class="d-none d-lg-table-cell">Rincian</th><th class="w-1">Aksi</th></tr></thead>
+          <tbody>${wdRows}</tbody>
+        </table></div>` : `<div class="card-body text-secondary">Tidak ada permintaan pencairan.</div>`}
+        <div class="card-footer muted">Pembeli bebas biaya tarik. Penjual: Rp3.500 (&lt;Rp200rb) / Rp7.500 (≥Rp200rb) — masuk kas.</div>
+      </div>
+
+      <div class="row row-cards mb-3">
+        <div class="col-lg-7 sect" id="verifikasi">
+          <div class="card h-100">
+            <div class="card-header"><h3 class="card-title">Verifikasi penjual <span class="badge bg-blue-lt ms-2">${jmlVerif}</span></h3></div>
+            ${jmlVerif ? `<div class="list-group list-group-flush">${sellerCards}</div>` : `<div class="card-body text-secondary">Tidak ada pengajuan penjual.</div>`}
+          </div>
+        </div>
+        <div class="col-lg-5 sect" id="laporan">
+          <div class="card h-100">
+            <div class="card-header"><h3 class="card-title">Laporan listing <span class="badge bg-red-lt ms-2">${jmlLapor}</span></h3></div>
+            ${jmlLapor ? `<div class="list-group list-group-flush">${laporCards}</div>` : `<div class="card-body text-secondary">Tidak ada laporan listing.</div>`}
+          </div>
+        </div>
+      </div>
+
+      <div class="card sect" id="jejak">
+        <div class="card-header"><h3 class="card-title">Jejak tindakan</h3></div>
+        ${auditRows ? `<div class="list-group list-group-flush">${auditRows}</div>` : `<div class="card-body text-secondary">Belum ada tindakan.</div>`}
+      </div>
+    </div>
   </div>
 </div>
+
 <script>
+function toggleTheme(){
+  var h=document.documentElement, next=h.getAttribute('data-bs-theme')==='dark'?'light':'dark';
+  h.setAttribute('data-bs-theme',next);
+  try{localStorage.setItem('owner-theme',next)}catch(e){}
+  tandaTema();
+}
+function tandaTema(){
+  var b=document.getElementById('themeBtn');
+  if(b) b.textContent = document.documentElement.getAttribute('data-bs-theme')==='dark' ? '☀' : '☾';
+}
+tandaTema();
+
 function err(t){document.getElementById('err').textContent=t||''}
 function esc(x){return String(x==null?'':x).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function val(id){var e=document.getElementById(id);return e?e.value.trim():''}
@@ -234,12 +356,10 @@ async function putusLaporan(id,decision,btn){
 async function resolve(id,decision,btn){
   const note=val('note-'+id);
   if(note.length<5){err('Tulis alasan keputusan dulu (min 5 karakter).');return}
-  const transfer_ref='';
   if(decision==='refund'){
     if(!confirm('Refund akan menambah SALDO pembeli (bukan transfer bank). Lanjut?')) return;
   }
-  if(decision==='refund' && !confirm('Refund ke pembeli? Dana tidak akan dilepas ke penjual.')) return;
-  btn.disabled=true; if(!await post('/api/owner/orders/'+id+'/resolve',{decision,note,transfer_ref:transfer_ref})) btn.disabled=false;
+  btn.disabled=true; if(!await post('/api/owner/orders/'+id+'/resolve',{decision,note,transfer_ref:''})) btn.disabled=false;
 }
 async function reviewSeller(id,decision,btn){
   let reason=val('snote-'+id);
