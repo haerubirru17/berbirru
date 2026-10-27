@@ -72,6 +72,7 @@ const AKT_LABEL: Record<string, string> = {
   order_done: 'Pesanan selesai — dana cair',
   order_dispute: 'Sengketa pesanan dibuka',
   order_refund: 'Refund masuk saldo kamu',
+  order_cancel: 'Pembeli membatalkan pesanan sebelum dikirim',
   order_withdraw_paid: 'Pencairan saldo sudah ditransfer',
   order_withdraw_reject: 'Pencairan saldo ditolak — saldo dikembalikan',
 };

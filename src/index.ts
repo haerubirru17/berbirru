@@ -1464,15 +1464,49 @@ const KURIR_MAP: Record<string, string> = { 'JNE': 'jne', 'J&T': 'jnt', 'SiCepat
 app.post('/api/pasar/order/:id/cancel', async (c) => {
   const me = await getAuthUser(c);
   if (!me) return c.json({ error: 'Masuk dulu' }, 401);
-  const o: any = await c.env.DB.prepare('SELECT id, buyer_id, status FROM orders WHERE id = ?').bind(c.req.param('id')).first();
+  const o: any = await c.env.DB.prepare(
+    'SELECT id, buyer_id, seller_id, listing_id, status, paid_with, qris_final_amount, price, shipping FROM orders WHERE id = ?'
+  ).bind(c.req.param('id')).first();
   if (!o || o.buyer_id !== me.id) return c.json({ error: 'Pesanan tidak ditemukan' }, 404);
-  if (o.status !== 'created') return c.json({ error: 'Pesanan sudah dibayar — pakai tombol Ada Masalah' }, 409);
-  const res = await c.env.DB.prepare(
-    "UPDATE orders SET status = 'cancelled', updated_at = datetime('now') WHERE id = ? AND status = 'created'"
-  ).bind(o.id).run();
-  if ((res.meta?.changes || 0) === 0) return c.json({ error: 'Pesanan sudah berubah status' }, 409);
-  await logOrderEvent(c.env.DB, o.id, 'buyer', 'created', 'cancelled', 'Dibatalkan pembeli sebelum dibayar');
-  return c.json({ ok: true });
+
+  // Belum dibayar: batal tanpa uang berpindah.
+  if (o.status === 'created') {
+    const res = await c.env.DB.prepare(
+      "UPDATE orders SET status = 'cancelled', updated_at = datetime('now') WHERE id = ? AND status = 'created'"
+    ).bind(o.id).run();
+    if ((res.meta?.changes || 0) === 0) return c.json({ error: 'Pesanan sudah berubah status' }, 409);
+    await c.env.DB.prepare("UPDATE listings SET status = 'active' WHERE id = ? AND status = 'sold'").bind(o.listing_id).run();
+    await logOrderEvent(c.env.DB, o.id, 'buyer', 'created', 'cancelled', 'Dibatalkan pembeli sebelum dibayar');
+    return c.json({ ok: true });
+  }
+
+  // Sudah dibayar, penjual BELUM serahkan: boleh batal, tapi uang harus kembali.
+  if (o.status === 'paid') {
+    if (o.paid_with !== 'saldo') {
+      return c.json({ error: 'Pembayaran QRIS harus lewat sengketa supaya dana bisa dikembalikan owner' }, 409);
+    }
+    const nominal = Number(o.qris_final_amount || (Number(o.price) + Number(o.shipping || 0)));
+    const res = await c.env.DB.batch([
+      c.env.DB.prepare(
+        "UPDATE orders SET status = 'cancelled', resolution_note = ?, updated_at = datetime('now') WHERE id = ? AND status = 'paid' AND paid_with = 'saldo'"
+      ).bind('Dibatalkan pembeli sebelum dikirim — saldo dikembalikan', o.id),
+      // Kembalikan saldo, sekali saja (NOT EXISTS = idempoten).
+      c.env.DB.prepare(
+        `INSERT INTO ledger (user_id, order_id, delta, kind)
+         SELECT buyer_id, id, qris_final_amount, 'refund' FROM orders
+          WHERE id = ? AND status = 'cancelled'
+            AND NOT EXISTS (SELECT 1 FROM ledger WHERE order_id = ? AND kind = 'refund')`
+      ).bind(o.id, o.id),
+      c.env.DB.prepare("UPDATE listings SET status = 'active' WHERE id = ? AND status = 'sold'").bind(o.listing_id),
+      c.env.DB.prepare("INSERT INTO order_events (order_id, actor, from_st, to_st, note) VALUES (?,?,?,?,?)")
+        .bind(o.id, 'buyer', 'paid', 'cancelled', 'Dibatalkan pembeli sebelum dikirim — saldo dikembalikan'),
+    ]);
+    if ((res[0].meta?.changes || 0) === 0) return c.json({ error: 'Pesanan sudah berubah status' }, 409);
+    await notifyOrder(c.env.DB, { userId: o.seller_id, actorId: me.id, type: 'order_cancel', orderId: o.id });
+    return c.json({ ok: true, refunded: nominal });
+  }
+
+  return c.json({ error: 'Pesanan sudah dikirim — pakai tombol Ada Masalah' }, 409);
 });
 
 // Ulasan hanya dari pembeli, hanya setelah selesai, sekali per pesanan (UNIQUE order_id).

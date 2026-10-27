@@ -66,7 +66,11 @@ export function renderOrderPage(o: any, p: any, photos: string[], viewer: any): 
     actions = `<button class="btn b-blue" onclick="receive()">Pesanan Diterima — Lepas Dana</button>
       <button class="btn b-ghost" onclick="showDispute()">Ada Masalah (Sengketa)</button>`;
   } else if (st === 'paid' && isBuyer) {
-    actions = `<button class="btn b-ghost" onclick="showDispute()">Ada Masalah (Sengketa)</button>
+    actions = `${o.paid_with === 'saldo'
+      ? `<button class="btn b-ghost" onclick="batalkan()">Batalkan pesanan</button>
+         <div class="st-sub" style="margin-top:6px;">Belum dikirim — saldo kamu kembali utuh kalau dibatalkan.</div>`
+      : ''}
+      <button class="btn b-ghost" onclick="showDispute()">Ada Masalah (Sengketa)</button>
       <div class="st-sub" style="margin-top:8px;">Menunggu penjual menyerahkan buku…</div>`;
   } else if (st === 'disputed') {
     actions = `<div class="st-sub">Owner BERBIRRU sedang meninjau sengketa ini. Semua pesan & kwitansi sudah terkirim ke owner.</div>`;
