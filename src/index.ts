@@ -264,6 +264,13 @@ app.get('/', async (c) => {
   return c.html(renderLandingPage(user));
 });
 
+// 404 jangan di-cache edge: rute baru bisa "hilang" beberapa jam karena 404 lama
+// tersimpan di cache Cloudflare (pernah terjadi pada /lupa-sandi).
+app.use('*', async (c, next) => {
+  await next();
+  if (c.res.status === 404) c.res.headers.set('Cache-Control', 'no-store');
+});
+
 app.get('/login', async (c) => {
   const user = await getAuthUser(c);
   if (user) return c.redirect('/feed');
