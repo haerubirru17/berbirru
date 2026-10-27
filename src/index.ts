@@ -1070,6 +1070,17 @@ const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
 const PHOTO_DIR = 'pasar';
 const PHOTO_TYPES: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
 
+// Owner = admin murni (keputusan pemilik): tidak berjualan/berbelanja lewat akun owner.
+// Satu middleware menutup semua jalur tulis pasar, bukan guard di tiap endpoint.
+app.use('/api/pasar/*', async (c, next) => {
+  if (c.req.method === 'GET') return next();
+  const me = await getAuthUser(c);
+  if (me && isOwner(c.env, me)) {
+    return c.json({ error: 'Akun owner hanya untuk administrasi. Pakai akun lain untuk berjualan atau berbelanja.' }, 403);
+  }
+  await next();
+});
+
 app.post('/api/pasar/upload', async (c) => {
   const me = await getAuthUser(c);
   if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
@@ -1366,6 +1377,7 @@ app.get('/pasar/listing/:id/edit', async (c) => {
 app.get('/pasar/jual', async (c) => {
   const user = await getAuthUser(c);
   if (!user) return c.redirect('/login');
+  if (isOwner(c.env, user)) return c.redirect('/owner'); // owner = admin, bukan penjual
   // Gerbang: hanya penjual terverifikasi yang boleh memasang buku.
   if (user.seller_status !== 'approved') return c.html(renderVerifikasiPage(user));
   return c.html(renderJualPage(user));
@@ -2254,6 +2266,9 @@ app.post('/api/owner/orders/:id/resolve', async (c) => {
   const o: any = await c.env.DB.prepare("SELECT * FROM orders WHERE id = ? AND status = 'disputed'")
     .bind(c.req.param('id')).first();
   if (!o) return c.json({ error: 'Sengketa tidak ditemukan' }, 404);
+  if (o.buyer_id === me!.id || o.seller_id === me!.id) {
+    return c.json({ error: 'Sengketa yang melibatkan akun owner harus diputus orang lain.' }, 403);
+  }
 
   if (decision === 'refund') {
     // Refund = saldo pembeli (bisa dipakai belanja lagi atau ditarik). Uang tidak keluar dari sistem.
@@ -2331,6 +2346,7 @@ app.post('/api/owner/sellers/:id/review', async (c) => {
   const body: any = await c.req.json().catch(() => ({}));
   const approve = body?.decision === 'approve';
   const reason = String(body?.reason || '').trim().slice(0, 200);
+  if (c.req.param('id') === me!.id) return c.json({ error: 'Tidak bisa mereview akun sendiri' }, 400);
   if (!approve && reason.length < 5) return c.json({ error: 'Tulis alasan penolakan (min 5 karakter)' }, 400);
 
   const res = await c.env.DB.prepare(
