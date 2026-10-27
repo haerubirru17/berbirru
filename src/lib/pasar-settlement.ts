@@ -24,3 +24,11 @@ export function withdrawFee(kind: 'seller' | 'buyer', amount: number): number {
 export function withdrawTotal(kind: 'seller' | 'buyer', amount: number): number {
   return Number(amount) + withdrawFee(kind, amount);
 }
+
+/** Nomor bukti pencairan: WD-<YYMMDD>-<4 karakter>. Dibaca manusia, unik lewat index DB. */
+export function kodePencairan(now: Date, acak: string): string {
+  const p2 = (n: number) => String(n).padStart(2, '0');
+  const tgl = String(now.getUTCFullYear()).slice(2) + p2(now.getUTCMonth() + 1) + p2(now.getUTCDate());
+  const suf = String(acak || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4).padEnd(4, '0');
+  return `WD-${tgl}-${suf}`;
+}

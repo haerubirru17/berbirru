@@ -47,6 +47,7 @@ export function renderSaldoPage(user: any, balance: number, ledger: any[], withd
     <div class="row">
       <div>${rupiah(Number(w.amount))}
         <div class="t">${escapeHtml(METHOD[w.method] || w.method || 'QRIS')} · ${escapeHtml(w.account || '—')}</div>
+        ${w.kode ? `<a class="t" style="color:#1D61E7;text-decoration:none;font-weight:800;" href="/saldo/pencairan/${escapeHtml(w.kode)}">Bukti ${escapeHtml(w.kode)} →</a>` : ''}
       </div>
       <div style="text-align:right;">
         <div style="font-size:11.5px;color:${w.status === 'paid' ? '#0F7A3D' : w.status === 'rejected' ? '#B42318' : '#92400E'}">${escapeHtml(WD[w.status] || w.status)}</div>
