@@ -30,7 +30,7 @@ function daftar(rows: any[], render: (r: any) => string, kosong: string): string
 }
 
 export function renderAkunAdminPage(u: any, d: {
-  pembeli: any[]; penjual: any[]; sengketa: any[]; listings: any[]; ulasan: any[]; ledger: any[]; saldo: number;
+  pembeli: any[]; penjual: any[]; sengketa: any[]; listings: any[]; ulasan: any[]; ledger: any[]; pencairan: any[]; saldo: number;
 }): string {
   const nama = u.shop_name || u.display_name || u.pen_name;
   return `<!DOCTYPE html>
@@ -77,6 +77,10 @@ export function renderAkunAdminPage(u: any, d: {
 
   <div class="box"><h2>Ulasan diterima</h2>
     ${daftar(d.ulasan, (r) => `<div class="row"><span>${'★'.repeat(Number(r.stars))}${'☆'.repeat(5 - Number(r.stars))}<div class="muted">${escapeHtml(r.body || 'tanpa catatan')}</div></span><span class="muted">${tgl(r.created_at)}</span></div>`, 'Belum ada ulasan.')}
+  </div>
+
+  <div class="box"><h2>Pencairan saldo</h2>
+    ${daftar(d.pencairan, (w) => `<div class="row"><span><a href="/saldo/pencairan/${escapeHtml(w.kode)}">${escapeHtml(w.kode)}</a><div class="muted">${tgl(w.requested_at)}${w.paid_at ? ' · dibayar ' + tgl(w.paid_at) : ''}</div></span><span>${rp(Number(w.amount) + Number(w.fee || 0))}<div class="muted">${escapeHtml(w.status)}</div></span></div>`, 'Belum pernah menarik saldo.')}
   </div>
 
   <div class="box"><h2>Mutasi saldo (15 terakhir)</h2>

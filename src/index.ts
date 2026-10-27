@@ -34,9 +34,10 @@ import { renderPasarSaya } from './web/pasarSaya';
 import { renderTokoPublikPage } from './web/tokoPublik';
 import { renderOwnerPage } from './web/owner';
 import { renderAkunAdminPage } from './web/akunAdmin';
+import { renderBuktiPencairan } from './web/pencairan';
 import { bolehLihatPesanan, bolehUnggahBukti, jenisDokumen, kunciBukti, kunciDokumen, MAKS_BUKTI_PER_PIHAK } from './lib/berkas';
 import { createQrisTransaction, getQrisStatus, verifyWebhook, KlikQrisEnv } from './klikqris';
-import { providerAmountMatches, settlementAmounts, PASAR_FEE, WITHDRAW_MIN, withdrawFee, withdrawTotal } from './lib/pasar-settlement';
+import { providerAmountMatches, settlementAmounts, PASAR_FEE, WITHDRAW_MIN, withdrawFee, withdrawTotal, kodePencairan } from './lib/pasar-settlement';
 import { validasiPenerima, normalisasiHp } from './lib/alamat';
 import { slugToko, slugUnik } from './lib/toko';
 import { sendOtpEmail, sendPasswordChangedEmail } from './mail';
@@ -2101,6 +2102,19 @@ app.get('/saldo', async (c) => {
   return c.redirect('/pasar/saya?tab=saldo');
 });
 
+// Bukti pencairan: dokumen internal bernomor. Bisa dibuka owner & pemilik saldo.
+app.get('/saldo/pencairan/:kode', async (c) => {
+  const me = await getAuthUser(c);
+  if (!me) return c.redirect('/login');
+  const w: any = await c.env.DB.prepare(
+    `SELECT w.*, u.pen_name FROM withdrawals w JOIN users u ON u.id = w.user_id WHERE w.kode = ?`
+  ).bind(c.req.param('kode')).first();
+  if (!w) return c.notFound();
+  const owner = isOwner(c.env, me);
+  if (!owner && w.user_id !== me.id) return c.notFound();
+  return c.html(renderBuktiPencairan(w, { owner, penName: w.pen_name || '—' }));
+});
+
 app.post('/api/saldo/withdraw', async (c) => {
   const me = await getAuthUser(c);
   if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
@@ -2126,16 +2140,19 @@ app.post('/api/saldo/withdraw', async (c) => {
   if (Number(hr?.n || 0) >= 3) return c.json({ error: 'Batas 3 pengajuan pencairan per 24 jam. Coba lagi besok.' }, 429);
 
   const id = crypto.randomUUID();
+  // Nomor bukti: dipakai owner & penjual untuk merujuk pencairan ini (bukan UUID).
+  const acak = [...crypto.getRandomValues(new Uint8Array(3))].map((b) => b.toString(36)).join('');
+  const kode = kodePencairan(new Date(), acak);
   // Cek saldo menyatu di statement INSERT: double-tap tak bisa bikin saldo minus.
   // Reservasi = jumlah ditarik + biaya, supaya biaya tidak bisa dipakai dua kali.
   const res = await c.env.DB.prepare(
-    `INSERT INTO withdrawals (id, user_id, amount, fee, kind, method, account, status)
-     SELECT ?,?,?,?,?,?,?, 'requested'
+    `INSERT INTO withdrawals (id, user_id, amount, fee, kind, method, account, status, kode)
+     SELECT ?,?,?,?,?,?,?, 'requested', ?
      WHERE ? <= (SELECT COALESCE(SUM(delta),0) FROM ledger WHERE user_id = ?)
               - (SELECT COALESCE(SUM(amount + fee),0) FROM withdrawals WHERE user_id = ? AND status = 'requested')`
-  ).bind(id, me.id, amount, fee, kind, method, account, total, me.id, me.id).run();
+  ).bind(id, me.id, amount, fee, kind, method, account, kode, total, me.id, me.id).run();
   if ((res.meta?.changes || 0) === 0) return c.json({ error: 'Saldo tidak cukup untuk jumlah + biaya tarik' }, 409);
-  return c.json({ ok: true, id, fee, net: amount });
+  return c.json({ ok: true, id, kode, fee, net: amount });
 });
 
 // ---- Pesanan pembeli ----
@@ -2399,10 +2416,14 @@ app.get('/owner/akun/:id', async (c) => {
     c.env.DB.prepare(`SELECT kind, delta, order_id, created_at FROM ledger WHERE user_id = ? ORDER BY id DESC LIMIT 15`).bind(id).all(),
     c.env.DB.prepare(`SELECT COALESCE(SUM(delta),0) AS n FROM ledger WHERE user_id = ?`).bind(id).first(),
   ]);
+  const cair = await c.env.DB.prepare(
+    `SELECT id, kode, amount, fee, status, requested_at, paid_at FROM withdrawals WHERE user_id = ? ORDER BY requested_at DESC LIMIT 10`
+  ).bind(id).all();
 
   return c.html(renderAkunAdminPage(u, {
     pembeli: beli.results || [], penjual: jual.results || [], sengketa: sen.results || [],
     listings: list.results || [], ulasan: ulas.results || [], ledger: led.results || [],
+    pencairan: cair.results || [],
     saldo: Number((saldo as any)?.n || 0),
   }));
 });

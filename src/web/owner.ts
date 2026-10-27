@@ -110,6 +110,10 @@ export function renderOwnerPage(disputes: any[], withdrawals: any[], calonPenjua
         </details>
       </td>
       <td class="w-1">
+        <div class="btn-list flex-nowrap mb-1">
+          <button class="btn btn-sm btn-ghost-secondary" onclick="isiCatatan('note-${escapeHtml(o.id)}','Resi terverifikasi kurir, pembeli tidak respons 3 hari')">Resi valid</button>
+          <button class="btn btn-sm btn-ghost-secondary" onclick="isiCatatan('note-${escapeHtml(o.id)}','Barang tidak sesuai bukti foto pembeli')">Bukti cocok</button>
+        </div>
         <input class="form-control form-control-sm mb-2" id="note-${escapeHtml(o.id)}" maxlength="300" placeholder="Alasan keputusan (wajib)">
         <div class="btn-list flex-nowrap">
           <button class="btn btn-sm btn-outline-danger" onclick="resolve('${escapeHtml(o.id)}','refund',this)">Refund</button>
@@ -123,6 +127,7 @@ export function renderOwnerPage(disputes: any[], withdrawals: any[], calonPenjua
       <td>
         <a class="fw-bold" href="/owner/akun/${escapeHtml(w.user_id)}">@${escapeHtml(w.pen_name || '?')}</a>
         <div class="muted">${escapeHtml(w.method || 'qris')} · ${escapeHtml(w.account || '—')} · ${tgl(w.requested_at)}</div>
+        ${w.kode ? `<a class="small" href="/saldo/pencairan/${escapeHtml(w.kode)}" target="_blank" rel="noopener">Bukti ${escapeHtml(w.kode)} →</a>` : ''}
       </td>
       <td><span class="badge ${w.kind === 'buyer' ? 'bg-cyan-lt' : 'bg-green-lt'}">${w.kind === 'buyer' ? 'pembeli · refund' : 'penjual'}</span></td>
       <td><div class="num">${rp(w.amount)}</div></td>
@@ -144,6 +149,11 @@ export function renderOwnerPage(disputes: any[], withdrawals: any[], calonPenjua
         ${Number(w.sengketa_aktif) > 0 ? `<span class="badge bg-red-lt mt-1">${Number(w.sengketa_aktif)} sengketa aktif</span>` : ''}
       </td>
       <td class="w-1">
+        <div class="btn-list flex-nowrap mb-1">
+          <button class="btn btn-sm btn-ghost-secondary" onclick="isiCatatan('wnote-${escapeHtml(w.id)}','Transfer sesuai rekening tujuan')">Sesuai rekening</button>
+          <button class="btn btn-sm btn-ghost-secondary" onclick="isiCatatan('wnote-${escapeHtml(w.id)}','Nama penerima cocok dengan data penjual')">Nama cocok</button>
+          <button class="btn btn-sm btn-ghost-secondary" onclick="isiCatatan('wnote-${escapeHtml(w.id)}','Mutasi bank sudah dicek')">Mutasi dicek</button>
+        </div>
         <input class="form-control form-control-sm mb-1" id="wnote-${escapeHtml(w.id)}" maxlength="300" placeholder="Catatan keputusan (wajib)">
         <input class="form-control form-control-sm mb-2" id="wref-${escapeHtml(w.id)}" maxlength="80" placeholder="Ref / bukti transfer">
         <div class="btn-list flex-nowrap">
@@ -172,7 +182,11 @@ export function renderOwnerPage(disputes: any[], withdrawals: any[], calonPenjua
         <div class="col-sm-4">Pengajuan: <span class="text-body">${tgl(u.seller_applied_at)}</span></div>
       </div>
       ${u.seller_note ? `<div class="small text-secondary mt-1">${escapeHtml(u.seller_note)}</div>` : ''}
-      <div class="input-group input-group-sm mt-2">
+      <div class="btn-list flex-nowrap mt-2">
+        <button class="btn btn-sm btn-ghost-secondary" onclick="isiCatatan('snote-${escapeHtml(u.id)}','KTP & rekening cocok, WA aktif')">Data cocok</button>
+        <button class="btn btn-sm btn-ghost-secondary" onclick="isiCatatan('snote-${escapeHtml(u.id)}','Nama rekening beda dengan KTP')">Rekening beda</button>
+      </div>
+      <div class="input-group input-group-sm mt-1">
         <input class="form-control" id="snote-${escapeHtml(u.id)}" maxlength="200" placeholder="Catatan verifikasi">
         <button class="btn btn-success" onclick="reviewSeller('${escapeHtml(u.id)}','approve',this)">Setujui</button>
         <button class="btn btn-outline-danger" onclick="reviewSeller('${escapeHtml(u.id)}','reject',this)">Tolak</button>
@@ -191,6 +205,10 @@ export function renderOwnerPage(disputes: any[], withdrawals: any[], calonPenjua
       <div class="muted mt-1">Rekam jejak: ${Number(r.trx_selesai)} transaksi selesai · ${Number(r.sengketa)} sengketa</div>
       <div class="border-start border-3 ps-2 mt-2 small text-secondary">
         ${(r.items || []).map((i: any) => `“${escapeHtml(ALASAN[i.reason] || i.reason)}” — @${escapeHtml(i.reporter)}${i.note ? `<br><span class="muted">${escapeHtml(i.note)}</span>` : ''}`).join('<br>')}
+      </div>
+      <div class="btn-list flex-nowrap mt-2">
+        <button class="btn btn-sm btn-ghost-secondary" onclick="isiCatatan('rnote-${escapeHtml(r.listing_id)}','Foto/deskripsi tidak sesuai laporan')">Terbukti</button>
+        <button class="btn btn-sm btn-ghost-secondary" onclick="isiCatatan('rnote-${escapeHtml(r.listing_id)}','Laporan tidak berdasar, buku sesuai deskripsi')">Tidak terbukti</button>
       </div>
       <input class="form-control form-control-sm mt-2" id="rnote-${escapeHtml(r.listing_id)}" maxlength="300" placeholder="Catatan keputusan (wajib)">
       <div class="btn-list mt-2">
@@ -347,6 +365,12 @@ function tandaTema(){
 tandaTema();
 
 function err(t){document.getElementById('err').textContent=t||''}
+function isiCatatan(id, teks){
+  var e=document.getElementById(id);
+  if(!e) return;
+  e.value = e.value.trim() ? (e.value.trim() + ' · ' + teks) : teks;
+  e.focus();
+}
 function esc(x){return String(x==null?'':x).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function val(id){var e=document.getElementById(id);return e?e.value.trim():''}
 async function post(url,body){
