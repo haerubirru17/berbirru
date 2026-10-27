@@ -72,9 +72,31 @@ function cardImage(photos: string): string {
   return `<div class="card-img"><img src="/media/${escapeHtml(String(first).split('?')[0])}?v=${Date.now()}" alt="Foto buku" loading="lazy"></div>`;
 }
 
-export function renderPasarPage(user: any, listings: any[], f: { q?: string; cond?: string; sort?: string; max?: number } = {}): string {
+export function renderPasarPage(user: any, listings: any[], f: { q?: string; cond?: string; sort?: string; max?: number } = {}, pg: { hal?: number; perPage?: number; total?: number } = {}): string {
   const q = f.q || '', cond = f.cond || '', sort = f.sort || 'baru', max = Number(f.max || 0);
   const adaFilter = !!(q || cond || max || sort !== 'baru');
+  const hal = Math.max(1, Number(pg.hal || 1));
+  const perPage = Number(pg.perPage || 24);
+  const total = Number(pg.total ?? listings.length);
+  const dari = total === 0 ? 0 : (hal - 1) * perPage + 1;
+  const sampai = Math.min(total, (hal - 1) * perPage + listings.length);
+  const halaman = Math.max(1, Math.ceil(total / perPage));
+  const tautan = (n: number) => {
+    const p = new URLSearchParams();
+    if (q) p.set('q', q);
+    if (cond) p.set('cond', cond);
+    if (sort && sort !== 'baru') p.set('sort', sort);
+    if (max) p.set('max', String(max));
+    if (n > 1) p.set('hal', String(n));
+    const s = p.toString();
+    return '/pasar' + (s ? '?' + s : '');
+  };
+  const pager = halaman > 1 ? `
+    <div class="pager">
+      ${hal > 1 ? `<a href="${tautan(hal - 1)}">&lsaquo; Sebelumnya</a>` : '<span class="off">&lsaquo; Sebelumnya</span>'}
+      <span class="pos">${dari}–${sampai} dari ${total} · hal ${hal}/${halaman}</span>
+      ${hal < halaman ? `<a href="${tautan(hal + 1)}">Berikutnya &rsaquo;</a>` : '<span class="off">Berikutnya &rsaquo;</span>'}
+    </div>` : '';
   const opsi = (v: string, label: string, kini: string) => `<option value="${v}"${kini === v ? ' selected' : ''}>${label}</option>`;
   const cards = listings.map((p) => `
       <a class="book-card" href="/pasar/${p.id}">
@@ -110,6 +132,10 @@ export function renderPasarPage(user: any, listings: any[], f: { q?: string; con
     .pf-go:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #26364A}
     .pf-info{display:flex;justify-content:space-between;align-items:center;margin:0 0 16px;font:800 11px 'Roboto Mono';color:#52627A}
     .pf-info a{color:var(--blue);font-weight:900;text-decoration:underline}
+    .pager{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 16px;font:800 11px 'Roboto Mono';color:#52627A}
+    .pager a,.pager .off{border:2px solid var(--ink);background:#fff;padding:7px 10px;text-decoration:none;color:var(--ink);box-shadow:var(--small-shadow)}
+    .pager .off{opacity:.35;border-style:dashed;box-shadow:none}
+    .pager .pos{font-weight:800;color:#64748B}
     @media(max-width:880px){.pf{grid-template-columns:1fr 1fr}.pf-q{grid-column:1/-1}.pf-go{grid-column:1/-1}}
     .book-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}.book-card{background:#fff;border:var(--line);box-shadow:var(--shadow);overflow:hidden;text-decoration:none;color:var(--ink);display:flex;flex-direction:column;transition:.08s}.book-card:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #26364A}.card-img{position:relative;aspect-ratio:4/5;background:var(--soft);border-bottom:var(--thin);overflow:hidden}.card-img img{width:100%;height:100%;object-fit:cover;display:block}.card-img-empty{display:grid;place-items:center}.card-img-empty svg{width:48px;height:48px;stroke:var(--blue);stroke-width:1.7;fill:none}.card-body{padding:14px;display:flex;flex-direction:column;gap:7px}.card-title{font:700 21px/1.08 'Newsreader',serif;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:45px}.card-price{font:400 18px 'Archivo Black';color:var(--deep)}.card-meta{display:flex;justify-content:space-between;align-items:center;gap:7px;flex-wrap:wrap}.cond-badge{font:700 9px 'Roboto Mono';letter-spacing:.04em;background:var(--yellow);border:2px solid var(--ink);padding:3px 7px}.card-ship{font-size:10px;font-weight:800;color:#607086}.rekber-note{margin-top:24px;background:var(--blue);color:#fff;border:var(--line);box-shadow:var(--shadow);padding:16px;font-size:13px;font-weight:700;line-height:1.55;display:flex;gap:10px;align-items:flex-start}.rekber-note svg{width:20px;height:20px;flex:none;stroke:var(--yellow);stroke-width:2.4;fill:none}.empty-state{text-align:center;padding:40px 16px;background:#fff;border:var(--line);box-shadow:var(--shadow)}.empty-state p{font-size:13px;font-weight:700;color:#64748B;margin-bottom:4px}
     @media(max-width:880px){.book-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.container{max-width:680px}}
@@ -135,10 +161,11 @@ export function renderPasarPage(user: any, listings: any[], f: { q?: string; con
       <button class="pf-go" type="submit">Cari</button>
     </form>
     <div class="pf-info">
-      <span>${listings.length} buku${adaFilter ? ' cocok' : ' dijual'}</span>
+      <span>${total === 0 ? 'Tidak ada buku' : `${dari}–${sampai} dari ${total} buku`}${adaFilter ? ' cocok' : ''}</span>
       ${adaFilter ? '<a href="/pasar">Hapus filter</a>' : ''}
     </div>
 
+    ${pager}
     ${listings.length === 0 ? `
     <div class="empty-state">
       ${adaFilter

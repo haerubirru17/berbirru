@@ -1042,23 +1042,31 @@ app.get('/pasar', async (c) => {
   const sort = ['baru', 'murah', 'mahal'].includes(String(c.req.query('sort') || '')) ? String(c.req.query('sort')) : 'baru';
   const max = Math.max(0, Math.min(100_000_000, Number.parseInt(String(c.req.query('max') || '0'), 10) || 0));
 
-  let sql = "SELECT id, seller_id, title, cond, price, shipping_flat, photos FROM listings WHERE status = 'active'";
+  const perPage = 24;
+  const hal = Math.max(1, Math.min(99, Number.parseInt(String(c.req.query('hal') || '1'), 10) || 1));
+  let where = " FROM listings WHERE status = 'active'";
   const binds: any[] = [];
   if (q) {
     const pola = '%' + q.replace(/[\\%_]/g, '\\$&') + '%';
-    sql += " AND (title LIKE ? ESCAPE '\\' OR author LIKE ? ESCAPE '\\')";
+    where += " AND (title LIKE ? ESCAPE '\\' OR author LIKE ? ESCAPE '\\')";
     binds.push(pola, pola);
   }
-  if (cond) { sql += ' AND cond = ?'; binds.push(cond); }
-  if (max) { sql += ' AND price <= ?'; binds.push(max); }
-  sql += sort === 'murah' ? ' ORDER BY price ASC, created_at DESC'
+  if (cond) { where += ' AND cond = ?'; binds.push(cond); }
+  if (max) { where += ' AND price <= ?'; binds.push(max); }
+
+  const urut = sort === 'murah' ? ' ORDER BY price ASC, created_at DESC'
     : sort === 'mahal' ? ' ORDER BY price DESC, created_at DESC'
     : ' ORDER BY created_at DESC';
-  sql += ' LIMIT 100';
 
-  const stmt = c.env.DB.prepare(sql);
-  const listings = binds.length ? await stmt.bind(...binds).all() : await stmt.all();
-  return c.html(renderPasarPage(user, listings.results || [], { q, cond, sort, max }));
+  const countStmt = c.env.DB.prepare('SELECT COUNT(*) AS n' + where);
+  const total: any = binds.length ? await countStmt.bind(...binds).first() : await countStmt.first();
+
+  const sql = 'SELECT id, seller_id, title, cond, price, shipping_flat, photos' + where + urut + ' LIMIT ? OFFSET ?';
+  const stmt = c.env.DB.prepare(sql).bind(...binds, perPage, (hal - 1) * perPage);
+  const listings = await stmt.all();
+  return c.html(renderPasarPage(user, listings.results || [], { q, cond, sort, max }, {
+    hal, perPage, total: Number(total?.n || 0),
+  }));
 });
 
 // Halaman akun: pintu pengaturan yang masuk akal di dalam Pasar.
@@ -1122,10 +1130,15 @@ app.get('/toko/:slug', async (c) => {
       WHERE shop_slug = ? AND seller_status = 'approved' LIMIT 1`
   ).bind(slug).first();
   if (!toko) return c.notFound();
+  const perPage = 24;
+  const hal = Math.max(1, Math.min(99, Number.parseInt(String(c.req.query('hal') || '1'), 10) || 1));
+  const jumlah: any = await c.env.DB.prepare(
+    "SELECT COUNT(*) AS n FROM listings WHERE seller_id = ? AND status = 'active'"
+  ).bind(toko.id).first();
   const rows = await c.env.DB.prepare(
     `SELECT id, title, price, cond, photos FROM listings
-      WHERE seller_id = ? AND status = 'active' ORDER BY created_at DESC LIMIT 60`
-  ).bind(toko.id).all();
+      WHERE seller_id = ? AND status = 'active' ORDER BY created_at DESC LIMIT ? OFFSET ?`
+  ).bind(toko.id, perPage, (hal - 1) * perPage).all();
   const done: any = await c.env.DB.prepare(
     "SELECT COUNT(*) AS n FROM orders WHERE seller_id = ? AND status = 'completed'"
   ).bind(toko.id).first();
@@ -1135,9 +1148,9 @@ app.get('/toko/:slug', async (c) => {
   const me = await getAuthUser(c);
   const baseUrl = new URL(c.req.url).origin;
   return c.html(renderTokoPublikPage(
-    { ...toko, transaksi_selesai: Number(done?.n || 0), ulasan_n: Number(rate?.n || 0), ulasan_avg: Number(rate?.avg || 0) },
+    { ...toko, transaksi_selesai: Number(done?.n || 0), ulasan_n: Number(rate?.n || 0), ulasan_avg: Number(rate?.avg || 0), buku_aktif: Number(jumlah?.n || 0) },
     rows.results || [],
-    { isOwner: !!me && me.id === toko.id, baseUrl },
+    { isOwner: !!me && me.id === toko.id, baseUrl, hal, perPage, total: Number(jumlah?.n || 0) },
   ));
 });
 
@@ -1963,6 +1976,10 @@ app.post('/api/owner/sellers/:id/review', async (c) => {
       await c.env.DB.prepare('UPDATE users SET shop_slug = ? WHERE id = ? AND shop_slug IS NULL').bind(slug, c.req.param('id')).run();
     }
   }
+  await notifyOrder(c.env.DB, {
+    userId: c.req.param('id'), actorId: me!.id,
+    type: approve ? 'order_seller_approved' : 'order_seller_rejected', orderId: null,
+  });
   await logOwnerAction(c.env.DB, me?.email, approve ? 'seller_approve' : 'seller_reject', 'user', c.req.param('id'), reason || null);
   return c.json({ ok: true });
 });

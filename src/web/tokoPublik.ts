@@ -20,6 +20,9 @@ const PAGE_CSS = `
   .stat b{display:block;font:400 17px 'Archivo Black';color:#0F3E99}
   .stat span{font:700 9.5px 'Roboto Mono';color:#64748B;letter-spacing:.05em;text-transform:uppercase}
   .sec-title{font:700 clamp(26px,4.5vw,36px)/1 'Newsreader',serif;letter-spacing:-.03em;margin:22px 0 12px}
+  .pg{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 14px;font:800 11px 'Roboto Mono';color:#52627A}
+  .pg a,.pg .off{border:2px solid #0B192C;background:#fff;padding:7px 10px;text-decoration:none;color:#0B192C;box-shadow:3px 4px 0 #26364A}
+  .pg .off{opacity:.35;border-style:dashed;box-shadow:none}
   .book-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
   .book-card{background:#fff;border:3px solid #0B192C;box-shadow:6px 7px 0 #26364A;overflow:hidden;text-decoration:none;color:#0B192C;display:flex;flex-direction:column}
   .book-card:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #26364A}
@@ -62,9 +65,18 @@ function kartu(p: any): string {
   </a>`;
 }
 
-export function renderTokoPublikPage(toko: any, listings: any[], opts: { isOwner?: boolean; baseUrl: string }): string {
+export function renderTokoPublikPage(toko: any, listings: any[], opts: { isOwner?: boolean; baseUrl: string; hal?: number; perPage?: number; total?: number }): string {
   const url = `${opts.baseUrl}/toko/${toko.shop_slug}`;
-  const bukuAktif = listings.length;
+  const bukuAktif = Number(toko.buku_aktif ?? listings.length);
+  const hal = Math.max(1, Number(opts.hal || 1));
+  const perPage = Number(opts.perPage || 24);
+  const totalBuku = Number(opts.total ?? listings.length);
+  const halaman = Math.max(1, Math.ceil(totalBuku / perPage));
+  const pager = halaman > 1
+    ? `<div class="pg">${hal > 1 ? `<a href="?hal=${hal - 1}">&lsaquo; Sebelumnya</a>` : '<span class="off">&lsaquo; Sebelumnya</span>'}
+        <span>${(hal - 1) * perPage + 1}–${Math.min(totalBuku, (hal - 1) * perPage + listings.length)} dari ${totalBuku}</span>
+        ${hal < halaman ? `<a href="?hal=${hal + 1}">Berikutnya &rsaquo;</a>` : '<span class="off">Berikutnya &rsaquo;</span>'}</div>`
+    : '';
   const selesai = Number(toko.transaksi_selesai || 0);
   const ulasanN = Number(toko.ulasan_n || 0);
   const ulasanAvg = Number(toko.ulasan_avg || 0);
@@ -111,6 +123,7 @@ ${PASAR_BASE_CSS}
   </div>
 
   <div class="sec-title">Buku di toko ini</div>
+  ${pager}
   ${listings.length ? `<div class="book-grid">${listings.map(kartu).join('')}</div>`
     : `<div class="empty"><p>Belum ada buku aktif di toko ini.</p>${opts.isOwner ? '<a href="/pasar/jual">Pasang buku</a>' : '<a href="/pasar">Lihat buku lain</a>'}</div>`}
 
