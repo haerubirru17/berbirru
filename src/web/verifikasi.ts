@@ -54,7 +54,11 @@ export function renderVerifikasiPage(user: any): string {
          <input class="inp" id="vName" maxlength="80" placeholder="Sesuai KTP / nama yang bisa dihubungi" value="${escapeHtml(user.seller_full_name || '')}">
          <label class="lbl" for="vPhone">Nomor WhatsApp *</label>
          <input class="inp" id="vPhone" inputmode="numeric" maxlength="15" placeholder="08xxxxxxxxxx" value="${escapeHtml(user.seller_phone || '')}">
-         <label class="lbl" for="vNote">Buku apa yang mau kamu jual? (opsional)</label>
+         <label class="lbl" for="vBankName">Nama pemilik rekening / QRIS *</label>
+        <input class="inp" id="vBankName" maxlength="80" placeholder="Harus sama dengan nama di rekening — dipakai saat pencairan" value="${escapeHtml(user.seller_bank_name || '')}">
+        <label class="lbl" for="vBankAcc">Nomor rekening / QRIS *</label>
+        <input class="inp" id="vBankAcc" inputmode="numeric" maxlength="20" placeholder="8–20 angka" value="${escapeHtml(user.seller_bank_account || '')}">
+        <label class="lbl" for="vNote">Buku apa yang mau kamu jual? (opsional)</label>
          <textarea class="inp" id="vNote" maxlength="300" placeholder="Contoh: koleksi sastra & buku bekas layak pakai, sekitar 40 judul.">${escapeHtml(user.seller_note || '')}</textarea>
          <button class="btn" id="btnAjukan" onclick="ajukan()">Ajukan Verifikasi</button>
          <div class="sub" style="margin-top:10px;">Dengan mengajukan, kamu setuju biaya rekber Rp5.000 per transaksi ditanggung penjual dan wajib mengirim sesuai kesepakatan.</div>
@@ -78,14 +82,18 @@ async function ajukan(){
   var shop=document.getElementById('vShop').value.trim();
   var name=document.getElementById('vName').value.trim();
   var phone=document.getElementById('vPhone').value.replace(/\\D/g,'');
+  var bankName=document.getElementById('vBankName').value.trim();
+  var bankAcc=document.getElementById('vBankAcc').value.replace(/\\D/g,'');
   var note=document.getElementById('vNote').value.trim();
   if(shop.length<2){err('Isi nama toko minimal 2 karakter.');return}
   if(name.length<3){err('Isi nama lengkap minimal 3 karakter.');return}
   if(!/^0?8\\d{8,13}$/.test(phone)){err('Nomor WhatsApp tidak valid (contoh 08xxxxxxxxxx).');return}
+  if(bankName.length<3){err('Isi nama pemilik rekening/QRIS (min 3 karakter).');return}
+  if(bankAcc.length<8){err('Nomor rekening/QRIS minimal 8 angka.');return}
   var b=document.getElementById('btnAjukan'); b.disabled=true; b.textContent='Mengirim…';
   try{
     var r=await fetch('/api/pasar/seller/apply',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({shop_name:shop,full_name:name,phone:phone,note:note})});
+      body:JSON.stringify({shop_name:shop,full_name:name,phone:phone,note:note,bank_name:bankName,bank_account:bankAcc})});
     var j=await r.json();
     if(!r.ok||!j.ok){err(j.error||'Gagal mengirim pengajuan.');b.disabled=false;b.textContent='Ajukan Verifikasi';return}
     location.reload();

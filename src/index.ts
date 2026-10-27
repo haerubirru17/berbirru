@@ -1532,9 +1532,13 @@ app.post('/api/pasar/seller/apply', async (c) => {
   const phone = String(body?.phone || '').replace(/\D/g, '').slice(0, 15);
   const note = String(body?.note || '').trim().slice(0, 300);
   const shopName = String(body?.shop_name || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+  const bankName = String(body?.bank_name || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+  const bankAccount = String(body?.bank_account || '').replace(/[^0-9]/g, '').slice(0, 20);
   if (fullName.length < 3) return c.json({ error: 'Nama lengkap minimal 3 karakter' }, 400);
   if (!/^0?8\d{8,13}$/.test(phone)) return c.json({ error: 'Nomor WhatsApp tidak valid' }, 400);
   if (shopName.length < 2) return c.json({ error: 'Nama toko minimal 2 karakter' }, 400);
+  if (bankName.length < 3) return c.json({ error: 'Isi nama pemilik rekening/QRIS (min 3 karakter)' }, 400);
+  if (bankAccount.length < 8) return c.json({ error: 'Nomor rekening/QRIS minimal 8 angka' }, 400);
   const dipakai: any = await c.env.DB.prepare(
     'SELECT 1 FROM users WHERE shop_name = ? COLLATE NOCASE AND id != ? LIMIT 1'
   ).bind(shopName, me.id).first();
@@ -1543,9 +1547,10 @@ app.post('/api/pasar/seller/apply', async (c) => {
   // Guard status di WHERE: double-submit tidak menimpa pengajuan yang sudah diproses owner.
   const res = await c.env.DB.prepare(
     `UPDATE users SET seller_status='pending', seller_full_name=?, seller_phone=?, seller_note=?, shop_name=?,
+       seller_bank_name=?, seller_bank_account=?,
        seller_applied_at=datetime('now'), seller_reject_reason=NULL
      WHERE id=? AND seller_status IN ('none','rejected')`
-  ).bind(fullName, phone, note || null, shopName, me.id).run();
+  ).bind(fullName, phone, note || null, shopName, bankName, bankAccount, me.id).run();
   if ((res.meta?.changes || 0) === 0) return c.json({ error: 'Pengajuan tidak bisa dikirim sekarang' }, 409);
   return c.json({ ok: true });
 });
@@ -1568,10 +1573,55 @@ app.get('/owner', async (c) => {
   ).all();
   const calon = await c.env.DB.prepare(
     `SELECT u.id, u.pen_name, u.email, u.city, u.seller_full_name, u.seller_phone, u.seller_note, u.shop_name, u.seller_applied_at,
+            u.seller_bank_name, u.seller_bank_account,
             (SELECT COUNT(*) FROM listings l WHERE l.seller_id = u.id AND l.status = 'active') AS listing_aktif
        FROM users u WHERE u.seller_status = 'pending' ORDER BY u.seller_applied_at ASC LIMIT 50`
   ).all();
-  return c.html(renderOwnerPage(disp.results || [], wd.results || [], calon.results || []));
+
+  // ponytail: query per kartu (maks 50 antrean) — cukup untuk volume UMKM.
+  // Gold-plating: satu query agregat kalau antrean sampai ratusan.
+  const disputes = disp.results || [];
+  for (const o of disputes as any[]) {
+    const ev = await c.env.DB.prepare(
+      'SELECT actor, from_st, to_st, note, created_at FROM order_events WHERE order_id = ? ORDER BY id'
+    ).bind(o.id).all();
+    o.events = ev.results || [];
+    const bs = await c.env.DB.prepare(
+      `SELECT (SELECT COUNT(*) FROM orders WHERE buyer_id = ? AND status = 'completed') AS selesai,
+              (SELECT COUNT(*) FROM orders WHERE buyer_id = ? AND status IN ('disputed','refunded')) AS sengketa,
+              (SELECT MIN(created_at) FROM users WHERE id = ?) AS sejak`
+    ).bind(o.buyer_id, o.buyer_id, o.buyer_id).first();
+    o.buyer_stats = bs || {};
+    const ss = await c.env.DB.prepare(
+      `SELECT (SELECT COUNT(*) FROM orders WHERE seller_id = ? AND status = 'completed') AS selesai,
+              (SELECT COUNT(*) FROM orders WHERE seller_id = ? AND status IN ('disputed','refunded')) AS sengketa,
+              (SELECT MIN(created_at) FROM users WHERE id = ?) AS sejak`
+    ).bind(o.seller_id, o.seller_id, o.seller_id).first();
+    o.seller_stats = ss || {};
+  }
+
+  const withdrawals = wd.results || [];
+  for (const w of withdrawals as any[]) {
+    const bal: any = await c.env.DB.prepare(
+      `SELECT (SELECT COALESCE(SUM(delta),0) FROM ledger WHERE user_id = ?1)
+            - (SELECT COALESCE(SUM(amount),0) FROM withdrawals WHERE user_id = ?2 AND status = 'requested') AS bal`
+    ).bind(w.user_id, w.user_id).first();
+    w.saldo = Number(bal?.bal || 0);
+    const src: any = await c.env.DB.prepare(
+      `SELECT kind, COALESCE(SUM(delta),0) AS total FROM ledger WHERE user_id = ? GROUP BY kind`
+    ).bind(w.user_id).all();
+    w.ledger_ringkas = src.results || [];
+    const risk: any = await c.env.DB.prepare(
+      `SELECT COUNT(*) AS n FROM orders WHERE seller_id = ? AND status = 'disputed'`
+    ).bind(w.user_id).first();
+    w.sengketa_aktif = Number(risk?.n || 0);
+    const hist: any = await c.env.DB.prepare(
+      `SELECT COUNT(*) AS n, COALESCE(SUM(amount),0) AS total FROM withdrawals WHERE user_id = ? AND status = 'paid'`
+    ).bind(w.user_id).first();
+    w.riwayat_pencairan = { jumlah: Number(hist?.n || 0), total: Number(hist?.total || 0) };
+  }
+
+  return c.html(renderOwnerPage(disputes, withdrawals, calon.results || []));
 });
 
 app.post('/api/owner/orders/:id/resolve', async (c) => {
@@ -1580,6 +1630,7 @@ app.post('/api/owner/orders/:id/resolve', async (c) => {
   const body: any = await c.req.json().catch(() => ({}));
   const decision = body?.decision === 'refund' ? 'refund' : 'release';
   const note = String(body?.note || '').trim().slice(0, 300);
+  if (note.length < 5) return c.json({ error: 'Tulis alasan keputusan (min 5 karakter) — tersimpan sebagai bukti' }, 400);
   const o: any = await c.env.DB.prepare("SELECT * FROM orders WHERE id = ? AND status = 'disputed'")
     .bind(c.req.param('id')).first();
   if (!o) return c.json({ error: 'Sengketa tidak ditemukan' }, 404);
@@ -1587,8 +1638,8 @@ app.post('/api/owner/orders/:id/resolve', async (c) => {
   if (decision === 'refund') {
     // Dana belum pernah dikreditkan ke penjual → cukup tutup order, tak ada ledger yang dibalik.
     const res = await c.env.DB.prepare(
-      "UPDATE orders SET status = 'refunded', updated_at = datetime('now') WHERE id = ? AND status = 'disputed'"
-    ).bind(o.id).run();
+      "UPDATE orders SET status = 'refunded', resolution_note = ?, resolved_at = datetime('now'), updated_at = datetime('now') WHERE id = ? AND status = 'disputed'"
+    ).bind(note, o.id).run();
     if ((res.meta?.changes || 0) === 0) return c.json({ error: 'Sengketa sudah diputuskan' }, 409);
     await logOrderEvent(c.env.DB, o.id, 'owner', 'disputed', 'refunded', note || 'Owner: dana dikembalikan ke pembeli');
     return c.json({ ok: true });
@@ -1598,7 +1649,7 @@ app.post('/api/owner/orders/:id/resolve', async (c) => {
   let r: any[];
   try {
     r = await c.env.DB.batch([
-      c.env.DB.prepare("UPDATE orders SET status = 'completed', updated_at = datetime('now') WHERE id = ? AND status = 'disputed'").bind(o.id),
+      c.env.DB.prepare("UPDATE orders SET status = 'completed', resolution_note = ?, resolved_at = datetime('now'), updated_at = datetime('now') WHERE id = ? AND status = 'disputed'").bind(note, o.id),
       c.env.DB.prepare("INSERT INTO ledger (user_id, order_id, delta, kind) SELECT ?,?,?,? FROM orders WHERE id = ? AND status = 'completed'").bind(o.seller_id, o.id, money.sale, 'sale', o.id),
       c.env.DB.prepare("INSERT INTO ledger (user_id, order_id, delta, kind) SELECT ?,?,?,? FROM orders WHERE id = ? AND status = 'completed'").bind(o.seller_id, o.id, money.fee, 'fee', o.id),
       c.env.DB.prepare("INSERT INTO order_events (order_id, actor, from_st, to_st, note) SELECT ?,?,?,?,? FROM orders WHERE id = ? AND status = 'completed'")
@@ -1621,9 +1672,10 @@ app.post('/api/owner/sellers/:id/review', async (c) => {
   if (!approve && reason.length < 5) return c.json({ error: 'Tulis alasan penolakan (min 5 karakter)' }, 400);
 
   const res = await c.env.DB.prepare(
-    `UPDATE users SET seller_status=?, seller_reviewed_at=datetime('now'), seller_reject_reason=?
+    `UPDATE users SET seller_status=?, seller_reviewed_at=datetime('now'), seller_reject_reason=?,
+       seller_review_note = COALESCE(NULLIF(?, ''), seller_review_note)
      WHERE id=? AND seller_status='pending'`
-  ).bind(approve ? 'approved' : 'rejected', approve ? null : reason, c.req.param('id')).run();
+  ).bind(approve ? 'approved' : 'rejected', approve ? null : reason, reason, c.req.param('id')).run();
   if ((res.meta?.changes || 0) === 0) return c.json({ error: 'Pengajuan tidak ditemukan' }, 404);
   return c.json({ ok: true });
 });
@@ -1633,14 +1685,19 @@ app.post('/api/owner/withdrawals/:id/settle', async (c) => {
   if (!isOwner(c.env, me)) return c.json({ error: 'Tidak ditemukan' }, 404);
   const body: any = await c.req.json().catch(() => ({}));
   const decision = body?.decision === 'reject' ? 'reject' : 'pay';
+  const note = String(body?.note || '').trim().slice(0, 300);
+  const ref = String(body?.transfer_ref || '').trim().slice(0, 80);
+  if (note.length < 5) return c.json({ error: 'Tulis catatan keputusan (min 5 karakter) — tersimpan sebagai bukti' }, 400);
+  if (decision === 'pay' && ref.length < 4) return c.json({ error: 'Isi referensi/bukti transfer (min 4 karakter)' }, 400);
   const id = c.req.param('id');
   const w: any = await c.env.DB.prepare("SELECT * FROM withdrawals WHERE id = ? AND status = 'requested'").bind(id).first();
   if (!w) return c.json({ error: 'Permintaan tidak ditemukan' }, 404);
 
   const status = decision === 'reject' ? 'rejected' : 'paid';
   const res = await c.env.DB.prepare(
-    `UPDATE withdrawals SET status = ?, paid_at = ${decision === 'reject' ? 'NULL' : "datetime('now')"} WHERE id = ? AND status = 'requested'`
-  ).bind(status, id).run();
+    `UPDATE withdrawals SET status = ?, review_note = ?, transfer_ref = ?, reviewed_at = datetime('now'),
+       paid_at = ${decision === 'reject' ? 'NULL' : "datetime('now')"} WHERE id = ? AND status = 'requested'`
+  ).bind(status, note, ref || null, id).run();
   if ((res.meta?.changes || 0) === 0) return c.json({ error: 'Permintaan sudah diproses' }, 409);
 
   if (decision === 'pay') {
