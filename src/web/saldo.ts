@@ -27,7 +27,7 @@ const KIND: Record<string, string> = { sale: 'Penjualan buku', fee: 'Biaya rekbe
 const WD: Record<string, string> = { requested: 'Diproses owner', paid: 'Sudah dicairkan', rejected: 'Ditolak' };
 const METHOD: Record<string, string> = { qris: 'QRIS', bank: 'Rekening bank', ewallet: 'E-wallet' };
 
-export function renderSaldoPage(user: any, balance: number, ledger: any[], withdrawals: any[], embed = false): string {
+export function renderSaldoPage(user: any, balance: number, ledger: any[], withdrawals: any[], embed = false, ditahan: any[] = []): string {
   const minTarik = 40000;
   const bisa = balance >= minTarik;
   // Saldo negatif hanya mungkin kalau ledger tak konsisten — tetap tampilkan jujur, jangan "Rp-40.000".
@@ -53,6 +53,13 @@ export function renderSaldoPage(user: any, balance: number, ledger: any[], withd
   const inner = `<div class="wrap">
   ${embed ? '' : `<a class="back" href="/pasar/saya?tab=pesanan">&larr; Pasar Saya</a>`}
   <div class="page-head"><h1>Saldo</h1><p>Hasil penjualan bukumu. Fee rekber Rp5.000 per pesanan sudah dipotong; ongkir utuh untukmu.</p></div>
+
+  <div class="st-card">
+    <div class="lbl">Dana ditahan rekber</div>
+    <div class="big" style="font:400 26px 'Archivo Black';color:#92400E;margin:6px 0 2px;">${rupiah(ditahan.reduce((a: number, o: any) => a + Number(o.qris_final_amount || Number(o.price) + Number(o.shipping || 0)), 0))}</div>
+    <div class="hint" style="font-size:11.5px;font-weight:600;color:#64748B;">Uang pembeli yang sudah masuk tapi belum jadi saldo — cair setelah pembeli konfirmasi terima (otomatis D+5, resi wajib terverifikasi).</div>
+    ${(ditahan.length ? ditahan.map((o: any) => `<div class="row"><div>${({ paid: 'Sudah dibayar', handed: 'Dikirim', disputed: 'Sengketa' } as any)[o.status] || o.status}<div class="t">${escapeHtml(String(o.id).slice(0, 12))}…</div></div><div class="pos">${rupiah(Number(o.qris_final_amount || Number(o.price) + Number(o.shipping || 0)))}</div></div>`).join('') : '<div class="empty" style="padding:10px 0;font-size:11.5px;">Tidak ada dana ditahan.</div>')}
+  </div>
 
   <div class="st-card">
     <div class="lbl">Saldo bisa ditarik</div>

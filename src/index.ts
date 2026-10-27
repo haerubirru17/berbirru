@@ -1188,13 +1188,18 @@ app.get('/pasar/saya', async (c) => {
   // Tab default: Toko kalau ada pesanan yang harus dikirim, selain itu Pesanan.
   const perluKirim = (jualRows.results || []).filter((o: any) => o.status === 'paid').length;
   // Prioritas: ?tab= → ada yang perlu dikirim → penjual tanpa pembelian → Pesanan.
+  // "Uangku di mana" versi penjual: dana yang sudah dibayar tapi belum jadi saldo.
+  const tahanRows = await c.env.DB.prepare(
+    `SELECT id, price, shipping, qris_final_amount, status, updated_at FROM orders
+      WHERE seller_id = ? AND status IN ('paid','handed','disputed') ORDER BY updated_at DESC LIMIT 20`
+  ).bind(user.id).all();
   const belumPernahBeli = (beliRows.results || []).length === 0;
   const tabFinal = tab || (approved && (perluKirim > 0 || belumPernahBeli) ? 'toko' : 'pesanan');
 
   return c.html(renderPasarSaya(user, tabFinal, sub, {
     pesanan: { orders: beliRows.results || [], sub },
     toko: { orders: jualRows.results || [], listings: bukuRows.results || [] },
-    saldo: { balance: saldo, ledger, withdrawals: wd },
+    saldo: { balance: saldo, ledger, withdrawals: wd, ditahan: tahanRows.results || [] },
     aktivitas: { items: aktItems, unread: aktItems.filter((n: any) => !n.is_read).length },
   }));
 });

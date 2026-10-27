@@ -74,7 +74,7 @@ const AKT_LABEL: Record<string, string> = {
 export interface HubData {
   pesanan: { orders: any[]; sub: string };
   toko: { orders: any[]; listings: any[] };
-  saldo: { balance: number; ledger: any[]; withdrawals: any[] };
+  saldo: { balance: number; ledger: any[]; withdrawals: any[]; ditahan?: any[] };
   aktivitas: { items: any[]; unread: number };
 }
 
@@ -105,7 +105,7 @@ export function renderPasarSaya(user: any, tab: string, sub: string, d: HubData)
   } else if (aktif === 'toko') {
     isi = renderTokoPage(user, d.toko.orders, d.toko.listings, d.saldo.balance, sub || 'perlu', true);
   } else if (aktif === 'saldo') {
-    isi = renderSaldoPage(user, d.saldo.balance, d.saldo.ledger, d.saldo.withdrawals, true);
+    isi = renderSaldoPage(user, d.saldo.balance, d.saldo.ledger, d.saldo.withdrawals, true, d.saldo.ditahan || []);
   } else {
     const items = d.aktivitas.items || [];
     isi = `<div class="akt-bar"><span class="lbl">${items.length} aktivitas pesanan</span>
