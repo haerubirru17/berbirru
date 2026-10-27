@@ -2,6 +2,8 @@ import { escapeHtml } from '../lib/sanitize';
 import { PASAR_BASE_CSS } from './pasar';
 import { renderBottomNav } from './layout';
 
+const rupiah = (n: number) => 'Rp' + Number(n || 0).toLocaleString('id-ID');
+
 const CSS = `
   .ak-card{background:#fff;border:3px solid #0B192C;box-shadow:5px 6px 0 #26364A;border-radius:12px;overflow:hidden;margin-bottom:16px}
   .ak-row{display:flex;align-items:center;gap:12px;padding:14px;border-bottom:2px solid #E2E8F0;text-decoration:none;color:#0B192C}
@@ -28,7 +30,7 @@ function baris(href: string, ikon: string, judul: string, sub: string, danger = 
     </a>`;
 }
 
-export function renderAkunPage(user: any): string {
+export function renderAkunPage(user: any, refunds: any[] = []): string {
   const penjual = user.seller_status === 'approved';
   const menunggu = user.seller_status === 'pending';
   const icoTas = '<path d="M9 11h6M9 15h4"/><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/>';
@@ -61,6 +63,22 @@ ${PASAR_BASE_CSS}
     ${baris('/akun/alamat', icoPin, 'Alamat Pengiriman', 'Nama, nomor HP, kode pos, alamat')}
     ${baris('/u/' + encodeURIComponent(user.pen_name), icoLuaran, 'Profil Publik', 'Warkah, pengikut, dan bio')}
   </div>
+
+  ${refunds.length ? `
+  <div class="ak-card">
+    <div class="ak-row" style="cursor:default;">
+      <span class="ak-ic"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/></svg></span>
+      <span class="ak-t"><b>Refund saya</b><span>Uang yang sudah dikembalikan ke kamu</span></span>
+    </div>
+    ${refunds.map((r: any) => `
+      <a class="ak-row" href="/pasar/order/${escapeHtml(r.id)}">
+        <span class="ak-t" style="padding-left:46px;">
+          <b>${rupiah(Number(r.refund_amount || Number(r.qris_final_amount) || Number(r.price) + Number(r.shipping || 0)))}</b>
+          <span>${escapeHtml(String(r.refunded_at || '').slice(0, 16))} · ref ${escapeHtml(r.refund_ref || '—')}</span>
+        </span>
+        <span class="ak-arw">›</span>
+      </a>`).join('')}
+  </div>` : ''}
 
   <button class="ak-btn" id="klr" style="color:#B42318;" onclick="keluar()">Keluar akun</button>
 </div>

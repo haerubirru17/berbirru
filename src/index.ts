@@ -1065,7 +1065,12 @@ app.get('/pasar', async (c) => {
 app.get('/akun', async (c) => {
   const user = await getAuthUser(c);
   if (!user) return c.redirect('/login');
-  return c.html(renderAkunPage(user));
+  // Refund = uang kembali ke rekening, bukan saldo. Tapi pembeli tetap butuh daftarnya.
+  const refunds = await c.env.DB.prepare(
+    `SELECT id, refund_amount, refund_ref, refunded_at, price, shipping, qris_final_amount
+       FROM orders WHERE buyer_id = ? AND status = 'refunded' ORDER BY refunded_at DESC LIMIT 10`
+  ).bind(user.id).all();
+  return c.html(renderAkunPage(user, refunds.results || []));
 });
 
 app.get('/akun/alamat', async (c) => {
