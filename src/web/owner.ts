@@ -61,7 +61,7 @@ const AKSI_LABEL: Record<string, string> = {
   sweep: 'Sweep manual',
 };
 
-export function renderOwnerPage(disputes: any[], withdrawals: any[], calonPenjual: any[] = [], audit: any[] = []): string {
+export function renderOwnerPage(disputes: any[], withdrawals: any[], calonPenjual: any[] = [], audit: any[] = [], liab: { saldo?: number; escrow?: number; fee?: number } = {}): string {
   const dispCards = (disputes || []).map((o) => `
     <div class="st-card">
       <div class="lbl">Sengketa · ${tgl(o.updated_at)}</div>
@@ -98,9 +98,14 @@ export function renderOwnerPage(disputes: any[], withdrawals: any[], calonPenjua
 
   const wdCards = (withdrawals || []).map((w) => `
     <div class="st-card">
-      <div class="lbl">Pencairan · ${tgl(w.requested_at)}</div>
+      <div class="lbl">${w.kind === 'buyer' ? 'Pencairan Pembeli (refund)' : 'Pencairan Penjual'} · ${tgl(w.requested_at)}</div>
       <div class="st-big">${rp(w.amount)}</div>
       <div class="st-sub">@${escapeHtml(w.pen_name || '?')} · ${escapeHtml(w.method || 'qris')} · ${escapeHtml(w.account || '—')}</div>
+      <div class="sum-row" style="margin-top:8px;"><span>Transfer ke pengguna</span><span><b>${rp(w.amount)}</b></span></div>
+      ${Number(w.fee) > 0
+        ? `<div class="sum-row"><span>Biaya tarik (masuk kas)</span><span>${rp(w.fee)}</span></div>
+           <div class="sum-row"><span>Total saldo terpakai</span><span>${rp(Number(w.amount) + Number(w.fee))}</span></div>`
+        : '<div class="sum-row"><span>Biaya tarik</span><span>Rp0 (pembeli)</span></div>'}
       ${Number(w.sengketa_aktif) > 0 ? `<div class="warn">⚠ Ada ${Number(w.sengketa_aktif)} sengketa aktif milik penjual ini — jangan cairkan sebelum diputuskan.</div>` : ''}
 
       <details class="ev"><summary>Lihat rincian saldo &amp; riwayat</summary>
@@ -154,6 +159,14 @@ ${PASAR_BASE_CSS}
   <div class="page-head"><h1>Owner</h1><p>Putuskan sengketa dan cairkan saldo penjual. Setiap keputusan menyimpan alasan sebagai bukti.</p></div>
   <div class="err" id="err"></div>
   <button class="btn" id="swp" onclick="sweep()" style="margin:0 0 14px;max-width:280px;">Jalankan sweep sekarang</button>
+
+  <div class="st-big" style="margin:18px 0 10px;">Kewajiban Saldo</div>
+  <div class="st-card">
+    <div class="sum-row"><span>Saldo pengguna (bisa ditarik)</span><span><b>${rp(liab.saldo || 0)}</b></span></div>
+    <div class="sum-row"><span>Dana ditahan rekber (escrow)</span><span><b>${rp(liab.escrow || 0)}</b></span></div>
+    <div class="sum-row"><span>Biaya rekber terkumpul</span><span><b>${rp(liab.fee || 0)}</b></span></div>
+    <div class="st-sub">Saldo + escrow = uang orang lain yang harus tersedia di rekeningmu. Siapkan minimal angka itu.</div>
+  </div>
 
   <div class="st-big" style="margin:18px 0 10px;">Verifikasi Penjual</div>
   ${sellerCards}

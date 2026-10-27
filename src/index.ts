@@ -1687,6 +1687,16 @@ app.post('/api/saldo/withdraw', async (c) => {
     return c.json({ error: `Minimal tarik Rp${WITHDRAW_MIN.toLocaleString('id-ID')}` }, 400);
   }
   if (account.length < 4) return c.json({ error: 'Tulis tujuan pencairan (no. QRIS/rekening/e-wallet)' }, 400);
+  // Anti-banjir antrean: satu pengajuan aktif, maksimal 3 pengajuan per 24 jam.
+  const akt: any = await c.env.DB.prepare(
+    "SELECT COUNT(*) AS n FROM withdrawals WHERE user_id = ? AND status = 'requested'"
+  ).bind(me.id).first();
+  if (Number(akt?.n || 0) > 0) return c.json({ error: 'Masih ada pengajuan yang diproses owner. Tunggu sampai selesai.' }, 409);
+  const hr: any = await c.env.DB.prepare(
+    "SELECT COUNT(*) AS n FROM withdrawals WHERE user_id = ? AND requested_at > datetime('now','-1 day')"
+  ).bind(me.id).first();
+  if (Number(hr?.n || 0) >= 3) return c.json({ error: 'Batas 3 pengajuan pencairan per 24 jam. Coba lagi besok.' }, 429);
+
   const id = crypto.randomUUID();
   // Cek saldo menyatu di statement INSERT: double-tap tak bisa bikin saldo minus.
   // Reservasi = jumlah ditarik + biaya, supaya biaya tidak bisa dipakai dua kali.
@@ -1865,7 +1875,17 @@ app.get('/owner', async (c) => {
   const audit = await c.env.DB.prepare(
     `SELECT action, target_type, target_id, note, created_at FROM owner_actions ORDER BY created_at DESC LIMIT 25`
   ).all();
-  return c.html(renderOwnerPage(disputes, withdrawals, calon.results || [], audit.results || []));
+  const liab: any = await c.env.DB.prepare(
+    `SELECT
+       (SELECT COALESCE(SUM(delta),0) FROM ledger)
+         - (SELECT COALESCE(SUM(amount + fee),0) FROM withdrawals WHERE status = 'requested') AS saldo,
+       (SELECT COALESCE(SUM(COALESCE(qris_final_amount, price + shipping)),0) FROM orders
+         WHERE status IN ('paid','handed','disputed')) AS escrow,
+       (SELECT COALESCE(-SUM(delta),0) FROM ledger WHERE kind = 'fee') AS fee`
+  ).first();
+  return c.html(renderOwnerPage(disputes, withdrawals, calon.results || [], audit.results || [], {
+    saldo: Number(liab?.saldo || 0), escrow: Number(liab?.escrow || 0), fee: Number(liab?.fee || 0),
+  }));
 });
 
 app.post('/api/owner/orders/:id/resolve', async (c) => {
