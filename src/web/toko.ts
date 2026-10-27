@@ -134,11 +134,13 @@ export function renderTokoPage(user: any, orders: any[], listings: any[], saldo:
     try { keys = JSON.parse(l.photos || '[]'); } catch { keys = []; }
     const st = LISTING_STATUS[String(l.status)] || { cls: 'off', label: String(l.status) };
     const jml = Number(l.jumlah_pesanan || 0);
+    const edit = l.status === 'sold' ? ''
+      : `<a class="mini" href="/pasar/listing/${escapeHtml(l.id)}/edit" onclick="event.stopPropagation()" style="display:inline-block;text-decoration:none;">Edit</a>`;
     const aksi = l.status === 'active'
-      ? `<button class="mini" onclick="event.stopPropagation();setListing('${escapeHtml(l.id)}','hidden',this)">Sembunyikan</button>`
+      ? `${edit} <button class="mini" onclick="event.stopPropagation();setListing('${escapeHtml(l.id)}','hidden',this)">Sembunyikan</button>`
       : l.status === 'hidden'
-        ? `<button class="mini" onclick="event.stopPropagation();setListing('${escapeHtml(l.id)}','active',this)">Aktifkan</button>`
-        : '';
+        ? `${edit} <button class="mini" onclick="event.stopPropagation();setListing('${escapeHtml(l.id)}','active',this)">Aktifkan</button>`
+        : edit;
     return `
       <div class="b-row" onclick="location.href='/pasar/${escapeHtml(l.id)}'">
         <div class="thumb">${keys[0] ? `<img src="/media/${escapeHtml(keys[0])}" alt="" loading="lazy">` : escapeHtml(String(l.title || '?').charAt(0).toUpperCase())}</div>

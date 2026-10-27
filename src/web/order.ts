@@ -77,7 +77,10 @@ export function renderOrderPage(o: any, p: any, photos: string[], viewer: any): 
         <textarea id="rvBody" maxlength="300" placeholder="Ceritakan kondisi buku & pelayanan penjual (opsional)" style="width:100%;min-height:70px;margin-top:8px;border:2.5px solid #0B192C;padding:9px;font:600 13px 'DM Sans';border-radius:10px;"></textarea>
         <button class="btn b-blue" style="margin-top:8px;" onclick="kirimUlasan()">Kirim ulasan</button>`;
   } else if (st === 'refunded') {
-    actions = `<div class="st-sub">Owner memutuskan dana dikembalikan ke pembeli. Penjual tidak menerima saldo untuk pesanan ini.</div>`;
+    actions = `<div class="st-sub">Dana dikembalikan ke pembeli. Penjual tidak menerima saldo untuk pesanan ini.</div>
+      <div class="sum-row" style="margin-top:8px;"><span>Nominal refund</span><span><b>${rupiah(Number(o.refund_amount || total))}</b></span></div>
+      <div class="sum-row"><span>Referensi transfer</span><span>${escapeHtml(o.refund_ref || '—')}</span></div>
+      <div class="sum-row"><span>Dikirim</span><span>${o.refunded_at ? escapeHtml(String(o.refunded_at)) : '—'}</span></div>`;
   }
 
   return `<!DOCTYPE html>

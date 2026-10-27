@@ -565,3 +565,54 @@ export function renderListingDetail(user: any, p: any, seller: any): string {
 </body>
 </html>`;
 }
+
+export function renderEditListingPage(user: any, l: any): string {
+  const cond = String(l.cond || 'bekas_bagus');
+  return `<!DOCTYPE html>
+<html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Edit Buku | BERBIRRU</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.ico">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,700&display=swap" rel="stylesheet">
+${PASAR_BASE_CSS}
+<style>
+  .ed{background:#fff;border:3px solid #0B192C;box-shadow:5px 6px 0 #26364A;border-radius:12px;padding:16px}
+  .ed .f{margin-bottom:12px}
+  .ed label{display:block;font:800 10.5px 'Roboto Mono';letter-spacing:.05em;color:#52627A;margin-bottom:5px;text-transform:uppercase}
+  .ed input,.ed select{width:100%;min-height:44px;border:2.5px solid #0B192C;border-radius:8px;padding:10px 12px;font:600 14px 'DM Sans'}
+  .ed .hint{font:600 10.5px 'DM Sans';color:#64748B;margin-top:4px}
+  .ed .btn{width:100%;min-height:46px;border:3px solid #0B192C;border-radius:8px;box-shadow:3px 4px 0 #26364A;font:900 13px 'DM Sans';cursor:pointer;background:#FDE047}
+  .err{display:none;background:#FEE2E2;border:2.5px solid #B42318;color:#7F1D1D;padding:9px 11px;font:800 12px 'DM Sans';margin-bottom:12px;border-radius:8px}
+</style></head>
+<body>
+<div class="wrap">
+  <div class="page-head"><h1>Edit Buku</h1><p>Perbaiki judul, harga, atau kondisi. Foto tidak berubah.</p></div>
+  <div class="err" id="err"></div>
+  <form class="ed" onsubmit="simpan(event)">
+    <div class="f"><label>Judul buku</label><input id="fTitle" maxlength="120" value="${escapeHtml(l.title || '')}"></div>
+    <div class="f"><label>Harga (Rp)</label><input id="fPrice" type="number" min="1000" max="50000000" step="500" value="${Number(l.price || 0)}">
+      <div class="hint">Biaya rekber Rp5.000 dipotong dari harga ini saat dana dilepas.</div></div>
+    <div class="f"><label>Kondisi</label>
+      <select id="fCond">
+        <option value="baru"${cond === 'baru' ? ' selected' : ''}>Baru</option>
+        <option value="bekas_bagus"${cond === 'bekas_bagus' ? ' selected' : ''}>Bekas — Bagus</option>
+        <option value="bekas_layak"${cond === 'bekas_layak' ? ' selected' : ''}>Bekas — Layak</option>
+      </select></div>
+    <button class="btn" type="submit">Simpan perubahan</button>
+  </form>
+</div>
+<script>
+async function simpan(e){
+  e.preventDefault();
+  const err=document.getElementById('err'); err.style.display='none';
+  const body={title:document.getElementById('fTitle').value.trim(),
+    price:Number(document.getElementById('fPrice').value),
+    cond:document.getElementById('fCond').value};
+  const r=await fetch('/api/pasar/listings/${escapeHtml(l.id)}',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok){err.textContent=j.error||'Gagal menyimpan.';err.style.display='block';return}
+  location.href='/pasar/saya?tab=toko';
+}
+</script>
+${renderBottomNav('pasar', user, false, { mode: 'pasar', marketTab: 'toko' })}
+</body></html>`;
+}

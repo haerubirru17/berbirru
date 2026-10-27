@@ -90,6 +90,9 @@ export function renderOwnerPage(disputes: any[], withdrawals: any[], calonPenjua
       <div class="field"><label class="lbl">Alasan keputusan (wajib)</label>
         <textarea class="inp" id="note-${escapeHtml(o.id)}" maxlength="300" placeholder="Contoh: resi terverifikasi & pembeli tidak respons 3 hari."></textarea>
       </div>
+      <div class="field"><label class="lbl">Ref transfer refund (wajib untuk refund)</label>
+        <input class="inp" id="refund-ref-${escapeHtml(o.id)}" maxlength="80" placeholder="Contoh: BCA-270126-8891 / no. referensi e-wallet">
+      </div>
       <div class="btns">
         <button class="btn b-red" onclick="resolve('${escapeHtml(o.id)}','refund',this)">Refund Pembeli</button>
         <button class="btn b-green" onclick="resolve('${escapeHtml(o.id)}','release',this)">Lepas ke Penjual</button>
@@ -188,8 +191,13 @@ async function post(url,body){
 async function resolve(id,decision,btn){
   const note=val('note-'+id);
   if(note.length<5){err('Tulis alasan keputusan dulu (min 5 karakter).');return}
+  const transfer_ref=val('refund-ref-'+id);
+  if(decision==='refund'){
+    if(transfer_ref.length<4){err('Isi referensi transfer refund dulu (min 4 karakter).');return}
+    if(!confirm('Pastikan dana sudah benar-benar ditransfer ke pembeli.')) return;
+  }
   if(decision==='refund' && !confirm('Refund ke pembeli? Dana tidak akan dilepas ke penjual.')) return;
-  btn.disabled=true; if(!await post('/api/owner/orders/'+id+'/resolve',{decision,note})) btn.disabled=false;
+  btn.disabled=true; if(!await post('/api/owner/orders/'+id+'/resolve',{decision,note,transfer_ref:transfer_ref})) btn.disabled=false;
 }
 async function reviewSeller(id,decision,btn){
   let reason=val('snote-'+id);

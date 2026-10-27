@@ -23,7 +23,7 @@ import { renderProfilePage } from './web/profile';
 import { renderNotificationsPage } from './web/notifications';
 import { renderChainPage } from './web/chain';
 import { renderAkunPage, renderAlamatPage } from './web/akun';
-import { renderPasarPage, renderJualPage, renderListingDetail } from './web/pasar';
+import { renderPasarPage, renderJualPage, renderEditListingPage, renderListingDetail } from './web/pasar';
 import { renderCheckoutPage } from './web/checkout';
 import { renderOrderPage } from './web/order';
 import { renderVerifikasiPage } from './web/verifikasi';
@@ -1090,6 +1090,16 @@ app.post('/akun/alamat', async (c) => {
   return c.redirect('/akun/alamat?ok=1');
 });
 
+app.get('/pasar/listing/:id/edit', async (c) => {
+  const me = await getAuthUser(c);
+  if (!me) return c.redirect('/login');
+  const l: any = await c.env.DB.prepare('SELECT id, seller_id, title, price, cond, status FROM listings WHERE id = ?')
+    .bind(c.req.param('id')).first();
+  if (!l || l.seller_id !== me.id) return c.notFound();
+  if (l.status === 'sold') return c.redirect('/pasar/saya?tab=toko');
+  return c.html(renderEditListingPage(me, l));
+});
+
 app.get('/pasar/jual', async (c) => {
   const user = await getAuthUser(c);
   if (!user) return c.redirect('/login');
@@ -1609,6 +1619,26 @@ app.get('/pesanan', async (c) => {
 });
 
 // ---- Kelola ketersediaan buku (1 buku = 1 listing; tanpa stok) ----
+app.patch('/api/pasar/listings/:id', async (c) => {
+  const me = await getAuthUser(c);
+  if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
+  const body: any = await c.req.json().catch(() => ({}));
+  const title = String(body?.title || '').trim().slice(0, 120);
+  const price = Number(body?.price || 0);
+  const cond = ['baru', 'bekas_bagus', 'bekas_layak'].includes(String(body?.cond)) ? String(body.cond) : '';
+  if (title.length < 3) return c.json({ error: 'Judul minimal 3 karakter' }, 400);
+  if (!(price >= 1000 && price <= 50_000_000)) return c.json({ error: 'Harga harus Rp1.000–Rp50.000.000' }, 400);
+  if (!cond) return c.json({ error: 'Kondisi buku tidak dikenal' }, 400);
+
+  const l: any = await c.env.DB.prepare('SELECT id, seller_id, status FROM listings WHERE id = ?').bind(c.req.param('id')).first();
+  if (!l || l.seller_id !== me.id) return c.json({ error: 'Tidak ditemukan' }, 404);
+  if (l.status === 'sold') return c.json({ error: 'Buku sudah terjual — tidak bisa diubah' }, 409);
+
+  await c.env.DB.prepare('UPDATE listings SET title = ?, price = ?, cond = ? WHERE id = ?')
+    .bind(title, Math.round(price), cond, l.id).run();
+  return c.json({ ok: true });
+});
+
 app.post('/api/pasar/listings/:id/status', async (c) => {
   const me = await getAuthUser(c);
   if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
@@ -1759,13 +1789,18 @@ app.post('/api/owner/orders/:id/resolve', async (c) => {
   if (!o) return c.json({ error: 'Sengketa tidak ditemukan' }, 404);
 
   if (decision === 'refund') {
-    // Dana belum pernah dikreditkan ke penjual → cukup tutup order, tak ada ledger yang dibalik.
+    // Refund = transfer nyata ke pembeli. Tanpa ref & nominal, status ini bohong.
+    const ref = String(body?.transfer_ref || '').trim().slice(0, 80);
+    if (ref.length < 4) return c.json({ error: 'Isi referensi transfer refund (min 4 karakter)' }, 400);
+    const nominal = Number(o.qris_final_amount || (Number(o.price) + Number(o.shipping || 0)));
     const res = await c.env.DB.prepare(
-      "UPDATE orders SET status = 'refunded', resolution_note = ?, resolved_at = datetime('now'), updated_at = datetime('now') WHERE id = ? AND status = 'disputed'"
-    ).bind(note, o.id).run();
+      `UPDATE orders SET status = 'refunded', resolution_note = ?, refund_ref = ?, refund_amount = ?,
+         refunded_at = datetime('now'), resolved_at = datetime('now'), updated_at = datetime('now')
+       WHERE id = ? AND status = 'disputed'`
+    ).bind(note, ref, nominal, o.id).run();
     if ((res.meta?.changes || 0) === 0) return c.json({ error: 'Sengketa sudah diputuskan' }, 409);
-    await logOrderEvent(c.env.DB, o.id, 'owner', 'disputed', 'refunded', note || 'Owner: dana dikembalikan ke pembeli');
-    await logOwnerAction(c.env.DB, me?.email, 'dispute_refund', 'order', o.id, note);
+    await logOrderEvent(c.env.DB, o.id, 'owner', 'disputed', 'refunded', `${note || 'Dana dikembalikan'} · refund ${ref} Rp${nominal.toLocaleString('id-ID')}`);
+    await logOwnerAction(c.env.DB, me?.email, 'dispute_refund', 'order', o.id, `${note} · ref ${ref} · Rp${nominal}`);
     return c.json({ ok: true });
   }
 
