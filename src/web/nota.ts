@@ -57,8 +57,8 @@ const CSS = `
   .stk .resi{margin-top:1.6mm;text-align:center}
   .stk .resi .k{font:400 4.8pt 'IM Fell English';letter-spacing:.26em;text-transform:uppercase}
   .stk .resi .v{font:700 12.4pt 'Special Elite';line-height:1;margin-top:.4mm;word-break:break-all}
-  .stk .bc{margin:1.1mm 0 .6mm;line-height:0}
-  .stk .bc svg{width:100%;height:auto;display:block}
+  .stk .bc{margin:1.1mm 0 .6mm;line-height:0;text-align:center}
+  .stk .bc svg{width:58mm;max-width:100%;height:auto;display:inline-block}
   .stk .isi{border-top:.6px solid var(--ink);border-bottom:.6px solid var(--ink);padding:1.2mm 0;margin:.8mm 0}
   .stk .isi .k{font:400 4.6pt 'IM Fell English';letter-spacing:.24em;text-transform:uppercase}
   .stk .isi .v{font:400 8.4pt 'IM Fell English';margin-top:.2mm}
@@ -150,7 +150,7 @@ export function renderNotaPengiriman(o: any, p: any, seller: any): string {
       </div>
 
       <div class="resi"><div class="k">Nomor Resi</div><div class="v">${escapeHtml(resi)}</div></div>
-      <div class="bc">${svgCode128(resi, { tinggi: 17, modul: 0.33 })}</div>
+      <div class="bc">${svgCode128(resi, { tinggi: 13, modul: 0.33 })}</div>
 
       <div class="isi"><div class="k">Isi Paket</div><div class="v">${isi}</div></div>
 
