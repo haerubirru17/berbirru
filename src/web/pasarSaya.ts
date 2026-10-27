@@ -61,6 +61,8 @@ const SHELL_CSS = `
   .locked-box p{margin:0 0 12px;font-size:12.5px;font-weight:600;color:#475569;line-height:1.6}
   .locked-box a{display:inline-flex;min-height:44px;align-items:center;background:#1D61E7;color:#fff;border:2.5px solid #0B192C;
     padding:9px 14px;font:900 12.5px 'DM Sans';text-decoration:none;box-shadow:3px 3px 0 #26364A}
+  .cari-wrap{margin:0 0 12px}
+  .cari-wrap input{width:100%;min-height:44px;border:2.5px solid #0B192C;border-radius:8px;padding:10px 12px;font:600 13.5px 'DM Sans';background:#fff}
   .empty-akt{background:#F8FAFC;border:2px dashed #CBD5E1;padding:18px 14px;text-align:center;font:700 12px 'DM Sans';color:#64748B;line-height:1.6}
 `;
 
@@ -69,6 +71,9 @@ const AKT_LABEL: Record<string, string> = {
   order_handed: 'Paket dikirim penjual',
   order_done: 'Pesanan selesai — dana cair',
   order_dispute: 'Sengketa pesanan dibuka',
+  order_refund: 'Refund masuk saldo kamu',
+  order_withdraw_paid: 'Pencairan saldo sudah ditransfer',
+  order_withdraw_reject: 'Pencairan saldo ditolak — saldo dikembalikan',
 };
 
 export interface HubData {
@@ -100,9 +105,23 @@ export function renderPasarSaya(user: any, tab: string, sub: string, d: HubData)
       ${t.label}<span class="c">${t.count}</span>${t.dot ? `<span class="dot">${t.dot}</span>` : ''}
     </a>`).join('');
 
+  // Ringkasan pembeli: uangku di mana + aktivitas belanja. Penjual pakai kotak di tab Toko.
+  const beli = d.pesanan.orders || [];
+  const uangDi = (st: string[]) => beli.filter((o: any) => st.includes(String(o.status)))
+    .reduce((a: number, o: any) => a + Number(o.qris_final_amount || Number(o.price) + Number(o.shipping || 0)), 0);
+  const dashBeli = approved ? '' : `
+  <div class="dash">
+    <div class="dbox d-escrow"><div class="dk">Di rekber</div><div class="dn">${'Rp' + uangDi(['paid', 'handed', 'disputed']).toLocaleString('id-ID')}</div></div>
+    <div class="dbox d-gmv"><div class="dk">Belanja</div><div class="dn">${'Rp' + uangDi(['completed']).toLocaleString('id-ID')}</div></div>
+    <div class="dbox d-produk"><div class="dk">Berjalan</div><div class="dn">${beli.filter((o: any) => ['created', 'paid', 'handed'].includes(String(o.status))).length}</div></div>
+    <div class="dbox d-saldo"><div class="dk">Selesai</div><div class="dn">${beli.filter((o: any) => String(o.status) === 'completed').length}</div></div>
+  </div>
+  <div class="dash-hint">Di rekber = uangmu yang masih ditahan. Belanja = total transaksi selesai.</div>`;
+
   let isi = '';
   if (aktif === 'pesanan') {
-    isi = renderPesananPage(user, d.pesanan.orders, sub || 'bayar', true);
+    isi = dashBeli + `<div class="cari-wrap"><input id="cariPesanan" type="search" placeholder="Cari judul buku di pesanan…" oninput="saringPesanan(this.value)"></div>`
+      + renderPesananPage(user, d.pesanan.orders, sub || 'bayar', true);
   } else if (aktif === 'toko') {
     isi = renderTokoPage(user, d.toko.orders, d.toko.listings, d.saldo.balance, sub || 'perlu', true, { gmv: d.toko.gmv || 0, escrow: d.toko.escrow || 0 });
   } else if (aktif === 'saldo') {
@@ -112,7 +131,7 @@ export function renderPasarSaya(user: any, tab: string, sub: string, d: HubData)
     isi = `<div class="akt-bar"><span class="lbl">${items.length} aktivitas pesanan</span>
       ${d.aktivitas.unread > 0 ? '<button onclick="bacaSemua()">Tandai dibaca</button>' : ''}</div>` +
       (items.length ? items.map((n) => `
-        <a class="akt ${n.is_read ? '' : 'unread'}" href="/pasar/order/${escapeHtml(n.order_id || '')}">
+        <a class="akt ${n.is_read ? '' : 'unread'}" href="${n.order_id ? '/pasar/order/' + escapeHtml(n.order_id) : '/pasar/saya?tab=saldo'}">
           <span class="ic"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></span>
           <span class="tx">
             <span class="t1">${escapeHtml(AKT_LABEL[n.type] || 'Pembaruan pesanan')}</span>
@@ -149,6 +168,14 @@ ${approved && user.shop_slug ? `<div class="wrap" style="padding-top:0"><div cla
     </div>
     <script>function salinToko(b){var u='https://'+location.host+'/toko/${escapeHtml(user.shop_slug)}';if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(u).then(function(){b.textContent='Tersalin ✓'},function(){prompt('Salin:',u)})}else{prompt('Salin:',u)}}</script></div>` : ''}
 ${approved ? '' : `<div class="wrap" style="padding-top:0"><a class="jual-cta" href="/pasar">Mau jual buku juga? Ajukan verifikasi &rsaquo;</a></div>`}
+<script>
+function saringPesanan(q){
+  var s=String(q||'').toLowerCase();
+  document.querySelectorAll('.o-card').forEach(function(c){
+    c.style.display = (!s || c.textContent.toLowerCase().indexOf(s)>=0) ? '' : 'none';
+  });
+}
+</script>
 ${renderBottomNav('pasar', user, false, { mode: 'pasar', marketTab: (aktif === 'toko' ? 'toko' : aktif === 'pesanan' ? 'pesanan' : 'pasar') })}
 </body></html>`;
 }

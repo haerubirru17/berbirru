@@ -1238,7 +1238,7 @@ const AUTO_COMPLETE_DAYS = 5;          // handed + diam D+5 → auto completed (
 
 
 // Notifikasi order: satu helper, dipanggil dari semua transisi status.
-async function notifyOrder(db: any, opts: { userId: string; actorId: string; type: string; orderId: string }) {
+async function notifyOrder(db: any, opts: { userId: string; actorId: string; type: string; orderId: string | null }) {
   if (!opts.userId || !opts.actorId || opts.userId === opts.actorId) return; // jangan notif diri sendiri
   try {
     await db.prepare('INSERT INTO notifications (id, user_id, actor_id, type, order_id) VALUES (?,?,?,?,?)')
@@ -1862,6 +1862,7 @@ app.post('/api/owner/orders/:id/resolve', async (c) => {
     ]);
     if ((r[0].meta?.changes || 0) === 0) return c.json({ error: 'Sengketa sudah diputuskan' }, 409);
     await logOrderEvent(c.env.DB, o.id, 'owner', 'disputed', 'refunded', `${note || 'Dana dikembalikan'} · saldo pembeli +Rp${nominal.toLocaleString('id-ID')}`);
+    await notifyOrder(c.env.DB, { userId: o.buyer_id, actorId: me!.id, type: 'order_refund', orderId: o.id });
     await logOwnerAction(c.env.DB, me?.email, 'dispute_refund', 'order', o.id, `${note} · saldo pembeli Rp${nominal}`);
     return c.json({ ok: true });
   }
@@ -1943,6 +1944,10 @@ app.post('/api/owner/withdrawals/:id/settle', async (c) => {
     }
     await c.env.DB.batch(rows);
   }
+  await notifyOrder(c.env.DB, {
+    userId: w.user_id, actorId: me!.id,
+    type: decision === 'pay' ? 'order_withdraw_paid' : 'order_withdraw_reject', orderId: null,
+  });
   await logOwnerAction(c.env.DB, me?.email, decision === 'pay' ? 'withdrawal_pay' : 'withdrawal_reject', 'withdrawal', id, note + (ref ? ' · ref ' + ref : ''));
   return c.json({ ok: true });
 });
