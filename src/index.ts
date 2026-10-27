@@ -33,6 +33,8 @@ import { renderVerifikasiPage } from './web/verifikasi';
 import { renderPasarSaya } from './web/pasarSaya';
 import { renderTokoPublikPage } from './web/tokoPublik';
 import { renderOwnerPage } from './web/owner';
+import { renderAkunAdminPage } from './web/akunAdmin';
+import { bolehLihatPesanan, bolehUnggahBukti, jenisDokumen, kunciBukti, kunciDokumen, MAKS_BUKTI_PER_PIHAK } from './lib/berkas';
 import { createQrisTransaction, getQrisStatus, verifyWebhook, KlikQrisEnv } from './klikqris';
 import { providerAmountMatches, settlementAmounts, PASAR_FEE, WITHDRAW_MIN, withdrawFee, withdrawTotal } from './lib/pasar-settlement';
 import { validasiPenerima, normalisasiHp } from './lib/alamat';
@@ -1081,25 +1083,36 @@ app.use('/api/pasar/*', async (c, next) => {
   await next();
 });
 
-app.post('/api/pasar/upload', async (c) => {
-  const me = await getAuthUser(c);
-  if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
+// Satu jalur unggah foto: listing, bukti sengketa, dokumen penjual.
+// Validasi (tipe, sniff isi berkas, batas 5 MB) ada di sini — pemanggil tidak menduplikasi.
+async function putFoto(
+  c: any,
+  keyName: (ext: string) => string
+): Promise<{ key: string } | { error: string; status: 400 | 413 | 415 | 503 }> {
   const ct = (c.req.header('Content-Type') || '').split(';')[0].trim().toLowerCase();
   const ext = PHOTO_TYPES[ct];
-  if (!ext) return c.json({ error: 'Hanya JPEG/PNG/WebP' }, 415);
-  if (!c.env.MEDIA) return c.json({ error: 'Media belum siap' }, 503);
+  if (!ext) return { error: 'Hanya JPEG/PNG/WebP', status: 415 };
+  if (!c.env.MEDIA) return { error: 'Media belum siap', status: 503 };
   const buf = await c.req.arrayBuffer();
-  if (!buf || buf.byteLength === 0) return c.json({ error: 'Berkas kosong' }, 400);
-  if (buf.byteLength > PHOTO_MAX_BYTES) return c.json({ error: 'Foto terlalu besar (maks 5MB)' }, 413);
+  if (!buf || buf.byteLength === 0) return { error: 'Berkas kosong', status: 400 };
+  if (buf.byteLength > PHOTO_MAX_BYTES) return { error: 'Foto terlalu besar (maks 5MB)', status: 413 };
   const b = new Uint8Array(buf);
   const isJpeg = b[0] === 0xFF && b[1] === 0xD8;
   const isPng = b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47;
   const isWebP = b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50;
   const sniffExt = isJpeg ? 'jpg' : isPng ? 'png' : isWebP ? 'webp' : null;
-  if (!sniffExt || sniffExt !== ext) return c.json({ error: 'Isi berkas tidak cocok dengan tipenya' }, 415);
-  const key = `${PHOTO_DIR}/${me.id}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  if (!sniffExt || sniffExt !== ext) return { error: 'Isi berkas tidak cocok dengan tipenya', status: 415 };
+  const key = keyName(ext);
   await c.env.MEDIA.put(key, buf, { httpMetadata: { contentType: ct } });
-  return c.json({ ok: true, key, url: `/media/${key}?v=${Date.now()}` });
+  return { key };
+}
+
+app.post('/api/pasar/upload', async (c) => {
+  const me = await getAuthUser(c);
+  if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
+  const r = await putFoto(c, (ext) => `${PHOTO_DIR}/${me.id}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`);
+  if ('error' in r) return c.json({ error: r.error }, r.status);
+  return c.json({ ok: true, key: r.key, url: `/media/${r.key}?v=${Date.now()}` });
 });
 
 app.delete('/api/pasar/upload', async (c) => {
@@ -1111,6 +1124,88 @@ app.delete('/api/pasar/upload', async (c) => {
   if (!/^[a-z0-9_/-]+\.(jpg|png|webp)$/i.test(key)) return c.json({ error: 'Key tak valid' }, 400);
   await c.env.MEDIA.delete(key).catch(() => {});
   return c.json({ ok: true });
+});
+
+// ---- Berkas privat: bukti sengketa & dokumen penjual ----
+// Disajikan lewat route ber-guard (bukan /media yang publik + cache 5 menit).
+async function serveBerkas(c: any, key: string) {
+  if (!c.env.MEDIA) return c.notFound();
+  const obj = await c.env.MEDIA.get(key);
+  if (!obj) return c.notFound();
+  return c.body(obj.body, 200, {
+    'Content-Type': obj.httpMetadata?.contentType || 'application/octet-stream',
+    'Cache-Control': 'private, no-store',
+    'X-Content-Type-Options': 'nosniff',
+  });
+}
+
+// Bukti foto sengketa: hanya pembeli/penjual pesanan itu, hanya saat status disputed.
+app.post('/api/pasar/order/:id/evidence', async (c) => {
+  const me = await getAuthUser(c);
+  if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
+  const o: any = await c.env.DB.prepare('SELECT id, buyer_id, seller_id, status FROM orders WHERE id = ?').bind(c.req.param('id')).first();
+  if (!o || (me.id !== o.buyer_id && me.id !== o.seller_id)) return c.json({ error: 'Tidak ditemukan' }, 404);
+  const sud: any = await c.env.DB.prepare(
+    'SELECT COUNT(*) AS n FROM order_evidence WHERE order_id = ? AND uploader_id = ?'
+  ).bind(o.id, me.id).first();
+  if (!bolehUnggahBukti(o.status, Number(sud?.n || 0))) {
+    return c.json({
+      error: o.status === 'disputed'
+        ? `Maksimal ${MAKS_BUKTI_PER_PIHAK} foto per pihak`
+        : 'Bukti hanya bisa diunggah saat sengketa',
+    }, 409);
+  }
+  if (await hitRate(c.env.DB, `bukti:${me.id}`, 10, 600)) {
+    return c.json({ error: 'Terlalu banyak unggahan. Coba lagi nanti.' }, 429);
+  }
+  const note = String(c.req.query('note') || '').trim().slice(0, 200);
+  const r = await putFoto(c, (ext) => kunciBukti(o.id, me.id, ext));
+  if ('error' in r) return c.json({ error: r.error }, r.status);
+  await c.env.DB.prepare(
+    'INSERT INTO order_evidence (id, order_id, uploader_id, role, r2_key, note) VALUES (?,?,?,?,?,?)'
+  ).bind(crypto.randomUUID(), o.id, me.id, me.id === o.buyer_id ? 'buyer' : 'seller', r.key, note || null).run();
+  return c.json({ ok: true });
+});
+
+app.get('/berkas/sengketa/:id', async (c) => {
+  const me = await getAuthUser(c);
+  const row: any = await c.env.DB.prepare(
+    'SELECT e.r2_key, o.buyer_id, o.seller_id FROM order_evidence e JOIN orders o ON o.id = e.order_id WHERE e.id = ?'
+  ).bind(c.req.param('id')).first();
+  if (!row) return c.notFound();
+  if (!bolehLihatPesanan(row, me?.id, isOwner(c.env, me))) return c.notFound();
+  return serveBerkas(c, row.r2_key);
+});
+
+// Dokumen verifikasi penjual: KTP & buku tabungan — HANYA owner yang boleh membuka.
+app.post('/api/pasar/seller/docs', async (c) => {
+  const me = await getAuthUser(c);
+  if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
+  if (me.seller_status === 'approved') return c.json({ error: 'Akun sudah terverifikasi' }, 409);
+  const kind = jenisDokumen(c.req.query('kind'));
+  if (!kind) return c.json({ error: 'Jenis dokumen tidak dikenal' }, 400);
+  if (await hitRate(c.env.DB, `dok:${me.id}`, 6, 3600)) {
+    return c.json({ error: 'Terlalu banyak unggahan. Coba lagi nanti.' }, 429);
+  }
+  const lama: any = await c.env.DB.prepare('SELECT r2_key FROM seller_docs WHERE user_id = ? AND kind = ?').bind(me.id, kind).first();
+  const r = await putFoto(c, (ext) => kunciDokumen(me.id, kind, ext));
+  if ('error' in r) return c.json({ error: r.error }, r.status);
+  await c.env.DB.prepare(
+    `INSERT INTO seller_docs (user_id, kind, r2_key) VALUES (?,?,?)
+     ON CONFLICT(user_id, kind) DO UPDATE SET r2_key = excluded.r2_key, uploaded_at = datetime('now')`
+  ).bind(me.id, kind, r.key).run();
+  if (lama?.r2_key && lama.r2_key !== r.key) await c.env.MEDIA.delete(lama.r2_key).catch(() => {});
+  return c.json({ ok: true });
+});
+
+app.get('/berkas/dokumen/:userId/:kind', async (c) => {
+  const me = await getAuthUser(c);
+  if (!isOwner(c.env, me)) return c.notFound();
+  const kind = jenisDokumen(c.req.param('kind'));
+  if (!kind) return c.notFound();
+  const row: any = await c.env.DB.prepare('SELECT r2_key FROM seller_docs WHERE user_id = ? AND kind = ?').bind(c.req.param('userId'), kind).first();
+  if (!row) return c.notFound();
+  return serveBerkas(c, row.r2_key);
 });
 
 app.post('/api/pasar/listings', async (c) => {
@@ -1379,7 +1474,11 @@ app.get('/pasar/jual', async (c) => {
   if (!user) return c.redirect('/login');
   if (isOwner(c.env, user)) return c.redirect('/owner'); // owner = admin, bukan penjual
   // Gerbang: hanya penjual terverifikasi yang boleh memasang buku.
-  if (user.seller_status !== 'approved') return c.html(renderVerifikasiPage(user));
+  if (user.seller_status !== 'approved') {
+    const docs = await c.env.DB.prepare('SELECT kind FROM seller_docs WHERE user_id = ?').bind(user.id).all();
+    const ada = new Set((docs.results || []).map((d: any) => d.kind));
+    return c.html(renderVerifikasiPage({ ...user, doc_ktp: ada.has('ktp'), doc_bank: ada.has('bank') }));
+  }
   return c.html(renderJualPage(user));
 });
 
@@ -1495,15 +1594,16 @@ app.get('/pasar/saya', async (c) => {
 
 app.get('/pasar/:id', async (c) => {
   const user = await getAuthUser(c);
+  const owner = isOwner(c.env, user);
   const p: any = await c.env.DB.prepare(
-    'SELECT * FROM listings WHERE id = ? AND status != \'hidden\''
+    owner ? 'SELECT * FROM listings WHERE id = ?' : "SELECT * FROM listings WHERE id = ? AND status != 'hidden'"
   ).bind(c.req.param('id')).first();
   if (!p) return c.notFound();
   const seller: any = await c.env.DB.prepare(
     'SELECT pen_name, display_name, city, avatar_key, shop_name, shop_slug, seller_status FROM users WHERE id = ?'
   ).bind(p.seller_id).first();
   if (!seller) return c.notFound();
-  return c.html(renderListingDetail(user, p, seller));
+  return c.html(renderListingDetail(user, p, seller, owner));
 });
 
 // ---- Order: kwitansi → QRIS → webhook → serah → selesai ----
@@ -1718,18 +1818,24 @@ app.get('/pasar/order/:id', async (c) => {
   const user = await getAuthUser(c);
   const o: any = await c.env.DB.prepare('SELECT * FROM orders WHERE id = ?').bind(c.req.param('id')).first();
   if (!o) return c.notFound();
-  // pembeli & penjual boleh lihat; orang lain 404 (kwitansi privat)
-  if (!user || (user.id !== o.buyer_id && user.id !== o.seller_id)) return c.notFound();
+  // Pembeli, penjual, atau owner (mode periksa) boleh lihat; orang lain 404.
+  const adminView = isOwner(c.env, user);
+  if (!bolehLihatPesanan(o, user?.id, adminView)) return c.notFound();
   const p: any = await c.env.DB.prepare('SELECT title, photos FROM listings WHERE id = ?').bind(o.listing_id).first();
   if (!p) return c.notFound();
   const ev = await c.env.DB.prepare('SELECT actor, note, to_st, created_at FROM order_events WHERE order_id = ? ORDER BY id').bind(o.id).all();
   o.events = ev.results || [];
+  // Bukti foto sengketa (kalau ada) — ditampilkan ke owner dan kedua pihak.
+  const bukti = await c.env.DB.prepare(
+    'SELECT id, uploader_id, role, note, created_at FROM order_evidence WHERE order_id = ? ORDER BY created_at'
+  ).bind(o.id).all().catch(() => ({ results: [] as any[] }));
+  o.evidence = bukti.results || [];
   const rv: any = await c.env.DB.prepare('SELECT stars, body FROM reviews WHERE order_id = ?').bind(o.id).first();
   o.review_stars = rv ? Number(rv.stars) : 0;
   o.review_body = rv?.body || '';
   let photos: string[] = [];
   try { photos = JSON.parse(p.photos || '[]'); } catch { photos = []; }
-  return c.html(renderOrderPage(o, p, photos, user));
+  return c.html(renderOrderPage(o, p, photos, user, adminView));
 });
 
 async function reconcileQris(db: any, env: Env, o: any): Promise<{ ok: boolean; paid?: boolean; error?: string }> {
@@ -2134,6 +2240,9 @@ app.post('/api/pasar/seller/apply', async (c) => {
   if (shopName.length < 2) return c.json({ error: 'Nama toko minimal 2 karakter' }, 400);
   if (bankName.length < 3) return c.json({ error: 'Isi nama pemilik rekening/QRIS (min 3 karakter)' }, 400);
   if (bankAccount.length < 8) return c.json({ error: 'Nomor rekening/QRIS minimal 8 angka' }, 400);
+  // Owner memverifikasi manual: tanpa foto KTP & buku tabungan, pengajuan tidak bisa dinilai.
+  const docs: any = await c.env.DB.prepare('SELECT COUNT(*) AS n FROM seller_docs WHERE user_id = ?').bind(me.id).first();
+  if (Number(docs?.n || 0) < 2) return c.json({ error: 'Unggah foto KTP dan buku tabungan dulu' }, 400);
   const dipakai: any = await c.env.DB.prepare(
     'SELECT 1 FROM users WHERE shop_name = ? COLLATE NOCASE AND id != ? LIMIT 1'
   ).bind(shopName, me.id).first();
@@ -2169,6 +2278,8 @@ app.get('/owner', async (c) => {
   const calon = await c.env.DB.prepare(
     `SELECT u.id, u.pen_name, u.email, u.city, u.seller_full_name, u.seller_phone, u.seller_note, u.shop_name, u.seller_applied_at,
             u.seller_bank_name, u.seller_bank_account,
+            (SELECT COUNT(*) FROM seller_docs d WHERE d.user_id = u.id AND d.kind = 'ktp') AS doc_ktp,
+            (SELECT COUNT(*) FROM seller_docs d WHERE d.user_id = u.id AND d.kind = 'bank') AS doc_bank,
             (SELECT COUNT(*) FROM listings l WHERE l.seller_id = u.id AND l.status = 'active') AS listing_aktif
        FROM users u WHERE u.seller_status = 'pending' ORDER BY u.seller_applied_at ASC LIMIT 50`
   ).all();
@@ -2181,6 +2292,10 @@ app.get('/owner', async (c) => {
       'SELECT actor, from_st, to_st, note, created_at FROM order_events WHERE order_id = ? ORDER BY id'
     ).bind(o.id).all();
     o.events = ev.results || [];
+    const bukti = await c.env.DB.prepare(
+      'SELECT id, uploader_id, role, note, created_at FROM order_evidence WHERE order_id = ? ORDER BY created_at'
+    ).bind(o.id).all();
+    o.evidence = bukti.results || [];
     const bs = await c.env.DB.prepare(
       `SELECT (SELECT COUNT(*) FROM orders WHERE buyer_id = ? AND status = 'completed') AS selesai,
               (SELECT COUNT(*) FROM orders WHERE buyer_id = ? AND status IN ('disputed','refunded')) AS sengketa,
@@ -2254,6 +2369,42 @@ app.get('/owner', async (c) => {
   return c.html(renderOwnerPage(disputes, withdrawals, calon.results || [], audit.results || [], {
     saldo: Number(liab?.saldo || 0), escrow: Number(liab?.escrow || 0), fee: Number(liab?.fee || 0),
   }, laporan));
+});
+
+// Riwayat akun (read-only) — owner memutuskan berdasarkan rekam jejak, bukan tebakan.
+app.get('/owner/akun/:id', async (c) => {
+  const me = await getAuthUser(c);
+  if (!isOwner(c.env, me)) return c.notFound();
+  const id = c.req.param('id');
+  const u: any = await c.env.DB.prepare(
+    `SELECT id, email, pen_name, display_name, city, seller_status, shop_name, shop_slug, seller_full_name, seller_phone,
+            seller_bank_name, seller_bank_account, seller_reject_reason, seller_applied_at, created_at
+       FROM users WHERE id = ?`
+  ).bind(id).first();
+  if (!u) return c.notFound();
+
+  const [beli, jual, sen, list, ulas, led, saldo] = await Promise.all([
+    c.env.DB.prepare(`SELECT o.id, o.status, o.price, o.shipping, o.created_at, l.title, s.pen_name AS lawan
+      FROM orders o JOIN listings l ON l.id = o.listing_id JOIN users s ON s.id = o.seller_id
+      WHERE o.buyer_id = ? ORDER BY o.created_at DESC LIMIT 15`).bind(id).all(),
+    c.env.DB.prepare(`SELECT o.id, o.status, o.price, o.shipping, o.created_at, l.title, b.pen_name AS lawan
+      FROM orders o JOIN listings l ON l.id = o.listing_id JOIN users b ON b.id = o.buyer_id
+      WHERE o.seller_id = ? ORDER BY o.created_at DESC LIMIT 15`).bind(id).all(),
+    c.env.DB.prepare(`SELECT o.id, o.status, o.updated_at, l.title
+      FROM orders o JOIN listings l ON l.id = o.listing_id
+      WHERE (o.buyer_id = ? OR o.seller_id = ?) AND o.status IN ('disputed','refunded')
+      ORDER BY o.updated_at DESC LIMIT 10`).bind(id, id).all(),
+    c.env.DB.prepare(`SELECT id, title, price, status, created_at FROM listings WHERE seller_id = ? ORDER BY created_at DESC LIMIT 15`).bind(id).all(),
+    c.env.DB.prepare(`SELECT stars, body, created_at FROM reviews WHERE seller_id = ? ORDER BY created_at DESC LIMIT 10`).bind(id).all(),
+    c.env.DB.prepare(`SELECT kind, delta, order_id, created_at FROM ledger WHERE user_id = ? ORDER BY id DESC LIMIT 15`).bind(id).all(),
+    c.env.DB.prepare(`SELECT COALESCE(SUM(delta),0) AS n FROM ledger WHERE user_id = ?`).bind(id).first(),
+  ]);
+
+  return c.html(renderAkunAdminPage(u, {
+    pembeli: beli.results || [], penjual: jual.results || [], sengketa: sen.results || [],
+    listings: list.results || [], ulasan: ulas.results || [], ledger: led.results || [],
+    saldo: Number((saldo as any)?.n || 0),
+  }));
 });
 
 app.post('/api/owner/orders/:id/resolve', async (c) => {
@@ -2476,7 +2627,18 @@ async function sweepOrders(db: any, env: any): Promise<string> {
       if (!String(e?.message || e).includes('UNIQUE')) throw e;
     }
   }
-  return `expired=${exp.meta?.changes || 0} completed=${completed}`;
+  // Retensi dokumen penjual: disimpan 90 hari setelah keputusan, lalu objek R2 + barisnya dihapus.
+  let docsHapus = 0;
+  const dokLama = await db.prepare(
+    `SELECT d.user_id, d.kind, d.r2_key FROM seller_docs d JOIN users u ON u.id = d.user_id
+      WHERE u.seller_reviewed_at IS NOT NULL AND u.seller_reviewed_at < datetime('now','-90 days')`
+  ).all();
+  for (const d of (dokLama.results || []) as any[]) {
+    if (env.MEDIA) await env.MEDIA.delete(d.r2_key).catch(() => {});
+    await db.prepare('DELETE FROM seller_docs WHERE user_id = ? AND kind = ?').bind(d.user_id, d.kind).run();
+    docsHapus++;
+  }
+  return `expired=${exp.meta?.changes || 0} completed=${completed} docs=${docsHapus}`;
 }
 
 app.get('/notifications', async (c) => {

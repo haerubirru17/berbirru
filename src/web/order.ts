@@ -26,14 +26,17 @@ const STATUS_LABEL: Record<string, string> = {
 
 const STEP_ORDER = ['created', 'paid', 'handed', 'completed'];
 
-export function renderOrderPage(o: any, p: any, photos: string[], viewer: any): string {
+export function renderOrderPage(o: any, p: any, photos: string[], viewer: any, adminView = false): string {
   const isBuyer = viewer.id === o.buyer_id;
   const isSeller = viewer.id === o.seller_id;
   const total = Number(o.qris_final_amount || Number(o.price) + Number(o.shipping || 0));
   const st = o.status;
 
   const dana = posisiDana(o, isBuyer ? 'pembeli' : 'penjual');
-  const stepIdx = st === 'disputed' ? 99 : STEP_ORDER.indexOf(st === 'handed' ? 'handed' : st);
+  // Sengketa bukan "selesai": stepper berhenti di tahap terakhir yang benar-benar terjadi.
+  const stepIdx = st === 'disputed'
+    ? (o.handed_at ? STEP_ORDER.indexOf('handed') : STEP_ORDER.indexOf('paid'))
+    : STEP_ORDER.indexOf(st === 'handed' ? 'handed' : st);
   const steps = STEP_ORDER.map((s, i) => {
     const cls = stepIdx > i ? 'done' : stepIdx === i ? 'on' : '';
     const label = { created: 'Bayar', paid: 'Dibayar', handed: 'Diserahkan', completed: 'Selesai' }[s];
@@ -93,6 +96,8 @@ export function renderOrderPage(o: any, p: any, photos: string[], viewer: any): 
       <div class="sum-row"><span>Status</span><span>Bisa dipakai belanja atau ditarik</span></div>`;
   }
 
+  if (adminView) actions = '';
+
   return `<!DOCTYPE html>
 <html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pesanan | BERBIRRU</title>
@@ -101,6 +106,7 @@ ${PASAR_BASE_CSS}
 <body>
 <div class="wrap">
   <div class="page-head"><h1>Pesanan</h1><p>Kwitansi rekber dan perjalanan buku.</p></div>
+  ${adminView ? `<div class="st-card" style="background:#FFFBEB;border-color:#B45309;"><div class="st-big" style="font-size:14px;">Mode admin — hanya baca</div><div class="st-sub">Kamu membuka halaman ini sebagai owner. Tombol aksi pembeli/penjual disembunyikan; keputusan diambil di halaman Owner dengan catatan wajib.</div></div>` : ''}
 
   <div class="dana dana-${dana.tone}">
     <div class="dana-t">${escapeHtml(dana.judul)}</div>
@@ -165,18 +171,35 @@ ${PASAR_BASE_CSS}
   </div>
 
   <div class="st-card">
+    <div class="st-big" style="font-size:14px;">Bukti foto${(o.evidence || []).length ? ` (${(o.evidence || []).length})` : ''}</div>
+    ${(o.evidence || []).length ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;margin-top:10px;">
+      ${(o.evidence || []).map((b: any) => `<a href="/berkas/sengketa/${escapeHtml(b.id)}" target="_blank" rel="noopener" style="text-decoration:none;">
+        <img src="/berkas/sengketa/${escapeHtml(b.id)}" alt="Bukti ${escapeHtml(b.role)}" style="width:100%;aspect-ratio:1;object-fit:cover;border:2px solid #0B192C;border-radius:8px;display:block;">
+        <span style="display:block;font:700 9px 'Roboto Mono';color:#64748B;margin-top:4px;">${b.role === 'buyer' ? 'Pembeli' : 'Penjual'} · ${escapeHtml(String(b.created_at || '').slice(0, 10))}</span>
+        ${b.note ? `<span style="display:block;font-size:10.5px;color:#475569;line-height:1.35;">${escapeHtml(b.note)}</span>` : ''}
+      </a>`).join('')}
+    </div>` : `<div class="st-sub">Belum ada foto bukti.${st === 'disputed' ? ' Unggah foto barang/kemasan sebagai dasar keputusan owner.' : ''}</div>`}
+    ${!adminView && (isBuyer || isSeller) && st === 'disputed' ? `<div style="margin-top:12px;border-top:2px dashed #CBD5E1;padding-top:10px;">
+      <label class="st-sub" style="font-weight:800;">Tambah bukti (maks 3 foto per pihak)</label>
+      <input type="file" id="buktiFoto" accept="image/jpeg,image/png,image/webp" style="width:100%;margin-top:6px;font-size:12px;">
+      <input id="buktiNote" maxlength="200" placeholder="Keterangan foto (opsional)" style="width:100%;margin-top:8px;padding:9px;border:2px solid #0B192C;border-radius:8px;font:600 12.5px 'DM Sans';">
+      <button class="btn b-blue" style="margin-top:8px;" onclick="unggahBukti()">Unggah bukti</button>
+    </div>` : ''}
+  </div>
+
+  <div class="st-card">
     <div class="st-big" style="font-size:14px;">Riwayat</div>
     <ul class="tl">
       ${(o.events || []).map((e: any) => `<li><b>${e.actor === 'buyer' ? 'Pembeli' : e.actor === 'seller' ? 'Penjual' : e.actor === 'owner' ? 'Owner' : 'Sistem'}</b> — ${escapeHtml(e.note || e.to_st)} <span style="color:#94A3B8;">· ${escapeHtml(String(e.created_at).slice(0, 16).replace('T', ' '))}</span></li>`).join('')}
     </ul>
   </div>
 
-  <div class="st-card" id="dispute-box" style="display:none;">
+  ${adminView ? '' : `<div class="st-card" id="dispute-box" style="display:none;">
     <div class="st-big" style="font-size:14px;">Ajukan Sengketa</div>
     <div class="st-sub">Ceritakan masalahnya — owner akan baca kwitansi + riwayat ini lalu memutuskan.</div>
     <textarea class="kw" id="dispute-note" style="margin-top:10px;min-height:80px;" placeholder="Contoh: buku tidak pernah diserahkan / kondisi beda dari foto…"></textarea>
     <button class="btn b-ghost" onclick="sendDispute()">Kirim Laporan ke Owner</button>
-  </div>
+  </div>`}
 </div>
 
 ${actions ? `<div class="actionbar" id="actionbar">${st === 'created' && isBuyer ? `<div style="min-width:112px"><div style="font:700 10px 'Roboto Mono';color:#64748B">TOTAL QRIS</div><div style="font:400 17px 'Archivo Black';color:#0F3E99">${rupiah(total)}</div></div>` : ''}${actions}</div>` : ''}
@@ -193,6 +216,18 @@ let rvN=5;function pilihBintang(n){rvN=n;document.querySelectorAll('#rvStars .ch
 async function batalkan(){if(!confirm('Batalkan pesanan ini? Buku akan dilepas lagi.'))return;try{await post('/api/pasar/order/'+${JSON.stringify(o.id)}+'/cancel');location.reload();}catch(e){alerterr(e)}}
 async function kirimUlasan(){try{await post('/api/pasar/order/'+${JSON.stringify(o.id)}+'/review',{stars:rvN,body:(document.getElementById('rvBody')||{}).value||''});location.reload();}catch(e){alerterr(e)}}
 async function cekStatus(){const b=document.getElementById('track-box');b.innerHTML='<div class="st-sub">Menghubungi kurir…</div>';try{const j=await post(location.pathname+'/track');if(j.ok){b.innerHTML='<div style="margin-top:10px;border:2.5px solid #0B192C;border-radius:10px;padding:10px;background:#fff;"><div style="font-weight:800;">'+(j.status||'-')+'</div>'+(j.desc?'<div class="st-sub">'+j.desc+'</div>':'')+(j.history||[]).slice(0,3).map(h=>'<div class="st-sub" style="border-top:1px dashed #CBD5E1;margin-top:6px;padding-top:6px;">'+h.date+' — '+h.desc+'</div>').join('')+'</div>';}else{b.innerHTML='<div class="st-sub">'+j.error+' — coba "Buka Web Kurir".</div>';}}catch(e){alerterr(e);b.innerHTML='';}}
+async function unggahBukti(){
+  const f=document.getElementById('buktiFoto'); const note=(document.getElementById('buktiNote')||{}).value||'';
+  if(!f||!f.files||!f.files[0]){alerterr({message:'Pilih foto dulu.'});return}
+  const file=f.files[0];
+  if(file.size>5*1024*1024){alerterr({message:'Foto maksimal 5MB.'});return}
+  try{
+    const r=await fetch('/api/pasar/order/'+${JSON.stringify(o.id)}+'/evidence?note='+encodeURIComponent(note),{method:'POST',headers:{'Content-Type':file.type},body:file});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(j.error||'Gagal mengunggah');
+    location.reload();
+  }catch(e){alerterr(e)}
+}
 function alerterr(e){const el=document.getElementById('err');el.textContent=e.message;el.style.display='block';}
 // polling status kalau masih menunggu bayar
 if('${st}'==='created'){const t=setInterval(async()=>{try{const r=await fetch('${o.id ? '/api/pasar/orders/' + o.id + '/status' : ''}');const j=await r.json();if(j.ok&&j.status!=='created'){clearInterval(t);location.reload();}}catch(_){}},5000);}
