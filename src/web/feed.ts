@@ -250,6 +250,10 @@ export function renderFeedPage(user: any = null): string {
     .vis-opt + .vis-opt { border-left: 1.5px solid var(--ink); }
     .vis-opt.active { background: var(--blue-primary); color: #FFF; box-shadow: none; transform: translate(1px, 1px); }
     .vis-hint { margin-left: auto; font-size: 11px; font-weight: 700; color: #8A94A6; white-space: nowrap; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; text-align: right; }
+    @media (max-width: 430px) {
+      .vis-row { flex-wrap: wrap; row-gap: 4px; }
+      .vis-hint { flex: 1 0 100%; white-space: normal; text-align: left; overflow: visible; }
+    }
 
     /* Kanvas editor: panel berisi, bukan whitespace mengambang */
     .rich-editor-canvas {
