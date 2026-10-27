@@ -664,6 +664,11 @@ app.post('/api/auth/verify-otp', async (c) => {
     if (pwdErr) return c.json({ error: pwdErr }, 400);
   }
   const wasPending: any = await c.env.DB.prepare('SELECT email_verified FROM users WHERE id = ?').bind(user.id).first();
+  // Tolak SEBELUM OTP diklaim: akun yang sudah aktif tidak boleh mengganti sandi lewat OTP,
+  // dan kode jangan ikut hangus supaya pengguna bisa langsung ulang tanpa sandi baru.
+  if (new_password && (!wasPending || wasPending.email_verified !== 0)) {
+    return c.json({ error: 'Akun ini sudah aktif — kosongkan kolom sandi baru, cukup masukkan kode OTP.' }, 400);
+  }
 
   // Klaim OTP ATMOST-ONCE (vuln-0007 putaran-4): check-then-delete lama punya jeda
   // → dua verify konkuren sama-sama lolos & mint 2 sesi dari 1 kode. Sekarang
