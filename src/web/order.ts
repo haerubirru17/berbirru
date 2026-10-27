@@ -158,6 +158,13 @@ ${PASAR_BASE_CSS}
   </div>
 
   <div class="st-card">
+    <div class="st-big" style="font-size:14px;">Dokumen</div>
+    <div class="st-sub">Cetak atau simpan PDF. Stiker pengiriman untuk ditempel di paket.</div>
+    <a class="btn b-ghost" style="width:100%;margin-top:10px;text-align:center;" href="/pasar/order/${escapeHtml(o.id)}/nota?jenis=pembelian" target="_blank" rel="noopener">Nota pembelian (A5)</a>
+    ${o.resi ? `<a class="btn b-ghost" style="width:100%;margin-top:8px;text-align:center;" href="/pasar/order/${escapeHtml(o.id)}/nota?jenis=pengiriman" target="_blank" rel="noopener">Stiker nota pengiriman</a>` : `<div class="st-sub" style="margin-top:8px;">Stiker pengiriman muncul setelah resi disimpan.</div>`}
+  </div>
+
+  <div class="st-card">
     <div class="st-big" style="font-size:14px;">Riwayat</div>
     <ul class="tl">
       ${(o.events || []).map((e: any) => `<li><b>${e.actor === 'buyer' ? 'Pembeli' : e.actor === 'seller' ? 'Penjual' : e.actor === 'owner' ? 'Owner' : 'Sistem'}</b> — ${escapeHtml(e.note || e.to_st)} <span style="color:#94A3B8;">· ${escapeHtml(String(e.created_at).slice(0, 16).replace('T', ' '))}</span></li>`).join('')}

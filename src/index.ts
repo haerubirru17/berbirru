@@ -27,6 +27,7 @@ import { renderAlamatListPage, renderAlamatFormPage } from './web/alamat';
 import { renderPasarPage, renderJualPage, renderEditListingPage, renderListingDetail } from './web/pasar';
 import { renderCheckoutPage } from './web/checkout';
 import { renderOrderPage } from './web/order';
+import { renderNotaPengiriman, renderNotaPembelian } from './web/nota';
 import { renderVerifikasiPage } from './web/verifikasi';
 import { renderPasarSaya } from './web/pasarSaya';
 import { renderTokoPublikPage } from './web/tokoPublik';
@@ -1545,6 +1546,29 @@ app.post('/api/pasar/orders', async (c) => {
     }
   }
   return c.json({ ok: true, id });
+});
+
+// ---- Nota cetak: stiker pengiriman (8x11,5) & nota pembelian (A5) ----
+app.get('/pasar/order/:id/nota', async (c) => {
+  const user = await getAuthUser(c);
+  if (!user) return c.redirect('/login');
+  const o: any = await c.env.DB.prepare('SELECT * FROM orders WHERE id = ?').bind(c.req.param('id')).first();
+  if (!o) return c.notFound();
+  // hanya pembeli & penjual; kwitansi privat
+  if (user.id !== o.buyer_id && user.id !== o.seller_id) return c.notFound();
+
+  const p: any = await c.env.DB.prepare('SELECT id, title, author, cond, weight_g FROM listings WHERE id = ?')
+    .bind(o.listing_id).first();
+  const seller: any = await c.env.DB.prepare('SELECT pen_name, shop_name, city FROM users WHERE id = ?')
+    .bind(o.seller_id).first();
+  const buyer: any = await c.env.DB.prepare('SELECT pen_name FROM users WHERE id = ?')
+    .bind(o.buyer_id).first();
+
+  if (c.req.query('jenis') === 'pengiriman') {
+    if (!o.resi) return c.redirect('/pasar/order/' + o.id + '?err=resi');
+    return c.html(renderNotaPengiriman(o, p || {}, seller || {}));
+  }
+  return c.html(renderNotaPembelian(o, p || {}, seller || {}, buyer || {}, user.id === o.buyer_id ? 'pembeli' : 'penjual'));
 });
 
 app.get('/pasar/order/:id', async (c) => {
