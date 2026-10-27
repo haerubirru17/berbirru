@@ -16,6 +16,7 @@ async function sha256hex(s: string): Promise<string> {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 import { renderLoginPage } from './web/login';
+import { renderResetPage } from './web/reset';
 import { cekResi, validasiFormatResi, ambilWilayah, cekTarifOngkir, KURIR_DIDUKUNG, KURIR_LABEL } from './kurir';
 import { renderFeedPage } from './web/feed';
 import { renderSearchPage } from './web/search';
@@ -36,7 +37,7 @@ import { createQrisTransaction, getQrisStatus, verifyWebhook, KlikQrisEnv } from
 import { providerAmountMatches, settlementAmounts, PASAR_FEE, WITHDRAW_MIN, withdrawFee, withdrawTotal } from './lib/pasar-settlement';
 import { validasiPenerima, normalisasiHp } from './lib/alamat';
 import { slugToko, slugUnik } from './lib/toko';
-import { sendOtpEmail } from './mail';
+import { sendOtpEmail, sendPasswordChangedEmail } from './mail';
 import { OG_IMAGE_BASE64 } from './assets';
 import { VENDOR_SWEETALERT2_JS, VENDOR_SWEETALERT2_CSS } from './vendor';
 
@@ -267,6 +268,12 @@ app.get('/login', async (c) => {
   const user = await getAuthUser(c);
   if (user) return c.redirect('/feed');
   return c.html(renderLoginPage(c.env.TURNSTILE_SITE_KEY || ''));
+});
+
+app.get('/lupa-sandi', async (c) => {
+  const user = await getAuthUser(c);
+  if (user) return c.redirect('/akun');
+  return c.html(renderResetPage(c.env.TURNSTILE_SITE_KEY || ''));
 });
 
 app.get('/feed', async (c) => {
@@ -567,6 +574,115 @@ app.post('/api/auth/change-password', async (c) => {
     'DELETE FROM sessions WHERE user_id = ? AND token_hash IS NOT NULL AND token_hash <> ?'
   ).bind(user.id, await sha256hex(getCookie(c, 'berbirru_session') || '')).run();
 
+  return c.json({ ok: true });
+});
+
+// ---- RESET SANDI: OTP → tiket sekali pakai → sandi baru ----
+// Tiga langkah terpisah supaya OTP tidak pernah langsung berwenang mengganti sandi
+// akun aktif. Tiket: 32 byte acak, disimpan sebagai hash, TTL 15 menit, sekali pakai.
+const RESET_COOKIE = 'berbirru_reset';
+
+const issueResetOtp = async (env: any, userId: string, email: string): Promise<boolean> => {
+  const kode = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0');
+  const hash = await hashPassword(kode);
+  await env.DB.prepare("DELETE FROM sessions WHERE user_id = ? AND token LIKE 'rsto_%'").bind(userId).run();
+  await env.DB.prepare(
+    "INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, datetime('now', '+10 minutes'))"
+  ).bind(crypto.randomUUID(), userId, 'rsto_' + hash).run();
+  const terkirim = await sendOtpEmail(email, kode, env);
+  // Jangan tinggalkan kode yang tidak pernah sampai ke inbox.
+  if (!terkirim) await env.DB.prepare("DELETE FROM sessions WHERE user_id = ? AND token LIKE 'rsto_%'").bind(userId).run();
+  return terkirim;
+};
+
+app.post('/api/auth/reset/start', async (c) => {
+  const { email, turnstile_token } = await c.req.json().catch(() => ({}));
+  if (!email) return c.json({ error: 'Email wajib diisi' }, 400);
+
+  const humanErr = await requireHuman(c, turnstile_token || '', 'rstart', 5, 600, { limit: 3, windowSec: 900 });
+  if (humanErr) return c.json({ error: humanErr }, 403);
+
+  const clean = String(email).trim().toLowerCase();
+  if (await hitRate(c.env.DB, `rsto:${clean}`, 3, 900)) {
+    return c.json({ error: 'Terlalu banyak permintaan. Coba lagi beberapa menit lagi.' }, 429);
+  }
+
+  const SERAGAM = { message: 'Jika email terdaftar, kode reset sudah dikirim. Cek kotak masuk (dan folder spam).', success: true };
+  const user: any = await c.env.DB.prepare('SELECT id FROM users WHERE email = ? LIMIT 1').bind(clean).first();
+  if (!user) return c.json(SERAGAM);
+
+  const terkirim = await issueResetOtp(c.env, user.id, clean);
+  // Jawaban TETAP seragam walau pengiriman gagal: kalau dibedakan, penyerang bisa
+  // menebak email mana yang terdaftar dari status HTTP.
+  if (!terkirim) console.warn('reset/start: gagal kirim email untuk', clean);
+  return c.json(SERAGAM);
+});
+
+app.post('/api/auth/reset/verify', async (c) => {
+  const { email, otp, turnstile_token } = await c.req.json().catch(() => ({}));
+  if (!email || !otp) return c.json({ error: 'Email dan kode wajib diisi' }, 400);
+
+  const humanErr = await requireHuman(c, turnstile_token || '', 'rvotp', 10, 600);
+  if (humanErr) return c.json({ error: humanErr }, 403);
+
+  const clean = String(email).trim().toLowerCase();
+  const ip = c.req.header('cf-connecting-ip') || 'unknown';
+  if (await hitRate(c.env.DB, `rv:ip:${ip}`, 10, 600) || await hitRate(c.env.DB, `rv:em:${clean}`, 10, 600)) {
+    return c.json({ error: 'Terlalu banyak percobaan. Tunggu beberapa menit.' }, 429);
+  }
+
+  const SALAH = { error: 'Kode salah atau sudah kedaluwarsa.' };
+  const user: any = await c.env.DB.prepare('SELECT id FROM users WHERE email = ? LIMIT 1').bind(clean).first();
+  if (!user) return c.json(SALAH, 400);
+
+  const row: any = await c.env.DB.prepare(
+    "SELECT id, token FROM sessions WHERE user_id = ? AND token LIKE 'rsto_%' AND expires_at > datetime('now') ORDER BY created_at DESC LIMIT 1"
+  ).bind(user.id).first();
+  const cocok = row ? (await verifyPassword(String(otp).trim(), String(row.token).slice(5))).ok : false;
+  if (!cocok) return c.json(SALAH, 400);
+
+  // Klaim atomik: satu kode hanya bisa jadi satu tiket.
+  const claim = await c.env.DB.prepare("DELETE FROM sessions WHERE id = ? AND token LIKE 'rsto\\_%' ESCAPE '\\'").bind(row.id).run();
+  if (!claim.meta.changes) return c.json(SALAH, 400);
+
+  const tiket = crypto.randomUUID() + crypto.randomUUID();
+  await c.env.DB.prepare(
+    "INSERT INTO sessions (id, user_id, token_hash, expires_at) VALUES (?, ?, ?, datetime('now', '+15 minutes'))"
+  ).bind(crypto.randomUUID(), user.id, 'rst_' + await sha256hex(tiket)).run();
+
+  setCookie(c, RESET_COOKIE, tiket, { path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 900 });
+  return c.json({ ok: true });
+});
+
+app.post('/api/auth/reset/finish', async (c) => {
+  const tiket = getCookie(c, RESET_COOKIE) || '';
+  if (!tiket) return c.json({ error: 'Sesi reset tidak ditemukan. Ulangi dari awal.' }, 400);
+
+  const { password } = await c.req.json().catch(() => ({}));
+  const kunci = 'rst_' + await sha256hex(tiket);
+
+  const baris: any = await c.env.DB.prepare(
+    "SELECT id, user_id FROM sessions WHERE token_hash = ? AND expires_at > datetime('now') LIMIT 1"
+  ).bind(kunci).first();
+  if (!baris) return c.json({ error: 'Tiket reset kedaluwarsa. Ulangi dari awal.' }, 400);
+
+  const user: any = await c.env.DB.prepare('SELECT id, email, pen_name FROM users WHERE id = ?').bind(baris.user_id).first();
+  if (!user) return c.json({ error: 'Akun tidak ditemukan.' }, 400);
+
+  const pwdErr = passwordIssue(password, user.email, user.pen_name);
+  if (pwdErr) return c.json({ error: pwdErr }, 400);
+
+  // Klaim tiket atomik — dipakai dua kali = ditolak.
+  const claim = await c.env.DB.prepare("DELETE FROM sessions WHERE id = ?").bind(baris.id).run();
+  if (!claim.meta.changes) return c.json({ error: 'Tiket reset sudah dipakai.' }, 400);
+
+  await c.env.DB.prepare('UPDATE users SET password_hash = ?, email_verified = 1 WHERE id = ?')
+    .bind(await hashPassword(password), user.id).run();
+  // Reset = keluar dari semua perangkat, termasuk sesi yang mungkin dicuri.
+  await c.env.DB.prepare('DELETE FROM sessions WHERE user_id = ?').bind(user.id).run();
+
+  setCookie(c, RESET_COOKIE, '', { path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 0 });
+  try { await sendPasswordChangedEmail(user.email, c.env); } catch (_) {}
   return c.json({ ok: true });
 });
 
