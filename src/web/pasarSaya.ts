@@ -28,8 +28,8 @@ const SHELL_CSS = `
   .hub-tab .c{font:700 9px 'Roboto Mono';color:#64748B}
   /* mode pasar: aksen kuning-amber, konsisten dengan navbar */
   .hub-tab.on{background:#B45309;color:#fff}.hub-tab.on .c{color:#FEF3C7}
-  .hub-body .tab.on{background:#B45309;color:#fff}
-  .hub-body .tab.on .c{color:#FEF3C7}
+  .hub-body .tab.on,.hub-body .tabs .tab.on,.hub-body .tabs-seller .tab.on{background:#B45309;color:#fff}
+  .hub-body .tab.on .c,.hub-body .tabs .tab.on .c,.hub-body .tabs-seller .tab.on .c{color:#FEF3C7}
   .hub-tab.locked{color:#94A3B8}.hub-tab.locked .c{color:#CBD5E1}
   .hub-tab .dot{position:absolute;top:5px;right:6px;min-width:15px;height:15px;border-radius:9px;background:#B42318;color:#fff;
     font:800 9px/15px 'Roboto Mono';text-align:center;padding:0 3px;border:1.5px solid #fff}
@@ -85,7 +85,7 @@ export function renderPasarSaya(user: any, tab: string, sub: string, d: HubData)
     ? [
         { key: 'pesanan', label: 'Pesanan', count: String(Object.values(ringkasBeli(d.pesanan.orders)).reduce((a, b) => a + b, 0)) },
         { key: 'toko', label: 'Toko', count: String(d.toko.orders.filter((o: any) => ['created', 'paid', 'handed', 'disputed'].includes(String(o.status))).length) },
-        { key: 'saldo', label: 'Saldo', count: 'Rp' },
+        { key: 'saldo', label: 'Saldo', count: 'Rp' + Number(d.saldo.balance || 0).toLocaleString('id-ID') },
         { key: 'aktivitas', label: 'Aktivitas', count: String(d.aktivitas.items.length), dot: d.aktivitas.unread },
       ]
     : [

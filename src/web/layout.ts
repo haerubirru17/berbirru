@@ -38,7 +38,19 @@ export function renderBottomNav(
         <span class="p"><svg viewBox="0 0 24 24">${plus}</svg></span>
         <span>Jual</span>
       </a>`
-      + item('/pasar/saya?tab=toko', 'Toko', icoToko, mon('toko'))
+      // Belum punya toko: label jujur "Buka Toko" + tanda +, menuju pengajuan (bukan halaman kosong).
+      + (() => {
+        const punya = currentUser && currentUser.seller_status === 'approved';
+        const nunggu = currentUser && currentUser.seller_status === 'pending';
+        const label = punya ? 'Toko' : nunggu ? 'Menunggu' : 'Buka Toko';
+        const href = punya ? '/pasar/saya?tab=toko' : '/pasar/jual';
+        const tanda = !punya && !nunggu ? '<span class="bnav-plusmark">+</span>' : '';
+        return `
+      <a href="${href}" class="bnav-item${mon('toko')}${punya ? '' : ' is-baru'}">
+        <span class="bnav-ico">${tanda}<svg viewBox="0 0 24 24">${icoToko}</svg></span>
+        <span class="bnav-lbl">${label}</span>
+      </a>`;
+      })()
       + item(akun, 'Profil', icoUser, mode === 'pasar' && activeTab === 'profile' && isMe ? ' is-on' : '')
     : item('/feed', 'Beranda', icoHome, on('feed'))
       + item('/pasar', 'Pasar', icoPasar, '')
@@ -73,6 +85,10 @@ export function renderBottomNav(
     .bnav-plus[data-mode="sosial"] .p{background:#DBEAFE}
     .bnav-plus .p svg{width:22px;height:22px;stroke:#0B192C;stroke-width:2.8;fill:none;stroke-linecap:round}
     .bnav-plus:active .p{transform:translate(2px,2px);box-shadow:1px 1px 0 #26364A}
+    .bnav-ico{position:relative;display:inline-flex;line-height:0}
+    .bnav-plusmark{position:absolute;top:-4px;right:-7px;display:grid;place-items:center;width:13px;height:13px;
+      background:#FDE047;border:1.5px solid #0B192C;border-radius:50%;font:900 10px/1 'DM Sans';color:#0B192C}
+    .bnav-item.is-baru .bnav-lbl{font-size:8.5px;letter-spacing:0}
     .bnav-bell{position:relative;display:inline-flex}
     .bnav-dot{position:absolute;top:-2px;right:-3px;width:8px;height:8px;border-radius:50%;background:#B42318;border:1.5px solid #fff}
   </style>

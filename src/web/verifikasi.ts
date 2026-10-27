@@ -1,4 +1,5 @@
 // Gerbang verifikasi penjual. Sebelum approved, /pasar/jual menampilkan status ini, bukan form jual.
+import { renderBottomNav } from './layout';
 import { escapeHtml } from '../lib/sanitize';
 import { PASAR_BASE_CSS } from './pasar';
 
@@ -99,5 +100,6 @@ async function ajukan(){
   }catch(e){err('Gagal mengirim pengajuan. Coba lagi.');b.disabled=false;b.textContent='Ajukan Verifikasi'}
 }
 </script>
+${renderBottomNav('pasar', user, false, { mode: 'pasar', marketTab: 'toko' })}
 </body></html>`;
 }
