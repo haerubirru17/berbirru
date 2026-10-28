@@ -277,6 +277,8 @@ async function getAuthUser(c: any): Promise<{ id: string; email: string; pen_nam
 // ---- WEB PAGES (SSR) ----
 app.get('/', async (c) => {
   const user = await getAuthUser(c);
+  // HTML landing jangan di-cache: perubahan UI harus langsung terlihat.
+  c.header('Cache-Control', 'no-store, must-revalidate');
   return c.html(renderLandingPage(user));
 });
 
