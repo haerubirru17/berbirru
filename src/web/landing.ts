@@ -33,15 +33,15 @@ export function renderLandingPage(user: any = null, warkah: any[] = []): string 
 <meta property="og:url" content="https://berbirru.com/">
 <meta property="og:title" content="BERBIRRU.COM — Merawat rasa, menguntai kata">
 <meta property="og:description" content="Pustaka tulisan &amp; kolaborasi kata. Tulis karyamu, arsipkan kutipan, sambung estafet lintas kota.">
-<meta property="og:image" content="https://berbirru.com/og-image.png?v=8">
-<meta property="og:image:secure_url" content="https://berbirru.com/og-image.png?v=8">
+<meta property="og:image" content="https://berbirru.com/og-image.png?v=9">
+<meta property="og:image:secure_url" content="https://berbirru.com/og-image.png?v=9">
 <meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="BERBIRRU.COM — Merawat rasa, menguntai kata">
 <meta name="twitter:description" content="Pustaka tulisan &amp; kolaborasi kata. Tulis karyamu, arsipkan kutipan, sambung estafet lintas kota.">
-<meta name="twitter:image" content="https://berbirru.com/og-image.png?v=8">
+<meta name="twitter:image" content="https://berbirru.com/og-image.png?v=9">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@400;500;700;800&family=Roboto+Mono:wght@600;700&display=swap" rel="stylesheet">
@@ -109,9 +109,9 @@ ${WARKAH_CARD_CSS}
   .hero-copy{display:flex;flex-direction:column;align-items:center;text-align:center;gap:clamp(.6rem,2vw,1.5rem)}
   @media(min-width:1024px){.hero-copy{align-items:flex-start;text-align:left}}
   .pill{border:3px solid var(--ink);border-radius:6px;background:var(--cream);color:var(--ink);padding:8px 16px;font:700 14px var(--mono);text-transform:uppercase;letter-spacing:.05em}
-  .hero h1{font-family:var(--display);font-weight:400;font-size:9vw;line-height:1.06;letter-spacing:-.03em}
-  @media(min-width:700px){.hero h1{font-size:5vw}}
-  @media(min-width:1024px){.hero h1{font-size:clamp(46px,4.5vw,66px)}}
+  .hero h1{font-family:var(--display);font-weight:400;font-size:9.6vw;line-height:1.06;letter-spacing:-.03em}
+  @media(min-width:700px){.hero h1{font-size:5.3vw}}
+  @media(min-width:1024px){.hero h1{font-size:clamp(52px,5.1vw,76px);width:max-content;max-width:calc(100% + 24px)}}
   .hero h1 .l2{white-space:nowrap}
   .hero h1 em{font-style:normal;color:var(--lime)}
   /* typing: "rasa" selesai dulu, baru "kata" */
