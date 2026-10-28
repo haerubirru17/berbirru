@@ -2902,8 +2902,13 @@ app.post('/api/posts', async (c) => {
   // Judul: teks biasa, disimpan apa adanya — di-escape saat render (feed/profil).
   const cleanTitle = title ? String(title).trim().slice(0, 200) : null;
 
-  // Visibilitas: hanya 'public' | 'private' yang diterima; selain itu tolak.
-  const cleanVisibility = visibility === 'private' ? 'private' : 'public';
+  // Visibilitas: hanya 'public' | 'private' yang diterima; selain itu tolak 400
+  // (jangan diam-diam dijadikan publik — klien yang salah harus kelihatan salahnya).
+  const visRaw = visibility == null ? 'public' : String(visibility);
+  if (visRaw !== 'public' && visRaw !== 'private') {
+    return c.json({ error: "Visibilitas hanya 'public' atau 'private'." }, 400);
+  }
+  const cleanVisibility = visRaw;
 
   const postId = crypto.randomUUID();
 
