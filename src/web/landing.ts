@@ -33,15 +33,15 @@ export function renderLandingPage(user: any = null, warkah: any[] = []): string 
 <meta property="og:url" content="https://berbirru.com/">
 <meta property="og:title" content="BERBIRRU.COM — Merawat rasa, menguntai kata">
 <meta property="og:description" content="Pustaka tulisan &amp; kolaborasi kata. Tulis karyamu, arsipkan kutipan, sambung estafet lintas kota.">
-<meta property="og:image" content="https://berbirru.com/og-image.png?v=10">
-<meta property="og:image:secure_url" content="https://berbirru.com/og-image.png?v=10">
+<meta property="og:image" content="https://berbirru.com/og-image.png?v=11">
+<meta property="og:image:secure_url" content="https://berbirru.com/og-image.png?v=11">
 <meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="BERBIRRU.COM — Merawat rasa, menguntai kata">
 <meta name="twitter:description" content="Pustaka tulisan &amp; kolaborasi kata. Tulis karyamu, arsipkan kutipan, sambung estafet lintas kota.">
-<meta name="twitter:image" content="https://berbirru.com/og-image.png?v=10">
+<meta name="twitter:image" content="https://berbirru.com/og-image.png?v=11">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@400;500;700;800&family=Roboto+Mono:wght@600;700&display=swap" rel="stylesheet">
