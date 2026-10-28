@@ -279,7 +279,8 @@ app.get('/', async (c) => {
   const user = await getAuthUser(c);
   // HTML landing jangan di-cache: perubahan UI harus langsung terlihat.
   c.header('Cache-Control', 'no-store, must-revalidate');
-  return c.html(renderLandingPage(user));
+  const tz = (c.req.raw as any).cf?.timezone || 'Asia/Jakarta';
+  return c.html(renderLandingPage(user, [], tz));
 });
 
 // 404 jangan di-cache edge: rute baru bisa "hilang" beberapa jam karena 404 lama

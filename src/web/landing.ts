@@ -2,7 +2,10 @@ import { WARKAH_CARD_CSS, WARKAH_EMPTY, renderWarkahCard } from './warkahCard';
 // Landing BERBIRRU — komposisi mengikuti template clone depobudget.com
 // (hero kobalt bergrid, marquee lime, kartu tebal berwarna, galeri ungu,
 // grid teal, FAQ merah, marquee kuning, CTA kobalt, footer hitam).
-export function renderLandingPage(user: any = null, warkah: any[] = []): string {
+export function renderLandingPage(user: any = null, warkah: any[] = [], tz: string = 'Asia/Jakarta'): string {
+  // jam status bar iPhone mengikuti zona waktu pengunjung (dari IP, via request.cf.timezone)
+  let jam = '09:41';
+  try { jam = new Intl.DateTimeFormat('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz }).format(new Date()); } catch {}
   const masuk = user ? `/u/${user.pen_name}` : '/login';
   const labelMasuk = user ? `@${user.pen_name}` : 'Masuk';
   const ctaHref = user ? '/feed' : '/login';
@@ -147,6 +150,8 @@ ${WARKAH_CARD_CSS}
   .screen{height:100%;border-radius:1.6rem;overflow-y:auto;overflow-x:hidden;background:var(--page);-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:none}
   .screen::-webkit-scrollbar{display:none}
   .screen img{width:100%;height:auto;display:block}
+  .appbar{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;height:30px;padding:0 14px;background:#FAF7F2;font:700 12px var(--sans);color:#111;z-index:4}
+  .appbar svg{width:38px;height:10px;display:block}
   .appnav{position:sticky;bottom:0;display:grid;grid-template-columns:repeat(5,1fr);background:#fff;border-top:2px solid #0B192C;padding:6px 4px 8px;z-index:3}
   .appnav span{display:flex;flex-direction:column;align-items:center;gap:2px;font:800 8px var(--mono);color:#6A788D;line-height:1}
   .appnav svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
@@ -327,7 +332,9 @@ ${WARKAH_CARD_CSS}
             </div>
             <div class="phone" aria-label="Tampilan aplikasi Berbirru">
               <div class="notch" aria-hidden="true"></div>
-              <div class="screen"><img src="/app-preview.png" alt="Linimasa warkah di aplikasi Berbirru" width="390" height="844" loading="lazy">
+              <div class="screen"><div class="appbar" aria-hidden="true"><time data-tz="${tz}">${jam}</time>
+                  <svg viewBox="0 0 42 10"><rect x="0" y="6" width="2.4" height="4" rx=".6" fill="#111"/><rect x="4.4" y="4.4" width="2.4" height="5.6" rx=".6" fill="#111"/><rect x="8.8" y="2.8" width="2.4" height="7.2" rx=".6" fill="#111"/><rect x="13.2" y="1.2" width="2.4" height="8.8" rx=".6" fill="#111"/><path d="M19.5 4.9a7 7 0 0 1 8.4 0" stroke="#111" stroke-width="1.2" fill="none" stroke-linecap="round"/><circle cx="23.7" cy="7.5" r="1.1" fill="#111"/><rect x="32" y="2.6" width="9" height="5.6" rx="1.5" stroke="#111" stroke-width=".9" fill="none"/><rect x="33.3" y="3.9" width="5.6" height="3" rx=".7" fill="#111"/><rect x="41.4" y="4.4" width="1.2" height="2" rx=".5" fill="#111"/></svg></div>
+                <img src="/app-preview.png" alt="Linimasa warkah di aplikasi Berbirru" width="390" height="844" loading="lazy">
                 <div class="appnav" aria-hidden="true">
                 <span class="on"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>Beranda</span>
                 <span><svg viewBox="0 0 24 24"><path d="M6 7h12l1 13H5L6 7Z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>Pasar</span>
@@ -568,6 +575,8 @@ ${WARKAH_CARD_CSS}
 <script>
   (function(){
     // typing headline: main sekali, lalu ulang tiap 9 detik (kecuali reduced-motion)
+    var jamEl=document.querySelector('.appbar time');
+    if(jamEl){var tz=jamEl.getAttribute('data-tz')||'Asia/Jakarta';var tick=function(){try{jamEl.textContent=new Intl.DateTimeFormat('id-ID',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:tz}).format(new Date())}catch(e){}};tick();setInterval(tick,20000);}
     var h1=document.querySelector('.hero h1');
     if(h1 && !matchMedia('(prefers-reduced-motion: reduce)').matches){
       var replay=function(){h1.classList.remove('typing');void h1.offsetWidth;h1.classList.add('typing')};
