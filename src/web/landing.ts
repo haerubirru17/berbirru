@@ -37,7 +37,7 @@ export function renderLandingPage(user: any = null, warkah: any[] = []): string 
 <meta property="og:image:secure_url" content="https://berbirru.com/og-image.png?v=7">
 <meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="745">
+<meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="BERBIRRU.COM — Merawat rasa, menguntai kata">
 <meta name="twitter:description" content="Pustaka tulisan &amp; kolaborasi kata. Tulis karyamu, arsipkan kutipan, sambung estafet lintas kota.">
