@@ -57,7 +57,7 @@ ${WARKAH_CARD_CSS}
     --display:'Archivo Black',sans-serif; --body:'DM Sans',system-ui,sans-serif; --mono:'Roboto Mono',ui-monospace,monospace;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  html{scroll-behavior:smooth;overflow-x:clip}
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%;scroll-behavior:smooth;overflow-x:clip}
   body{background:var(--page);color:var(--ink);font:16px/1.5 var(--body);-webkit-font-smoothing:antialiased;overflow-x:hidden;overflow-wrap:break-word}
   a{color:inherit;text-decoration:none}
   img{display:block;max-width:100%}
@@ -85,7 +85,7 @@ ${WARKAH_CARD_CSS}
   header{position:sticky;top:0;z-index:50;border-bottom:3px solid var(--ink);background:var(--page);color:var(--ink)}
   .nav{display:flex;align-items:center;justify-content:space-between;padding:9px 0}
   /* Logo resmi BERBIRRU — disalin utuh dari src/web/login.ts (.brand-header) */
-  .brand-wrap{display:inline-flex;align-items:center;text-decoration:none;position:relative}
+  .brand-wrap{display:inline-flex;align-items:center;text-decoration:none;position:relative;max-width:100%}
   .brand-badge{display:inline-flex;align-items:center;gap:6px;background:#1769E8;color:#fff;padding:6px 14px;border:3px solid var(--ink);border-radius:8px;box-shadow:4px 4px 0 var(--ink);transform:rotate(-1deg);position:relative;z-index:2}
   .brand-badge h1{margin:0;font-family:var(--display);font-size:19px;font-weight:800;letter-spacing:.5px;color:#fff;line-height:1}
   .brand-badge svg{width:16px;height:16px;stroke:#fff;stroke-width:2;fill:none;flex-shrink:0}
@@ -269,6 +269,8 @@ ${WARKAH_CARD_CSS}
   .cta .deco svg{width:100%;height:100%;filter:drop-shadow(3px 3px #111)}
 
   /* footer */
+  footer .brand-badge h1{font-size:16px}
+  footer .brand-com-tag{font-size:22px}
   footer{background:var(--ink);color:var(--cream);padding:32px 0 24px;border-top:4px solid var(--ink)}
   @media(min-width:768px){footer{padding:48px 0 28px}}
   .fcols{display:grid;grid-template-columns:1fr;gap:24px}
