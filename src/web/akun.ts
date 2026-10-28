@@ -30,7 +30,7 @@ function baris(href: string, ikon: string, judul: string, sub: string, danger = 
     </a>`;
 }
 
-export function renderAkunPage(user: any, refunds: any[] = []): string {
+export function renderAkunPage(user: any, refunds: any[] = [], owner = false): string {
   const penjual = user.seller_status === 'approved';
   const menunggu = user.seller_status === 'pending';
   const icoTas = '<path d="M9 11h6M9 15h4"/><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/>';
@@ -62,6 +62,7 @@ ${PASAR_BASE_CSS}
     ${penjual ? baris('/pasar/saya?tab=saldo', icoDuit, 'Saldo & Tarik Dana', 'Sisa saldo dan riwayat pencairan') : ''}
     ${baris('/akun/alamat', icoPin, 'Alamat Pengiriman', 'Nama, nomor HP, kode pos, alamat')}
     ${baris('/u/' + encodeURIComponent(user.pen_name), icoLuaran, 'Profil Publik', 'Warkah, pengikut, dan bio')}
+    ${owner ? baris('/owner', icoKeluar, 'Dashboard Owner', 'Sengketa, pencairan, verifikasi penjual') : ''}
   </div>
 
   ${refunds.length ? `

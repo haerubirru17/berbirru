@@ -286,6 +286,7 @@ export function renderOwnerPage(disputes: any[], withdrawals: any[], calonPenjua
           </div>
           <div class="col-auto ms-auto d-print-none">
             <div class="btn-list">
+              <a class="btn btn-outline-primary" href="/feed">Akun sosial</a>
               <button class="btn btn-outline-secondary" id="swp" onclick="sweep()">Sweep manual</button>
               <button class="btn btn-primary" onclick="location.reload()">Muat ulang</button>
             </div>

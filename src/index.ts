@@ -1334,7 +1334,7 @@ app.get('/akun', async (c) => {
     `SELECT id, refund_amount, refund_ref, refunded_at, price, shipping, qris_final_amount
        FROM orders WHERE buyer_id = ? AND status = 'refunded' ORDER BY refunded_at DESC LIMIT 10`
   ).bind(user.id).all();
-  return c.html(renderAkunPage(user, refunds.results || []));
+  return c.html(renderAkunPage(user, refunds.results || [], isOwner(c.env, user)));
 });
 
 // ---- Buku alamat (maks 5, satu utama) ----
@@ -2116,7 +2116,7 @@ async function sellerBalance(db: any, userId: string): Promise<number> {
 app.get('/setelah-masuk', async (c) => {
   const me = await getAuthUser(c);
   if (!me) return c.redirect('/login');
-  return c.redirect(isOwner(c.env, me) ? '/owner' : '/feed');
+  return c.redirect('/feed');
 });
 
 app.get('/saldo', async (c) => {
