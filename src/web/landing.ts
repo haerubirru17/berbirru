@@ -89,7 +89,7 @@ ${WARKAH_CARD_CSS}
   .brand-badge{display:inline-flex;align-items:center;gap:6px;background:#1769E8;color:#fff;padding:6px 14px;border:3px solid var(--ink);border-radius:8px;box-shadow:4px 4px 0 var(--ink);transform:rotate(-1deg);position:relative;z-index:2}
   .brand-badge h1{margin:0;font-family:var(--display);font-size:19px;font-weight:800;letter-spacing:.5px;color:#fff;line-height:1}
   .brand-badge svg{width:16px;height:16px;stroke:#fff;stroke-width:2;fill:none;flex-shrink:0}
-  .brand-com-tag{font-family:var(--display);font-size:26px;font-weight:900;color:#1769E8;position:relative;display:inline-block;transform:rotate(2deg);margin-left:4px;margin-top:2px;z-index:1;line-height:1;padding-bottom:3px}
+  .brand-com-tag{font-family:var(--display);font-size:26px;font-weight:900;color:#1769E8;position:relative;display:inline-block;transform:rotate(2deg);margin-left:11px;margin-top:2px;z-index:3;line-height:1;padding-bottom:3px}
   .brand-com-tag::after{content:'';position:absolute;left:-24px;bottom:-3px;width:calc(100% + 28px);height:6px;background:var(--yellow);border-radius:3px;z-index:-1}
   .navlinks{display:none;align-items:center;gap:18px;font:700 13.5px var(--body)}
   @media(min-width:900px){.navlinks{display:flex}}
