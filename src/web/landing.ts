@@ -109,7 +109,10 @@ ${WARKAH_CARD_CSS}
   .hero-copy{display:flex;flex-direction:column;align-items:center;text-align:center;gap:clamp(.6rem,2vw,1.5rem)}
   @media(min-width:1024px){.hero-copy{align-items:flex-start;text-align:left}}
   .pill{border:3px solid var(--ink);border-radius:6px;background:var(--cream);color:var(--ink);padding:8px 16px;font:700 14px var(--mono);text-transform:uppercase;letter-spacing:.05em}
-  .hero h1{font-family:var(--display);font-weight:400;font-size:clamp(40px,8vw,76px);line-height:1.05;letter-spacing:-.03em}
+  .hero h1{font-family:var(--display);font-weight:400;font-size:9vw;line-height:1.06;letter-spacing:-.03em}
+  @media(min-width:700px){.hero h1{font-size:5vw}}
+  @media(min-width:1024px){.hero h1{font-size:clamp(46px,4.5vw,66px)}}
+  .hero h1 .l2{white-space:nowrap}
   .hero h1 em{font-style:normal;color:var(--lime)}
   /* typing: "rasa" selesai dulu, baru "kata" */
   .tw{display:inline-grid;vertical-align:baseline}
@@ -337,7 +340,7 @@ ${WARKAH_CARD_CSS}
           </div>
           <div class="hero-copy">
             <div class="pill">Pustaka tulisan &amp; kolaborasi kata</div>
-            <h1 class="typing" aria-label="Merawat rasa, menguntai kata."><span aria-hidden="true">Merawat <span class="tw"><span class="ghost">rasa</span><em class="ty ty1">rasa</em></span>,<br>menguntai <span class="tw"><span class="ghost">kata</span><em class="ty ty2">kata</em></span>.</span></h1>
+            <h1 class="typing" aria-label="Merawat rasa, menguntai kata."><span aria-hidden="true">Merawat <span class="tw"><span class="ghost">rasa</span><em class="ty ty1">rasa</em></span>,<br><span class="l2">menguntai <span class="tw"><span class="ghost">kata</span><em class="ty ty2">kata</em></span>.</span></span></h1>
             <p>Pernah menulis ide bagus di sembarang tempat, lalu lupa di mana menyimpannya? Berbirru rumahnya — tempat mengabadikan setiap patah kata agar tersimpan rapi, mudah ditemukan, dan bisa dilanjutkan bersama.</p>
             <div class="hero-ctas">
               <a class="btn coral" href="${ctaHref}">Mulai menulis →</a>
