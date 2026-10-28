@@ -128,6 +128,8 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     }
     
     /* Statistik inline: icon + angka, 1 baris (Varian 2) */
+    .vis-private { display: inline-flex; align-items: center; gap: 3px; margin-top: 2px; padding: 1px 6px; border: 1.5px solid #CBD5E1; border-radius: 999px; font: 800 9px 'Roboto Mono', monospace; color: #64748B; letter-spacing: .3px; }
+    .vis-private svg { width: 9px; height: 9px; }
     .thread-name-row { display: flex; align-items: center; gap: 3px; }
     .vcheck { width: 13px; height: 13px; flex: none; }
     .admin-badge { display: inline-flex; align-items: center; margin-left: 1px; vertical-align: 1px; }
@@ -805,6 +807,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
                 <div class="thread-author-info">
                   <span class="thread-name-row"><span class="thread-pen-name">@\${escapeHtml(p.pen_name)}</span>\${p.is_admin ? '<svg class="vcheck" viewBox="0 0 24 24" fill="none" aria-label="Akun admin" role="img"><circle cx="12" cy="12" r="10" fill="#1D61E7"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</span></span>
                 </div>
+                \${p.visibility === 'private' ? '<span class="vis-private"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Privat</span>' : ''}
               </div>
               <div style="display:flex;align-items:center;gap:8px;">
                 \${formatTimestamp(p.created_at)}
