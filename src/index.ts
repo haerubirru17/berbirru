@@ -936,9 +936,11 @@ app.get('/api/users/:pen_name', async (c) => {
     isFollowing = Boolean(await c.env.DB.prepare('SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?').bind(viewer.id, user.id).first());
   }
 
+  // Email hanya dipakai untuk cek admin — jangan pernah dikirim ke klien.
+  const { email: _email, ...publik } = user;
   return c.json({
     user: {
-      ...user,
+      ...publik,
       posts_count: postsCount,
       likes_count: likesCount,
       saves_count: savesCount,
@@ -946,7 +948,7 @@ app.get('/api/users/:pen_name', async (c) => {
       following_count: followingCount,
       is_following: isFollowing,
       // Penanda akun admin (owner) — diverifikasi dari email, bukan dari input klien.
-      is_admin: String(user.email || '').toLowerCase() === String(c.env.OWNER_EMAIL || '').toLowerCase()
+      is_admin: String(_email || '').toLowerCase() === String(c.env.OWNER_EMAIL || '').toLowerCase()
     }
   });
 });
