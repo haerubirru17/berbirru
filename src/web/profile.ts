@@ -128,9 +128,10 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     }
     
     /* Statistik inline: icon + angka, 1 baris (Varian 2) */
-    .admin-badge { display: inline-flex; align-items: center; gap: 3px; margin-left: 6px; padding: 2px 7px 2px 4px; background: #E0EEFD; border: 2px solid #1D61E7; color: #1D61E7; font: 800 9px 'Roboto Mono', monospace; text-transform: uppercase; letter-spacing: .4px; vertical-align: 2px; }
+    .admin-badge { display: inline-flex; align-items: center; margin-left: 5px; vertical-align: 3px; }
     .admin-badge[hidden] { display: none; }
-    .admin-badge svg { width: 12px; height: 12px; }
+    .admin-badge svg { width: 15px; height: 15px; display: block; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
     .stats-inline { display: flex; justify-content: center; align-items: center; gap: 26px; margin-top: 14px; padding-top: 12px; border-top: 2px solid #E2E8F0; }
     .si { display: inline-flex; align-items: center; gap: 6px; color: var(--ink); }
     .si svg { width: 17px; height: 17px; flex: none; }
@@ -362,7 +363,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
         </div>
 
         <div class="pen-name-group">
-          <span class="pen-name" id="penNameDisplay">@${penName}</span><span class="admin-badge" id="adminBadge" hidden title="Akun admin BERBIRRU"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#1D61E7"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Admin</span>
+          <span class="pen-name" id="penNameDisplay">@${penName}</span><span class="admin-badge" id="adminBadge" hidden title="Akun admin BERBIRRU"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#1D61E7"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="sr-only">Akun admin</span></span>
           <span class="display-name-main" id="displayNameDisplay">${penName}</span>
         </div>
 
