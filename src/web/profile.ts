@@ -142,6 +142,24 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     .si b {
       font-family: 'Archivo Black', sans-serif; font-size: 16px; font-weight: 800; line-height: 1;
     }
+    .stats-button { border: 0; background: transparent; cursor: pointer; font: inherit; padding: 0; }
+    .follow-sheet-backdrop { display:none; position:fixed; inset:0; z-index:900; background:rgba(11,25,44,.42); }
+    .follow-sheet { display:none; position:fixed; z-index:901; left:50%; bottom:0; transform:translateX(-50%); width:min(480px,100%); max-height:min(620px,86vh); overflow:auto; background:var(--paper); border:var(--border-thick); border-bottom:0; box-shadow:0 -6px 0 #26364A; padding:16px 16px 88px; }
+    .follow-sheet-head { display:flex; align-items:center; justify-content:space-between; padding-bottom:11px; border-bottom:2px solid #E2E8F0; }
+    .follow-sheet-title { font-family:'Newsreader',serif; font-size:24px; font-weight:700; }
+    .follow-sheet-hint { color:#64748B; font-size:11px; font-weight:700; margin-top:3px; }
+    .follow-sheet-close { width:34px; height:34px; border:2px solid var(--ink); background:#FFF; box-shadow:2px 2px 0 #26364A; font-size:20px; font-weight:800; cursor:pointer; }
+    .follow-switch { display:grid; grid-template-columns:1fr 1fr; margin:13px 0 8px; border:2px solid var(--ink); background:#FFF; }
+    .follow-switch button { border:0; padding:9px 6px; background:#FFF; color:#64748B; font:800 11px 'DM Sans',sans-serif; cursor:pointer; }
+    .follow-switch button.active { background:var(--blue); color:#FFF; }
+    .follow-list { min-height:120px; }
+    .follow-row { display:flex; align-items:center; gap:10px; padding:12px 0; border-bottom:1px solid #E2E8F0; }
+    .follow-avatar { width:42px; height:42px; display:grid; place-items:center; flex:none; border:2px solid var(--ink); background:var(--blue); color:#FFF; font:22px 'Newsreader',serif; }
+    .follow-info { flex:1; min-width:0; }
+    .follow-name { font-size:13px; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .follow-meta { color:#64748B; font-size:10px; font-weight:700; margin-top:2px; }
+    .follow-action { border:2px solid var(--ink); background:var(--blue); color:#FFF; box-shadow:2px 2px 0 #26364A; padding:7px 10px; font-size:10px; font-weight:800; cursor:pointer; }
+    .follow-empty, .follow-loading { padding:34px 10px; text-align:center; color:#64748B; font-size:12px; font-weight:700; }
 
     /* Tab Underline Bersih (Hanya 1 Aktif) */
     .profile-tabs-reddit {
@@ -380,14 +398,14 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4H6.5A2.5 2.5 0 0 0 4 6.5v13z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>
             <b id="countPosts">0</b>
           </span>
-          <span class="si" title="Pengikut">
+          <button class="si stats-button" title="Pengikut" aria-label="Lihat pengikut" onclick="openFollowSheet('followers')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.4 3.4-5 6.5-5s5.7 1.6 6.5 5"/><circle cx="17.5" cy="9" r="2.5"/><path d="M15.5 15.2c2.8.2 5.2 1.6 6 4.3"/></svg>
             <b id="countFollowers">0</b>
-          </span>
-          <span class="si" title="Mengikuti">
+          </button>
+          <button class="si stats-button" title="Mengikuti" aria-label="Lihat akun yang diikuti" onclick="openFollowSheet('following')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8.5" cy="8" r="3.5"/><path d="M2.5 20c.8-3.4 3.2-5 6-5s5.2 1.6 6 5"/><path d="M17 8h5M19.5 5.5v5"/></svg>
             <b id="countFollowing">0</b>
-          </span>
+          </button>
         </div>
       </div>
     </div>
@@ -452,6 +470,19 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
 
     <div class="feed-list" id="profileFeed"></div>
   </div>
+
+  <div class="follow-sheet-backdrop" id="followSheetBackdrop" onclick="closeFollowSheet()"></div>
+  <section class="follow-sheet" id="followSheet" role="dialog" aria-modal="true" aria-labelledby="followSheetTitle">
+    <div class="follow-sheet-head">
+      <div><div class="follow-sheet-title" id="followSheetTitle">Pengikut</div><div class="follow-sheet-hint" id="followSheetHint"></div></div>
+      <button class="follow-sheet-close" type="button" aria-label="Tutup" onclick="closeFollowSheet()">×</button>
+    </div>
+    <div class="follow-switch" role="tablist">
+      <button id="followTabFollowers" type="button" role="tab" onclick="openFollowSheet('followers')">Pengikut</button>
+      <button id="followTabFollowing" type="button" role="tab" onclick="openFollowSheet('following')">Mengikuti</button>
+    </div>
+    <div class="follow-list" id="followList"><div class="follow-loading">Pilih daftar untuk melihat akun.</div></div>
+  </section>
 
   <!-- 5-TAB DOCKED BOTTOM NAVBAR -->
   ${renderBottomNav('profile', currentUser, isMe)}
@@ -787,6 +818,61 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
       return String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
+    let followSheetType = 'followers';
+    let followTouchX = 0;
+    function followAvatarStyle(name, key) {
+      if (avatarKeyValid(key)) return 'background-image:url(/media/' + freshKey(key) + ');background-size:cover;background-position:center;color:transparent;';
+      return 'background:' + getAvatarColor(name) + ';';
+    }
+    function renderFollowRows(users) {
+      const list = document.getElementById('followList');
+      if (!users.length) {
+        list.innerHTML = '<div class="follow-empty">' + (followSheetType === 'followers' ? 'Belum ada yang mengikuti.' : 'Belum mengikuti penulis lain.') + '</div>';
+        return;
+      }
+      list.innerHTML = users.map(u => \`
+        <div class="follow-row">
+          <div class="follow-avatar" style="\${followAvatarStyle(u.pen_name, u.avatar_key)}">\${escapeHtml((u.pen_name || 'D')[0].toUpperCase())}</div>
+          <div class="follow-info"><div class="follow-name">@\${escapeHtml(u.pen_name)}</div><div class="follow-meta">\${escapeHtml(u.display_name || u.pen_name)}\${u.city ? ' · ' + escapeHtml(u.city) : ''}</div></div>
+          \${u.pen_name !== currentPenName ? \`<button class="follow-action" data-pen="\${escapeHtml(u.pen_name)}" data-on="\${u.is_following ? '1' : '0'}">\${u.is_following ? 'Mengikuti' : 'Ikuti'}</button>\` : ''}
+        </div>\`).join('');
+      list.querySelectorAll('.follow-action').forEach(btn => btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        try {
+          const res = await fetch('/api/users/' + encodeURIComponent(btn.dataset.pen) + '/follow', { method: 'POST' });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Gagal mengubah status ikuti');
+          btn.dataset.on = data.following ? '1' : '0'; btn.textContent = data.following ? 'Mengikuti' : 'Ikuti';
+          btn.disabled = false;
+        } catch (err) { btn.disabled = false; bbToast(err.message || 'Gagal mengubah status ikuti.', 'error'); }
+      }));
+    }
+    async function loadFollowList(type) {
+      const list = document.getElementById('followList');
+      list.innerHTML = '<div class="follow-loading">Memuat daftar…</div>';
+      try {
+        const res = await fetch('/api/users/' + encodeURIComponent(currentPenName) + '/follows?type=' + type);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal memuat daftar');
+        renderFollowRows(data.users || []);
+        document.getElementById('followSheetHint').textContent = (data.users || []).length + ' ' + (type === 'followers' ? 'orang mengikuti' : 'akun diikuti') + ' @' + currentPenName;
+      } catch (err) { list.innerHTML = '<div class="follow-empty">' + escapeHtml(err.message || 'Gagal memuat daftar.') + '</div>'; }
+    }
+    function openFollowSheet(type) {
+      followSheetType = type;
+      document.getElementById('followSheet').style.display = 'block';
+      document.getElementById('followSheetBackdrop').style.display = 'block';
+      document.body.style.overflow = 'hidden';
+      document.getElementById('followSheetTitle').textContent = type === 'followers' ? 'Pengikut' : 'Mengikuti';
+      document.getElementById('followTabFollowers').classList.toggle('active', type === 'followers');
+      document.getElementById('followTabFollowing').classList.toggle('active', type === 'following');
+      loadFollowList(type);
+    }
+    function closeFollowSheet() { document.getElementById('followSheet').style.display = 'none'; document.getElementById('followSheetBackdrop').style.display = 'none'; document.body.style.overflow = ''; }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeFollowSheet(); });
+    document.getElementById('followSheet')?.addEventListener('touchstart', e => { followTouchX = e.touches[0].clientX; }, { passive: true });
+    document.getElementById('followSheet')?.addEventListener('touchend', e => { const dx = e.changedTouches[0].clientX - followTouchX; if (Math.abs(dx) > 45) openFollowSheet(dx < 0 ? 'following' : 'followers'); });
+
     async function loadProfilePosts(tab = 'original') {
       try {
         const res = await fetch('/api/users/' + encodeURIComponent(currentPenName) + '/posts?tab=' + tab);
@@ -860,6 +946,8 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
     window.deletePost = deletePost;
     window.toggleSettingsMenu = toggleSettingsMenu;
     window.toggleFollow = toggleFollow;
+    window.openFollowSheet = openFollowSheet;
+    window.closeFollowSheet = closeFollowSheet;
 
     loadUserData();
     loadProfilePosts('original');

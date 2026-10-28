@@ -994,6 +994,29 @@ app.get('/api/users/:pen_name', async (c) => {
   });
 });
 
+// Daftar relasi sosial tetap berada di konteks profil; hanya identitas publik yang dikirim.
+app.get('/api/users/:pen_name/follows', async (c) => {
+  const penName = c.req.param('pen_name').replace(/^@/, '').toLowerCase();
+  const type = c.req.query('type');
+  if (type !== 'followers' && type !== 'following') {
+    return c.json({ error: 'Tipe relasi tidak valid' }, 400);
+  }
+  const target: any = await c.env.DB.prepare('SELECT id, pen_name FROM users WHERE pen_name = ? LIMIT 1').bind(penName).first();
+  if (!target) return c.json({ error: 'Penulis tidak ditemukan' }, 404);
+  const viewer = await getAuthUser(c);
+  const joinColumn = type === 'followers' ? 'f.follower_id' : 'f.following_id';
+  const whereColumn = type === 'followers' ? 'f.following_id' : 'f.follower_id';
+  const rows = await c.env.DB.prepare(`
+    SELECT DISTINCT u.id, u.pen_name, u.display_name, u.city, u.avatar_key,
+      CASE WHEN ? <> '' AND EXISTS (SELECT 1 FROM follows vf WHERE vf.follower_id = ? AND vf.following_id = u.id) THEN 1 ELSE 0 END AS is_following
+    FROM follows f JOIN users u ON u.id = ${joinColumn}
+    WHERE ${whereColumn} = ?
+    ORDER BY lower(COALESCE(u.display_name, u.pen_name)), u.pen_name
+    LIMIT 100
+  `).bind(viewer?.id || '', viewer?.id || '', target.id).all();
+  return c.json({ type, pen_name: target.pen_name, users: rows.results || [], has_more: (rows.results || []).length === 100 });
+});
+
 // ---- MEDIA PROFIL (R2): avatar & cover ----
 // batas setelah kompres client. ponytail: cap tetap, naikkan jika perlu.
 const MEDIA_SPEC: Record<string, { max: number; col: string; dir: string }> = {
