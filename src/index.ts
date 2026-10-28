@@ -451,7 +451,9 @@ app.post('/api/auth/register', async (c) => {
   // Verifikasi Turnstile (fail-closed — wajib lolos sebelum boleh daftar)
   // Register: gerbang KERAS (tanpa jalur cadangan) — endpoint ini yang paling
   // disalahgunakan bot (buat akun massal) dan tidak punya lockout per-akun.
-  const humanErr = await requireHuman(c, turnstile_token || '', 'register', 10, 600);
+  // Fallback ketat: widget Turnstile bisa gagal render di sebagian peramban.
+  // Tanpa ini pendaftaran mentok permanen. Tetap fail-closed bila secret kosong.
+  const humanErr = await requireHuman(c, turnstile_token || '', 'register', 10, 600, { limit: 3, windowSec: 900 });
   if (humanErr) return c.json({ error: humanErr }, 403);
 
   const cleanEmail = String(email).trim().toLowerCase();

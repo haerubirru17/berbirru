@@ -234,10 +234,12 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
     }
 
     function onTurnstileError() {
-      console.warn('Turnstile gagal (adblocker/iframe diblokir). Widget disembunyikan, lanjut tanpa verifikasi.');
-      document.querySelectorAll('.cf-turnstile').forEach(el => { if (el.parentElement) el.parentElement.style.display = 'none'; });
+      // Jangan sembunyikan widget: kalau disembunyikan, token tak akan pernah ada dan
+      // pengguna mentok dengan pesan "tidak dapat dimuat" tanpa jalan keluar.
+      console.warn('Turnstile gagal render — mencoba reset widget sekali lagi.');
       window.__tsBlocked = true;
-      return true; // serahkan ke app — jangan tampilkan kotak error Cloudflare
+      try { if (window.turnstile) window.turnstile.reset(); } catch (e) {}
+      return true; // jangan tampilkan kotak error Cloudflare
     }
     // Bila script api.js diblokir total (widget tak pernah render), sembunyikan placeholder kosong
     setTimeout(() => { if (!window.turnstile) onTurnstileError(); }, 6000);
@@ -336,7 +338,14 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
       const email = document.getElementById('emailInput').value.trim();
       const password = document.getElementById('passwordInput').value.trim();
       const penName = document.getElementById('penNameInput').value.trim();
-      const turnstileToken = getTurnstileToken('turnstileAuthWidget');
+      // Token Turnstile tidak instan. Tunggu sebentar; jangan kirim kosong —
+      // server menolak token kosong dan pengguna cuma lihat pesan "tidak dapat dimuat".
+      let turnstileToken = getTurnstileToken('turnstileAuthWidget') || await tungguToken('turnstileAuthWidget', 8000);
+      if (!turnstileToken) {
+        try { if (window.turnstile) window.turnstile.reset('#turnstileAuthWidget'); } catch (e) {}
+        bbToast('Verifikasi keamanan belum siap. Tunggu widget muncul, lalu coba lagi.', 'warning');
+        return;
+      }
       const endpoint = isLoginMode ? '/api/auth/login' : '/api/auth/register';
 
       try {
