@@ -917,7 +917,7 @@ app.get('/api/users/suggest', async (c) => {
 
 app.get('/api/users/:pen_name', async (c) => {
   const penName = c.req.param('pen_name').replace(/^@/, '').toLowerCase();
-  const user: any = await c.env.DB.prepare('SELECT id, pen_name, city, bio, avatar_key, cover_key, display_name, created_at FROM users WHERE pen_name = ? LIMIT 1').bind(penName).first();
+  const user: any = await c.env.DB.prepare('SELECT id, pen_name, email, city, bio, avatar_key, cover_key, display_name, created_at FROM users WHERE pen_name = ? LIMIT 1').bind(penName).first();
   if (!user) return c.json({ error: 'Penulis tidak ditemukan' }, 404);
 
   // Angka profil orang lain hanya menghitung warkah publik — jumlah warkah privat
@@ -944,7 +944,9 @@ app.get('/api/users/:pen_name', async (c) => {
       saves_count: savesCount,
       followers_count: followersCount,
       following_count: followingCount,
-      is_following: isFollowing
+      is_following: isFollowing,
+      // Penanda akun admin (owner) — diverifikasi dari email, bukan dari input klien.
+      is_admin: String(user.email || '').toLowerCase() === String(c.env.OWNER_EMAIL || '').toLowerCase()
     }
   });
 });
