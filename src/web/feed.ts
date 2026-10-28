@@ -826,14 +826,27 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
       }
     }
 
+    let unreadTimer = null;
+    let unreadBusy = false;
+    const UNREAD_POLL_MS = 12000;
     async function checkUnreadNotifs() {
+      if (unreadBusy || document.visibilityState !== 'visible') return;
+      unreadBusy = true;
       try {
-        const res = await fetch('/api/notifications/unread-count');
+        const res = await fetch('/api/notifications/unread-count', { cache: 'no-store' });
         const data = await res.json();
         const dot = document.getElementById('notifDot');
-        if (dot && data.count > 0) dot.style.display = 'block';
-      } catch (err) {}
+        if (dot) dot.style.display = data.count > 0 ? 'block' : 'none';
+      } catch (err) {} finally {
+        unreadBusy = false;
+        clearTimeout(unreadTimer);
+        if (document.visibilityState === 'visible') unreadTimer = setTimeout(checkUnreadNotifs, UNREAD_POLL_MS);
+      }
     }
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') checkUnreadNotifs();
+      else clearTimeout(unreadTimer);
+    });
 
     loadFeed();
     checkUnreadNotifs();

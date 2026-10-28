@@ -580,9 +580,33 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
       return colors[sum % colors.length];
     }
 
+    async function refreshProfileCounts() {
+      if (profileCountsBusy) return;
+      profileCountsBusy = true;
+      try {
+        const res = await fetch('/api/users/' + encodeURIComponent(currentPenName), { cache: 'no-store' });
+        const data = await res.json();
+        if (!data.user) return;
+        document.getElementById('countPosts').textContent = data.user.posts_count || 0;
+        document.getElementById('countFollowers').textContent = data.user.followers_count || 0;
+        document.getElementById('countFollowing').textContent = data.user.following_count || 0;
+        setFollowBtn(!!data.user.is_following);
+      } finally {
+        profileCountsBusy = false;
+      }
+    }
+    function scheduleProfileCountsPoll() {
+      clearTimeout(profileCountsTimer);
+      if (document.visibilityState === 'visible') profileCountsTimer = setTimeout(async () => { await refreshProfileCounts().catch(() => {}); scheduleProfileCountsPoll(); }, PROFILE_COUNTS_POLL_MS);
+    }
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') { refreshProfileCounts().catch(() => {}); scheduleProfileCountsPoll(); }
+      else { clearTimeout(profileCountsTimer); clearTimeout(followListTimer); }
+    });
+
     async function loadUserData() {
       try {
-        const res = await fetch('/api/users/' + encodeURIComponent(currentPenName));
+        const res = await fetch('/api/users/' + encodeURIComponent(currentPenName), { cache: 'no-store' });
         const data = await res.json();
         if (data.user) {
           currentUserData = data.user;
@@ -598,9 +622,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
           document.getElementById('countFollowing').textContent = data.user.following_count || 0;
           setFollowBtn(!!data.user.is_following);
         }
-      } catch (err) {
-        console.error(err);
-      }
+      } catch (err) { console.error(err); }
     }
 
     function formatTimestamp(isoStr) {
@@ -821,6 +843,12 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
 
     let followSheetType = 'followers';
     let followTouchX = 0;
+    let followListTimer = null;
+    let followListBusy = false;
+    let profileCountsTimer = null;
+    let profileCountsBusy = false;
+    const FOLLOW_LIST_POLL_MS = 12000;
+    const PROFILE_COUNTS_POLL_MS = 12000;
     function followAvatarStyle(name, key) {
       if (avatarKeyValid(key)) return 'background-image:url(/media/' + freshKey(key) + ');background-size:cover;background-position:center;color:transparent;';
       return 'background:' + getAvatarColor(name) + ';';
@@ -856,12 +884,22 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
             btn.dataset.on = data.following ? '1' : '0'; btn.textContent = data.following ? 'Mengikuti' : 'Ikuti';
           }
           btn.disabled = false;
+          await refreshProfileCounts();
+          await loadFollowList(followSheetType, false);
         } catch (err) { btn.disabled = false; bbToast(err.message || 'Gagal mengubah status ikuti.', 'error'); }
       }));
     }
-    async function loadFollowList(type) {
+    function scheduleFollowPoll() {
+      clearTimeout(followListTimer);
+      if (document.visibilityState === 'visible' && document.getElementById('followSheet').style.display === 'block') {
+        followListTimer = setTimeout(() => loadFollowList(followSheetType, false), FOLLOW_LIST_POLL_MS);
+      }
+    }
+    async function loadFollowList(type, showLoading = true) {
+      if (followListBusy) return;
       const list = document.getElementById('followList');
-      list.innerHTML = '<div class="follow-loading">Memuat daftar…</div>';
+      if (showLoading) list.innerHTML = '<div class="follow-loading">Memuat daftar…</div>';
+      followListBusy = true;
       try {
         const res = await fetch('/api/users/' + encodeURIComponent(currentPenName) + '/follows?type=' + type);
         const data = await res.json();
@@ -871,6 +909,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
         document.getElementById(type === 'followers' ? 'followTabFollowers' : 'followTabFollowing').textContent = label;
         document.getElementById('followSheetHint').textContent = (data.users || []).length + ' ' + (type === 'followers' ? 'orang mengikuti' : 'akun diikuti') + ' @' + currentPenName;
       } catch (err) { list.innerHTML = '<div class="follow-empty">' + escapeHtml(err.message || 'Gagal memuat daftar.') + '</div>'; }
+      finally { followListBusy = false; scheduleFollowPoll(); }
     }
     function openFollowSheet(type) {
       followSheetType = type;
@@ -880,9 +919,10 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
       document.getElementById('followSheetTitle').textContent = type === 'followers' ? 'Pengikut' : 'Mengikuti';
       document.getElementById('followTabFollowers').classList.toggle('active', type === 'followers');
       document.getElementById('followTabFollowing').classList.toggle('active', type === 'following');
+      clearTimeout(followListTimer);
       loadFollowList(type);
     }
-    function closeFollowSheet() { document.getElementById('followSheet').style.display = 'none'; document.getElementById('followSheetBackdrop').style.display = 'none'; document.body.style.overflow = ''; }
+    function closeFollowSheet() { clearTimeout(followListTimer); document.getElementById('followSheet').style.display = 'none'; document.getElementById('followSheetBackdrop').style.display = 'none'; document.body.style.overflow = ''; }
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeFollowSheet(); });
     document.getElementById('followSheet')?.addEventListener('touchstart', e => { followTouchX = e.touches[0].clientX; }, { passive: true });
     document.getElementById('followSheet')?.addEventListener('touchend', e => { const dx = e.changedTouches[0].clientX - followTouchX; if (Math.abs(dx) > 45) openFollowSheet(dx < 0 ? 'following' : 'followers'); });
@@ -964,6 +1004,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
     window.closeFollowSheet = closeFollowSheet;
 
     loadUserData();
+    scheduleProfileCountsPoll();
     loadProfilePosts('original');
   </script>
   ${NOTIFY_HTML}

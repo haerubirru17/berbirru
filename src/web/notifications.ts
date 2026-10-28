@@ -174,22 +174,48 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
   ${renderBottomNav('notifications', user, false)}
 
   <script>
+    let notificationsBusy = false;
+    let notificationsTimer = null;
+    let notificationsFingerprint = '';
+    const NOTIFICATIONS_POLL_MS = 12000;
+
+    function scheduleNotificationsPoll() {
+      clearTimeout(notificationsTimer);
+      if (document.visibilityState !== 'visible') return;
+      notificationsTimer = setTimeout(() => { loadNotifications(); }, NOTIFICATIONS_POLL_MS);
+    }
+
     async function loadNotifications() {
+      if (notificationsBusy || document.visibilityState !== 'visible') return;
+      notificationsBusy = true;
       try {
-        const res = await fetch('/api/notifications');
+        const res = await fetch('/api/notifications', { cache: 'no-store' });
         const data = await res.json();
+        const list = data.notifications || [];
+        const fingerprint = list.map(n => [n.id, n.is_read, n.created_at].join(':')).join('|');
         const container = document.getElementById('notifListContainer');
-
-        if (!data.notifications || !data.notifications.length) {
-          container.innerHTML = '<div style="background:#FFF;padding:24px;border:3px solid #0B192C;border-radius:16px;text-align:center;font-weight:700;box-shadow:4px 4px 0 #1E293B;">Belum ada aktivitas baru. Bagikan warkahmu untuk mengundang tanggapan!</div>';
-          return;
+        if (fingerprint !== notificationsFingerprint) {
+          notificationsFingerprint = fingerprint;
+          if (!list.length) {
+            container.innerHTML = '<div style="background:#FFF;padding:24px;border:3px solid #0B192C;border-radius:16px;text-align:center;font-weight:700;box-shadow:4px 4px 0 #1E293B;">Belum ada aktivitas baru. Bagikan warkahmu untuk mengundang tanggapan!</div>';
+          } else {
+            container.innerHTML = groupNotifs(list).map(renderNotifCard).join('');
+          }
         }
-
-        container.innerHTML = groupNotifs(data.notifications).map(renderNotifCard).join('');
       } catch (err) {
         console.error(err);
+      } finally {
+        notificationsBusy = false;
+        scheduleNotificationsPoll();
       }
     }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') loadNotifications();
+      else clearTimeout(notificationsTimer);
+    });
+
+    loadNotifications();
 
     // Kelompokkan ala TikTok: like/save/chain digroup per (tipe+post_id),
     // follow digroup per tipe — arena 1 baris: "A, B dan N lainnya ..."
