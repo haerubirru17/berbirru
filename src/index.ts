@@ -2799,7 +2799,8 @@ app.get('/api/posts', async (c) => {
   const mode = c.req.query('mode') || 'viral';
   const q = (c.req.query('q') || '').trim();
   const user = await getAuthUser(c);
-  const vis = visibilityClause(user);
+  // Beranda = ruang publik. Warkah privat cuma muncul di tab Karya profil pemiliknya.
+  const vis = { sql: "p.visibility = 'public'", binds: [] as any[] };
 
   let query = `
     SELECT p.*, u.pen_name, u.city, u.avatar_key, u.email AS author_email,
