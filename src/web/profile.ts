@@ -128,6 +128,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     }
     
     /* Statistik inline: icon + angka, 1 baris (Varian 2) */
+    .stats-inline { display: flex; justify-content: center; align-items: center; gap: 26px; margin-top: 14px; padding-top: 12px; border-top: 2px solid #E2E8F0; }
     .si { display: inline-flex; align-items: center; gap: 6px; color: var(--ink); }
     .si svg { width: 17px; height: 17px; flex: none; }
     .si b {
