@@ -511,8 +511,13 @@ app.post('/api/auth/register', async (c) => {
     ).bind(userId, cleanEmail, pwdHash, cleanPenName, city ? String(city).trim() : 'Nusantara', 'Goresan perenungan rasa dan bait kata.').run();
   }
 
-  // Tidak ada sesi di sini: akun baru hanya aktif setelah OTP terbukti masuk ke inbox (Strix #23).
-  await issueOtp(c.env, userId, cleanEmail);
+  // Tidak ada sesi login di sini: akun baru hanya aktif setelah OTP terbukti masuk ke inbox.
+  const sent = await issueOtp(c.env, userId, cleanEmail);
+  // Flow browser aman dibuat walau provider email gagal: tanpa OTP benar, cookie ini
+  // tidak dapat ditukar menjadi sesi. Ini juga menjaga UI dari dead-end Turnstile.
+  await issueOtpFlow(c, userId);
+  if (!sent.ok) console.warn('register: gagal kirim OTP untuk', cleanEmail);
+  // Respons tetap seragam untuk mencegah enumerasi email.
   return c.json(UNIFORM);
 });
 
@@ -723,6 +728,26 @@ app.post('/api/auth/reset/finish', async (c) => {
   return c.json({ ok: true });
 });
 
+const OTP_FLOW_COOKIE = 'berbirru_otp_flow';
+
+async function issueOtpFlow(c: any, userId: string): Promise<void> {
+  const raw = crypto.randomUUID() + '-' + crypto.randomUUID();
+  const key = 'otpf_' + await sha256hex(raw);
+  await c.env.DB.prepare("DELETE FROM sessions WHERE user_id = ? AND token_hash LIKE 'otpf_%'").bind(userId).run();
+  await c.env.DB.prepare(
+    "INSERT INTO sessions (id, user_id, token_hash, expires_at) VALUES (?, ?, ?, datetime('now', '+10 minutes'))"
+  ).bind(crypto.randomUUID(), userId, key).run();
+  setCookie(c, OTP_FLOW_COOKIE, raw, { path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 600 });
+}
+
+async function validOtpFlow(c: any, userId: string): Promise<any | null> {
+  const raw = getCookie(c, OTP_FLOW_COOKIE) || '';
+  if (!raw) return null;
+  return c.env.DB.prepare(
+    "SELECT id FROM sessions WHERE user_id = ? AND token_hash = ? AND expires_at > datetime('now') LIMIT 1"
+  ).bind(userId, 'otpf_' + await sha256hex(raw)).first();
+}
+
 // ---- OTP AUTH API (EMAIL TERDAFTAR ONLY) ----
 /**
  * Simpan OTP sebagai hash + kirim emailnya. Kode lama user ini dibuang.
@@ -733,10 +758,13 @@ async function issueOtp(env: any, userId: string, cleanEmail: string): Promise<{
   await env.DB.prepare("DELETE FROM sessions WHERE user_id = ? AND token LIKE 'otp_%'").bind(userId).run();
   // Hash, bukan kode mentah: kalau isi tabel bocor, kode tidak langsung bisa dipakai.
   const otpHash = await hashPassword(otpCode);
+  const otpId = crypto.randomUUID();
   await env.DB.prepare(
     'INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, datetime("now", "+10 minutes"))'
-  ).bind(crypto.randomUUID(), userId, `otp_${otpHash}`).run();
-  return { ok: await sendOtpEmail(cleanEmail, otpCode, env) };
+  ).bind(otpId, userId, `otp_${otpHash}`).run();
+  const ok = await sendOtpEmail(cleanEmail, otpCode, env);
+  if (!ok) await env.DB.prepare('DELETE FROM sessions WHERE id = ?').bind(otpId).run();
+  return { ok };
 }
 
 app.post('/api/auth/send-otp', async (c) => {
@@ -765,10 +793,9 @@ app.post('/api/auth/send-otp', async (c) => {
 
   // Buat OTP (tersimpan sebagai hash) + kirim via helper bersama.
   const sent = await issueOtp(c.env, user.id, cleanEmail);
-  if (!sent.ok) {
-    return c.json({ error: 'Gagal mengirim kode OTP saat ini. Coba lagi beberapa saat lagi.' }, 502);
-  }
-
+  await issueOtpFlow(c, user.id);
+  if (!sent.ok) console.warn('send-otp: gagal kirim email untuk', cleanEmail);
+  // Tetap seragam saat provider gagal — jangan bocorkan apakah email terdaftar.
   return c.json(UNIFORM);
 });
 
@@ -777,23 +804,21 @@ app.post('/api/auth/verify-otp', async (c) => {
   if (!email || !otp) return c.json({ error: 'Email dan Kode OTP wajib diisi' }, 400);
   const cleanEmail = String(email).trim().toLowerCase();
   const ip = c.req.header('cf-connecting-ip') || 'unknown';
+  const BAD_OTP = { error: 'Kode OTP salah atau sudah kedaluwarsa.' };
+  const user: any = await c.env.DB.prepare('SELECT id, pen_name FROM users WHERE email = ? LIMIT 1').bind(cleanEmail).first();
 
-  // Gerbang Turnstile (vuln-0003 GLM, HIGH): satu-satunya jalur auth tanpa gate —
-  // OTP yang dicuri/ dipancing tak boleh bisa ditukar sesi oleh skrip tanpa browser.
-  // ponytail: tanpa fallback adblocker di path ini — aset yang dilindungi justru OTP.
-  // Fallback ketat: verifikasi OTP tetap butuh kode 6 digit yang benar.
-  const humanErr = await requireHuman(c, turnstile_token || '', 'votp', 10, 600, { limit: 5, windowSec: 900 });
-  if (humanErr) return c.json({ error: humanErr }, 403);
+  // Token kosong hanya boleh lanjut dari browser yang memulai pengiriman OTP dan
+  // memegang cookie flow HttpOnly sekali pakai. Tidak ada fallback generik.
+  const flow = user ? await validOtpFlow(c, user.id) : null;
+  if (!flow) {
+    const humanErr = await requireHuman(c, turnstile_token || '', 'votp', 10, 600);
+    if (humanErr) return c.json({ error: humanErr }, 403);
+  }
 
-  // Anti brute-force OTP (vuln-0005): batas per-IP dan per-akun.
+  // Anti brute-force OTP: batas per-IP dan per-akun tetap berlaku pada kedua jalur.
   if (await hitRate(c.env.DB, `votp:ip:${ip}`, 10, 600) || await hitRate(c.env.DB, `votp:em:${cleanEmail}`, 10, 600)) {
     return c.json({ error: 'Terlalu banyak percobaan kode. Tunggu beberapa menit lalu coba lagi.' }, 429);
   }
-
-  // Pesan seragam untuk email tak terdaftar / kode salah → cegah enumerasi (vuln-0003).
-  const BAD_OTP = { error: 'Kode OTP salah atau sudah kedaluwarsa.' };
-
-  const user: any = await c.env.DB.prepare('SELECT id, pen_name FROM users WHERE email = ? LIMIT 1').bind(cleanEmail).first();
   if (!user) return c.json(BAD_OTP, 400);
 
   // OTP disimpan sebagai `otp_<hash pbkdf2>` (vuln-0006 Strix), jadi cari dulu
@@ -834,6 +859,8 @@ app.post('/api/auth/verify-otp', async (c) => {
   if (!claim.meta.changes) {
     return c.json(BAD_OTP, 400);
   }
+  if (flow) await c.env.DB.prepare('DELETE FROM sessions WHERE id = ?').bind(flow.id).run();
+  setCookie(c, OTP_FLOW_COOKIE, '', { path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 0 });
 
   // OTP = bukti kepemilikan inbox → akun resmi aktif (Strix #23).
   if (new_password) {
@@ -881,7 +908,7 @@ app.post('/api/auth/logout-all', async (c) => {
   if (!user) return c.json({ error: 'Silakan masuk terlebih dahulu' }, 401);
   const token = getCookie(c, 'berbirru_session') || '';
   // Sesi lain + OTP yang masih menggantung ikut dimatikan.
-  await c.env.DB.prepare('DELETE FROM sessions WHERE user_id = ? AND token_hash IS NOT NULL AND token_hash != ?').bind(user.id, await sha256hex(token)).run();
+  await c.env.DB.prepare('DELETE FROM sessions WHERE user_id = ? AND (token_hash IS NULL OR token_hash != ?)').bind(user.id, await sha256hex(token)).run();
   return c.json({ ok: true });
 });
 

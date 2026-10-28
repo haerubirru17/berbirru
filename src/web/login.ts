@@ -200,6 +200,7 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
 
   <script>
     let isLoginMode = true;
+    let pendingActivationPassword = '';
 
     function switchAuth(isLogin) {
       isLoginMode = isLogin;
@@ -312,10 +313,11 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
       btn.disabled = true;
       btn.querySelector('span').textContent = 'Memverifikasi...';
 
-      // Token Turnstile tidak selalu tersedia (widget bisa gagal render). Tunggu
-      // maksimal 4 detik; server punya fallback ketat untuk jalur OTP.
-      let turnstileToken = getTurnstileToken('turnstileOtpWidget') || await tungguToken('turnstileOtpWidget', 4000);
+      // Verifikasi langsung. Jika widget tersembunyi tidak punya token, server hanya
+      // menerima request dari browser yang memegang cookie flow HttpOnly hasil kirim OTP.
+      const turnstileToken = getTurnstileToken('turnstileOtpWidget');
       const payload = { email, otp, turnstile_token: turnstileToken };
+      if (pendingActivationPassword) payload.new_password = pendingActivationPassword;
 
       try {
         const res = await fetch('/api/auth/verify-otp', {
@@ -326,6 +328,7 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Kode OTP salah');
         resetTurnstile();
+        pendingActivationPassword = '';
         window.location.href = '/setelah-masuk';
       } catch (err) {
         bbToast(err.message || 'Terjadi kesalahan.', 'error');
@@ -340,14 +343,12 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
       const email = document.getElementById('emailInput').value.trim();
       const password = document.getElementById('passwordInput').value.trim();
       const penName = document.getElementById('penNameInput').value.trim();
-      // Token Turnstile tidak instan. Tunggu sebentar; jangan kirim kosong —
-      // server menolak token kosong dan pengguna cuma lihat pesan "tidak dapat dimuat".
-      let turnstileToken = getTurnstileToken('turnstileAuthWidget') || await tungguToken('turnstileAuthWidget', 8000);
-      if (!turnstileToken) {
-        try { if (window.turnstile) window.turnstile.reset('#turnstileAuthWidget'); } catch (e) {}
-        bbToast('Verifikasi keamanan belum siap. Tunggu widget muncul, lalu coba lagi.', 'warning');
-        return;
-      }
+      const btn = document.getElementById('btnSubmit');
+      btn.disabled = true;
+      btn.querySelector('span').textContent = isLoginMode ? 'Memeriksa...' : 'Mendaftarkan...';
+      // Tunggu singkat untuk token; jika widget benar-benar diblokir, server memakai
+      // fallback berkuota ketat. Jangan membuat tombol tampak mati selama 8 detik.
+      let turnstileToken = getTurnstileToken('turnstileAuthWidget') || await tungguToken('turnstileAuthWidget', 2500);
       const endpoint = isLoginMode ? '/api/auth/login' : '/api/auth/register';
 
       try {
@@ -366,6 +367,7 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
         // Pendaftaran kini butuh bukti kepemilikan email dulu (Strix #23):
         // kode sudah dikirim server, langsung minta 6 digitnya.
         if (data.need_otp) {
+          pendingActivationPassword = isLoginMode ? '' : password;
           toggleOtpCard(true);
           document.getElementById('otpSentEmail').textContent = data.email || email;
           document.getElementById('otpStep1').style.display = 'none';
@@ -378,6 +380,9 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
       } catch (err) {
         resetTurnstile();
         bbToast(err.message || 'Terjadi kesalahan.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.querySelector('span').textContent = isLoginMode ? 'Masuk' : 'Daftar Pustaka';
       }
     }
   </script>

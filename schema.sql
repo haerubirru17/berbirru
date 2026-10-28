@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS sessions (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
-  token TEXT UNIQUE NOT NULL,
+  token TEXT,
   token_hash TEXT,
   ip_address TEXT,
   user_agent TEXT,
