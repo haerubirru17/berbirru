@@ -150,7 +150,7 @@ ${WARKAH_CARD_CSS}
   .screen{height:100%;border-radius:1.6rem;overflow-y:auto;overflow-x:hidden;background:var(--page);-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:none}
   .screen::-webkit-scrollbar{display:none}
   .screen img{width:100%;height:auto;display:block}
-  .appbar{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;height:30px;padding:0 14px;background:#FAF7F2;font:700 12px var(--sans);color:#111;z-index:4}
+  .appbar{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;height:34px;padding:0 14px;background:#FAF7F2;font:700 12px var(--sans);color:#111;z-index:4}
   .appbar svg{width:38px;height:10px;display:block}
   .appnav{position:sticky;bottom:0;display:grid;grid-template-columns:repeat(5,1fr);background:#fff;border-top:2px solid #0B192C;padding:6px 4px 8px;z-index:3}
   .appnav span{display:flex;flex-direction:column;align-items:center;gap:2px;font:800 8px var(--mono);color:#6A788D;line-height:1}
@@ -158,9 +158,9 @@ ${WARKAH_CARD_CSS}
   .appnav .on{color:#1D61E7}
   .appnav .fab{width:30px;height:30px;border:2.5px solid #0B192C;background:var(--yellow);color:#0B192C;box-shadow:3px 3px 0 #0B192C;transform:rotate(-2deg);display:grid;place-items:center;margin-top:-16px}
   .hero-phone-frame .screen img{width:100%!important;height:auto!important;object-fit:fill!important}
-  /* notch iPhone: menempel di bibir atas layar, sudut bawah membulat */
-  .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:34%;height:5.4%;min-height:18px;max-height:26px;background:var(--ink);border-radius:0 0 16px 16px;z-index:4}
-  .notch:after{content:'';position:absolute;left:50%;top:38%;transform:translateX(-50%);width:26%;height:3px;border-radius:2px;background:#2A2A2A}
+  /* iPhone 18: Dynamic Island (pil hitam mengambang), bukan notch poni */
+  .island{position:absolute;top:7px;left:50%;transform:translateX(-50%);width:30%;height:20px;background:#0B0B0C;border-radius:999px;z-index:6;box-shadow:inset 0 -1px 0 rgba(255,255,255,.06),0 1px 2px rgba(0,0,0,.25)}
+  .island:after{content:'';position:absolute;right:13%;top:50%;transform:translateY(-50%);width:7px;height:7px;border-radius:50%;background:#151517;box-shadow:inset 0 0 2px 1px #2E2E32}
   .marquee{border-top:4px solid var(--ink);background:var(--lime);height:clamp(72px,9vw,104px);display:flex;align-items:center;overflow:hidden}
   .marquee-track{display:flex;white-space:nowrap;width:max-content;animation:slide 45s linear infinite}
   .marquee:hover .marquee-track{animation-play-state:paused}
@@ -331,7 +331,7 @@ ${WARKAH_CARD_CSS}
               <svg viewBox="0 0 100 100"><path d="M 50,10 L 56,40 L 90,50 L 56,60 L 50,90 L 44,60 L 10,50 L 44,40 Z" fill="#C8E832" stroke="#111" stroke-width="5" stroke-linejoin="miter"/></svg>
             </div>
             <div class="phone" aria-label="Tampilan aplikasi Berbirru">
-              <div class="notch" aria-hidden="true"></div>
+              <div class="island" aria-hidden="true"></div>
               <div class="screen"><div class="appbar" aria-hidden="true"><time data-tz="${tz}">${jam}</time>
                   <svg viewBox="0 0 42 10"><rect x="0" y="6" width="2.4" height="4" rx=".6" fill="#111"/><rect x="4.4" y="4.4" width="2.4" height="5.6" rx=".6" fill="#111"/><rect x="8.8" y="2.8" width="2.4" height="7.2" rx=".6" fill="#111"/><rect x="13.2" y="1.2" width="2.4" height="8.8" rx=".6" fill="#111"/><path d="M19.5 4.9a7 7 0 0 1 8.4 0" stroke="#111" stroke-width="1.2" fill="none" stroke-linecap="round"/><circle cx="23.7" cy="7.5" r="1.1" fill="#111"/><rect x="32" y="2.6" width="9" height="5.6" rx="1.5" stroke="#111" stroke-width=".9" fill="none"/><rect x="33.3" y="3.9" width="5.6" height="3" rx=".7" fill="#111"/><rect x="41.4" y="4.4" width="1.2" height="2" rx=".5" fill="#111"/></svg></div>
                 <img src="/app-preview.png" alt="Linimasa warkah di aplikasi Berbirru" width="390" height="844" loading="lazy">
