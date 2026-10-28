@@ -270,6 +270,7 @@ ${WARKAH_CARD_CSS}
   .cta .deco svg{width:100%;height:100%;filter:drop-shadow(3px 3px #111)}
 
   /* footer */
+  footer .brand-badge{box-shadow:4px 4px 0 var(--cream)}
   footer .brand-badge h1{font-size:16px}
   footer .brand-com-tag{font-size:22px}
   footer{background:var(--ink);color:var(--cream);padding:32px 0 24px;border-top:4px solid var(--ink)}
