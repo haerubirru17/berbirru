@@ -1008,12 +1008,13 @@ app.get('/api/users/:pen_name/follows', async (c) => {
   const whereColumn = type === 'followers' ? 'f.following_id' : 'f.follower_id';
   const rows = await c.env.DB.prepare(`
     SELECT DISTINCT u.id, u.pen_name, u.display_name, u.city, u.avatar_key,
+      CASE WHEN lower(COALESCE(u.email, '')) = lower(COALESCE(?, '')) THEN 1 ELSE 0 END AS is_admin,
       CASE WHEN ? <> '' AND EXISTS (SELECT 1 FROM follows vf WHERE vf.follower_id = ? AND vf.following_id = u.id) THEN 1 ELSE 0 END AS is_following
     FROM follows f JOIN users u ON u.id = ${joinColumn}
     WHERE ${whereColumn} = ?
     ORDER BY lower(COALESCE(u.display_name, u.pen_name)), u.pen_name
     LIMIT 100
-  `).bind(viewer?.id || '', viewer?.id || '', target.id).all();
+  `).bind(c.env.OWNER_EMAIL || '', viewer?.id || '', viewer?.id || '', target.id).all();
   return c.json({ type, pen_name: target.pen_name, users: rows.results || [], has_more: (rows.results || []).length === 100 });
 });
 

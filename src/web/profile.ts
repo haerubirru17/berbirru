@@ -156,7 +156,8 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     .follow-row { display:flex; align-items:center; gap:10px; padding:12px 0; border-bottom:1px solid #E2E8F0; }
     .follow-avatar { width:42px; height:42px; display:grid; place-items:center; flex:none; border:2px solid var(--ink); background:var(--blue); color:#FFF; font:22px 'Newsreader',serif; }
     .follow-info { flex:1; min-width:0; }
-    .follow-name { font-size:13px; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .follow-name { display:flex; align-items:center; gap:4px; font-size:13px; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .follow-verified { width:14px; height:14px; flex:none; }
     .follow-meta { color:#64748B; font-size:10px; font-weight:700; margin-top:2px; }
     .follow-action { border:2px solid var(--ink); background:var(--blue); color:#FFF; box-shadow:2px 2px 0 #26364A; padding:7px 10px; font-size:10px; font-weight:800; cursor:pointer; }
     .follow-empty, .follow-loading { padding:34px 10px; text-align:center; color:#64748B; font-size:12px; font-weight:700; }
@@ -833,7 +834,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
       list.innerHTML = users.map(u => \`
         <div class="follow-row">
           <div class="follow-avatar" style="\${followAvatarStyle(u.pen_name, u.avatar_key)}">\${escapeHtml((u.pen_name || 'D')[0].toUpperCase())}</div>
-          <div class="follow-info"><div class="follow-name">@\${escapeHtml(u.pen_name)}</div><div class="follow-meta">\${escapeHtml(u.display_name || u.pen_name)}\${u.city ? ' · ' + escapeHtml(u.city) : ''}</div></div>
+          <div class="follow-info"><div class="follow-name">@\${escapeHtml(u.pen_name)}\${u.is_admin ? '<svg class="follow-verified" viewBox="0 0 24 24" fill="none" aria-label="Akun admin" role="img"><circle cx="12" cy="12" r="10" fill="#1D61E7"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div><div class="follow-meta">\${escapeHtml(u.display_name || u.pen_name)}\${u.city ? ' · ' + escapeHtml(u.city) : ''}</div></div>
           \${u.pen_name !== currentPenName ? \`<button class="follow-action" data-pen="\${escapeHtml(u.pen_name)}" data-on="\${u.is_following ? '1' : '0'}">\${u.is_following ? 'Mengikuti' : 'Ikuti'}</button>\` : ''}
         </div>\`).join('');
       list.querySelectorAll('.follow-action').forEach(btn => btn.addEventListener('click', async () => {
@@ -842,7 +843,18 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
           const res = await fetch('/api/users/' + encodeURIComponent(btn.dataset.pen) + '/follow', { method: 'POST' });
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || 'Gagal mengubah status ikuti');
-          btn.dataset.on = data.following ? '1' : '0'; btn.textContent = data.following ? 'Mengikuti' : 'Ikuti';
+          if (!data.following && followSheetType === 'following') {
+            const row = btn.closest('.follow-row');
+            row?.remove();
+            const count = Math.max(0, Number(document.getElementById('countFollowing')?.textContent || 0) - 1);
+            const countEl = document.getElementById('countFollowing');
+            if (countEl) countEl.textContent = String(count);
+            document.getElementById('followTabFollowing').textContent = 'Mengikuti · ' + count;
+            document.getElementById('followSheetHint').textContent = count + ' akun diikuti @' + currentPenName;
+            if (!document.querySelector('#followList .follow-row')) renderFollowRows([]);
+          } else {
+            btn.dataset.on = data.following ? '1' : '0'; btn.textContent = data.following ? 'Mengikuti' : 'Ikuti';
+          }
           btn.disabled = false;
         } catch (err) { btn.disabled = false; bbToast(err.message || 'Gagal mengubah status ikuti.', 'error'); }
       }));
@@ -855,6 +867,8 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Gagal memuat daftar');
         renderFollowRows(data.users || []);
+        const label = (type === 'followers' ? 'Pengikut · ' : 'Mengikuti · ') + (data.users || []).length;
+        document.getElementById(type === 'followers' ? 'followTabFollowers' : 'followTabFollowing').textContent = label;
         document.getElementById('followSheetHint').textContent = (data.users || []).length + ' ' + (type === 'followers' ? 'orang mengikuti' : 'akun diikuti') + ' @' + currentPenName;
       } catch (err) { list.innerHTML = '<div class="follow-empty">' + escapeHtml(err.message || 'Gagal memuat daftar.') + '</div>'; }
     }
