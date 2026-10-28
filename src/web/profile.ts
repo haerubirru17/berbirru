@@ -128,9 +128,11 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     }
     
     /* Statistik inline: icon + angka, 1 baris (Varian 2) */
-    .admin-badge { display: inline-flex; align-items: center; margin-left: 5px; vertical-align: 3px; }
+    .thread-name-row { display: flex; align-items: center; gap: 3px; }
+    .vcheck { width: 13px; height: 13px; flex: none; }
+    .admin-badge { display: inline-flex; align-items: center; margin-left: 2px; vertical-align: 2px; }
     .admin-badge[hidden] { display: none; }
-    .admin-badge svg { width: 15px; height: 15px; display: block; }
+    .admin-badge svg { width: 14px; height: 14px; display: block; }
     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
     .stats-inline { display: flex; justify-content: center; align-items: center; gap: 26px; margin-top: 14px; padding-top: 12px; border-top: 2px solid #E2E8F0; }
     .si { display: inline-flex; align-items: center; gap: 6px; color: var(--ink); }
@@ -801,7 +803,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
               </div>
               <div class="thread-author-wrap">
                 <div class="thread-author-info">
-                  <span class="thread-pen-name">@\${escapeHtml(p.pen_name)}</span>
+                  <span class="thread-name-row"><span class="thread-pen-name">@\${escapeHtml(p.pen_name)}</span>\${p.is_admin ? '<svg class="vcheck" viewBox="0 0 24 24" fill="none" aria-label="Akun admin" role="img"><circle cx="12" cy="12" r="10" fill="#1D61E7"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</span></span>
                 </div>
               </div>
               <div style="display:flex;align-items:center;gap:8px;">

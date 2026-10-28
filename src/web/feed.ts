@@ -115,6 +115,8 @@ export function renderFeedPage(user: any = null): string {
 
     .thread-author-info { display: flex; flex-direction: column; line-height: 1.25; }
     .thread-pen-name { font-size: 13px; font-weight: 800; color: var(--ink); text-decoration: none; }
+    .thread-name-row { display: flex; align-items: center; gap: 3px; }
+    .vcheck { width: 13px; height: 13px; flex: none; }
     .thread-city { font-size: 10px; font-weight: 700; color: #64748B; }
     
     /* Timestamp 2 Baris Sejajar: Jam di atas, Tanggal di bawah */
@@ -540,7 +542,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
             </div>
             <div class="thread-author-wrap">
               <div class="thread-author-info">
-                <a href="/u/\${p.pen_name}" class="thread-pen-name">@\${escapeHtml(p.pen_name)}</a>
+                <span class="thread-name-row"><a href="/u/\${p.pen_name}" class="thread-pen-name">@\${escapeHtml(p.pen_name)}</a>\${p.is_admin ? '<svg class="vcheck" viewBox="0 0 24 24" fill="none" aria-label="Akun admin" role="img"><circle cx="12" cy="12" r="10" fill="#1D61E7"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</span>
                 <span class="thread-city">\${escapeHtml(p.city || 'Nusantara')}</span>
               </div>
             </div>

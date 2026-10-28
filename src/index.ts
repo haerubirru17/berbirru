@@ -187,6 +187,15 @@ function hardenPost(p: any): any {
   return p;
 }
 
+// Penanda centang biru admin pada tiap warkah. Email hanya dipakai di server,
+// lalu dibuang — klien cuma menerima boolean.
+function withAdmin<T extends any>(p: T, ownerEmail: string): T {
+  if (!p) return p;
+  const { author_email, ...rest } = p as any;
+  rest.is_admin = String(author_email || '').toLowerCase() === String(ownerEmail || '').toLowerCase();
+  return rest as T;
+}
+
 // Filter visibilitas: post privat hanya terlihat oleh penulisnya sendiri.
 // Mengembalikan pasangan klausa SQL + binding. `user` boleh null (guest).
 function visibilityClause(user: any): { sql: string; binds: any[] } {
@@ -1040,7 +1049,7 @@ app.get('/api/users/:pen_name/posts', async (c) => {
 
   if (tab === 'likes') {
     query = `
-      SELECT p.*, u.pen_name, u.city, u.avatar_key 
+      SELECT p.*, u.pen_name, u.city, u.avatar_key, u.email AS author_email 
       FROM likes l 
       JOIN posts p ON l.post_id = p.id 
       JOIN users u ON p.author_id = u.id 
@@ -1050,7 +1059,7 @@ app.get('/api/users/:pen_name/posts', async (c) => {
     binds.push(targetUser.id);
   } else if (tab === 'saved') {
     query = `
-      SELECT p.*, u.pen_name, u.city, u.avatar_key 
+      SELECT p.*, u.pen_name, u.city, u.avatar_key, u.email AS author_email 
       FROM bookmarks b 
       JOIN posts p ON b.post_id = p.id 
       JOIN users u ON p.author_id = u.id 
@@ -1061,7 +1070,7 @@ app.get('/api/users/:pen_name/posts', async (c) => {
   } else if (tab === 'chains') {
     const vis = visibilityClause(await getAuthUser(c));
     query = `
-      SELECT p.*, u.pen_name, u.city, u.avatar_key 
+      SELECT p.*, u.pen_name, u.city, u.avatar_key, u.email AS author_email 
       FROM posts p 
       JOIN users u ON p.author_id = u.id 
       WHERE p.author_id = ? AND p.parent_id IS NOT NULL AND ${vis.sql}
@@ -1072,7 +1081,7 @@ app.get('/api/users/:pen_name/posts', async (c) => {
     // tab === 'original'
     const vis = visibilityClause(await getAuthUser(c));
     query = `
-      SELECT p.*, u.pen_name, u.city, u.avatar_key 
+      SELECT p.*, u.pen_name, u.city, u.avatar_key, u.email AS author_email 
       FROM posts p 
       JOIN users u ON p.author_id = u.id 
       WHERE p.author_id = ? AND p.parent_id IS NULL AND ${vis.sql}
@@ -1082,7 +1091,7 @@ app.get('/api/users/:pen_name/posts', async (c) => {
   }
 
   const posts = await c.env.DB.prepare(query).bind(...binds).all().then((r) => r.results);
-  return c.json({ tab, posts: posts.map(hardenPost) });
+  return c.json({ tab, posts: posts.map((p: any) => withAdmin(hardenPost(p), c.env.OWNER_EMAIL as string)) });
 });
 
 // ---- NOTIFIKASI (SSR) ----
@@ -2793,7 +2802,7 @@ app.get('/api/posts', async (c) => {
   const vis = visibilityClause(user);
 
   let query = `
-    SELECT p.*, u.pen_name, u.city, u.avatar_key,
+    SELECT p.*, u.pen_name, u.city, u.avatar_key, u.email AS author_email,
       (SELECT content FROM posts prnt WHERE prnt.id = p.parent_id) as parent_content,
       (SELECT u2.pen_name FROM posts prnt JOIN users u2 ON prnt.author_id = u2.id WHERE prnt.id = p.parent_id) as parent_author
     FROM posts p
@@ -2845,18 +2854,18 @@ app.get('/api/posts', async (c) => {
     });
   }
 
-  return c.json({ mode, posts: posts.map(hardenPost) });
+  return c.json({ mode, posts: posts.map((p) => withAdmin(hardenPost(p), c.env.OWNER_EMAIL as string)) });
 });
 
 // Sambungan 1 post (untuk expand inline feed) — ringkas, ASC, tanpa isi penuh
 app.get('/api/posts/:id/chains', async (c) => {
   const vis = visibilityClause(await getAuthUser(c));
   const { results } = await c.env.DB.prepare(
-    `SELECT p.id, p.title, p.content, p.created_at, p.likes_count, p.chains_count, u.pen_name
+    `SELECT p.id, p.title, p.content, p.created_at, p.likes_count, p.chains_count, u.pen_name, u.email AS author_email
      FROM posts p JOIN users u ON p.author_id = u.id
      WHERE p.parent_id = ? AND ${vis.sql} ORDER BY p.created_at ASC LIMIT 20`
   ).bind(c.req.param('id'), ...vis.binds).all();
-  return c.json({ chains: (results || []).map(hardenPost) });
+  return c.json({ chains: (results || []).map((p: any) => withAdmin(hardenPost(p), c.env.OWNER_EMAIL as string)) });
 });
 
 app.post('/api/posts', async (c) => {
