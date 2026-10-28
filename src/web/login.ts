@@ -308,12 +308,14 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
       const otp = document.getElementById('otpCodeInput').value.trim();
       if (!otp || otp.length !== 6) return bbToast('Masukkan 6 digit kode OTP!', 'warning');
 
-      let turnstileToken = getTurnstileToken('turnstileOtpWidget') || await tungguToken('turnstileOtpWidget', 12000);
-      const payload = { email, otp, turnstile_token: turnstileToken };
-
       const btn = document.getElementById('btnVerifyOtp');
       btn.disabled = true;
       btn.querySelector('span').textContent = 'Memverifikasi...';
+
+      // Token Turnstile tidak selalu tersedia (widget bisa gagal render). Tunggu
+      // maksimal 4 detik; server punya fallback ketat untuk jalur OTP.
+      let turnstileToken = getTurnstileToken('turnstileOtpWidget') || await tungguToken('turnstileOtpWidget', 4000);
+      const payload = { email, otp, turnstile_token: turnstileToken };
 
       try {
         const res = await fetch('/api/auth/verify-otp', {

@@ -744,7 +744,9 @@ app.post('/api/auth/send-otp', async (c) => {
   if (!email) return c.json({ error: 'Email wajib diisi' }, 400);
 
   // Turnstile wajib (fail-closed) + rate limit per-IP.
-  const humanErr = await requireHuman(c, turnstile_token || '', 'otp', 5, 600, { limit: 3, windowSec: 900 });
+  // Widget Turnstile bisa gagal render (peramban/adblock). Kode OTP sendiri sudah
+  // bukti kepemilikan email — fallback ketat menjaga alur tetap jalan.
+  const humanErr = await requireHuman(c, turnstile_token || '', 'otp', 5, 600, { limit: 5, windowSec: 900 });
   if (humanErr) return c.json({ error: humanErr }, 403);
 
   const cleanEmail = String(email).trim().toLowerCase();
@@ -779,7 +781,8 @@ app.post('/api/auth/verify-otp', async (c) => {
   // Gerbang Turnstile (vuln-0003 GLM, HIGH): satu-satunya jalur auth tanpa gate —
   // OTP yang dicuri/ dipancing tak boleh bisa ditukar sesi oleh skrip tanpa browser.
   // ponytail: tanpa fallback adblocker di path ini — aset yang dilindungi justru OTP.
-  const humanErr = await requireHuman(c, turnstile_token || '', 'votp', 10, 600);
+  // Fallback ketat: verifikasi OTP tetap butuh kode 6 digit yang benar.
+  const humanErr = await requireHuman(c, turnstile_token || '', 'votp', 10, 600, { limit: 5, windowSec: 900 });
   if (humanErr) return c.json({ error: humanErr }, 403);
 
   // Anti brute-force OTP (vuln-0005): batas per-IP dan per-akun.
