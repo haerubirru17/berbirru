@@ -1,6 +1,6 @@
 {
  "base": "https://berbirru-uji.haerubirru17.workers.dev",
- "at": "2026-10-29T07:47:40.501Z",
+ "at": "2026-10-29T07:49:19.903Z",
  "guest": {
   "/": {
    "status": 200,
@@ -28,17 +28,237 @@
    "body": "User-agent: *\nAllow: /\nAllow: /feed\nAllow: /u/\nDisallow: /api/\n\nSitemap: https://berbirru-uji.haerubirru17.workers.dev/sitemap.xml"
   },
   "/api/posts?mode=latest": {
-   "status": 500,
+   "status": 200,
    "ct": "application/json",
    "body": {
-    "error": "Terjadi kesalahan internal. Coba lagi sebentar."
+    "mode": "latest",
+    "posts": [
+     {
+      "author_id": "uji-owner2",
+      "avatar_key": null,
+      "chains_count": 0,
+      "city": "Cilegon",
+      "content": "Uji centang biru pada warkah.",
+      "created_at": "<TS>",
+      "id": "<UUID>",
+      "is_admin": true,
+      "likes_count": 0,
+      "parent_author": null,
+      "parent_content": null,
+      "parent_id": null,
+      "pen_name": "haeru",
+      "saves_count": 0,
+      "title": "Cek centang",
+      "visibility": "public"
+     },
+     {
+      "author_id": "ujaaf6d52b2a",
+      "avatar_key": null,
+      "chains_count": 12,
+      "city": "Jakarta",
+      "content": "Aku ingin mencintaimu dengan sederhana: dengan kata yang tak sempat diucapkan kayu kepada api yang menjadikannya abu.",
+      "created_at": "<TS>",
+      "id": "prev-warkah-1",
+      "is_admin": false,
+      "likes_count": 128,
+      "parent_author": null,
+      "parent_content": null,
+      "parent_id": null,
+      "pen_name": "senja_kelabu",
+      "saves_count": 64,
+      "title": "Aku Ingin",
+      "visibility": "public"
+     },
+     {
+      "author_id": "ujaaf6d52b2a",
+      "avatar_key": null,
+      "chains_count": 7,
+      "city": "Jakarta",
+      "content": "Suaramu takkan padam ditelan angin, akan abadi sampai jauh di kemudian hari.",
+      "created_at": "<TS>",
+      "id": "prev-warkah-2",
+      "is_admin": false,
+      "likes_count": 96,
+      "parent_author": null,
+      "parent_content": null,
+      "parent_id": null,
+      "pen_name": "senja_kelabu",
+      "saves_count": 41,
+      "title": "Suara yang Tak Padam",
+      "visibility": "public"
+     },
+     {
+      "author_id": "ujaaf6d52b2a",
+      "avatar_key": null,
+      "chains_count": 31,
+      "city": "Jakarta",
+      "content": "Jangan berduka. Apa pun yang hilang darimu akan kembali dalam bentuk yang lain. Luka adalah tempat di mana cahaya memasuki jiwamu.",
+      "created_at": "<TS>",
+      "id": "prev-warkah-3",
+      "is_admin": false,
+      "likes_count": 214,
+      "parent_author": null,
+      "parent_content": null,
+      "parent_id": null,
+      "pen_name": "senja_kelabu",
+      "saves_count": 120,
+      "title": "Luka & Cahaya",
+      "visibility": "public"
+     },
+     {
+      "author_id": "ujaaf6d52b2a",
+      "avatar_key": null,
+      "chains_count": 44,
+      "city": "Jakarta",
+      "content": "Aku ini binatang jalang, dari kumpulannya terbuang. Biar peluru menembus kulitku, aku tetap meradang menerjang.",
+      "created_at": "<TS>",
+      "id": "prev-warkah-4",
+      "is_admin": false,
+      "likes_count": 302,
+      "parent_author": null,
+      "parent_content": null,
+      "parent_id": null,
+      "pen_name": "senja_kelabu",
+      "saves_count": 158,
+      "title": "Aku",
+      "visibility": "public"
+     },
+     {
+      "author_id": "snap-0001-e2e0-0000-000000000001",
+      "avatar_key": null,
+      "chains_count": 0,
+      "city": "Nusantara",
+      "content": "kijangemas10 lumut golden",
+      "created_at": "<TS>",
+      "id": "snap-post-000000000000000000000001",
+      "is_admin": false,
+      "likes_count": 1,
+      "parent_author": null,
+      "parent_content": null,
+      "parent_id": null,
+      "pen_name": "snap1",
+      "saves_count": 0,
+      "title": "Golden Warkah",
+      "visibility": "public"
+     }
+    ]
    }
   },
   "/api/posts?mode=viral": {
-   "status": 500,
+   "status": 200,
    "ct": "application/json",
    "body": {
-    "error": "Terjadi kesalahan internal. Coba lagi sebentar."
+    "mode": "viral",
+    "posts": [
+     {
+      "author_id": "ujaaf6d52b2a",
+      "avatar_key": null,
+      "chains_count": 44,
+      "city": "Jakarta",
+      "content": "Aku ini binatang jalang, dari kumpulannya terbuang. Biar peluru menembus kulitku, aku tetap meradang menerjang.",
+      "created_at": "<TS>",
+      "id": "prev-warkah-4",
+      "is_admin": false,
+      "likes_count": 302,
+      "parent_author": null,
+      "parent_content": null,
+      "parent_id": null,
+      "pen_name": "senja_kelabu",
+      "saves_count": 158,
+      "title": "Aku",
+      "visibility": "public"
+     },
+     {
+      "author_id": "ujaaf6d52b2a",
+      "avatar_key": null,
+      "chains_count": 31,
+      "city": "Jakarta",
+      "content": "Jangan berduka. Apa pun yang hilang darimu akan kembali dalam bentuk yang lain. Luka adalah tempat di mana cahaya memasuki jiwamu.",
+      "created_at": "<TS>",
+      "id": "prev-warkah-3",
+      "is_admin": false,
+      "likes_count": 214,
+      "parent_author": null,
+      "parent_content": null,
+      "parent_id": null,
+      "pen_name": "senja_kelabu",
+      "saves_count": 120,
+      "title": "Luka & Cahaya",
+      "visibility": "public"
+     },
+     {
+      "author_id": "ujaaf6d52b2a",
+      "avatar_key": null,
+      "chains_count": 12,
+      "city": "Jakarta",
+      "content": "Aku ingin mencintaimu dengan sederhana: dengan kata yang tak sempat diucapkan kayu kepada api yang menjadikannya abu.",
+      "created_at": "<TS>",
+      "id": "prev-warkah-1",
+      "is_admin": false,
+      "likes_count": 128,
+      "parent_author": null,
+      "parent_content": null,
+      "parent_id": null,
+      "pen_name": "senja_kelabu",
+      "saves_count": 64,
+      "title": "Aku Ingin",
+      "visibility": "public"
+     },
+     {
+      "author_id": "ujaaf6d52b2a",
+      "avatar_key": null,
+      "chains_count": 7,
+      "city": "Jakarta",
+      "content": "Suaramu takkan padam ditelan angin, akan abadi sampai jauh di kemudian hari.",
+      "created_at": "<TS>",
+      "id": "prev-warkah-2",
+      "is_admin": false,
+      "likes_count": 96,
+      "parent_author": null,
+      "parent_content": null,
+      "parent_id": null,
+      "pen_name": "senja_kelabu",
+      "saves_count": 41,
+      "title": "Suara yang Tak Padam",
+      "visibility": "public"
+     },
+     {
+      "author_id": "uji-owner2",
+      "avatar_key": null,
+      "chains_count": 0,
+      "city": "Cilegon",
+      "content": "Uji centang biru pada warkah.",
+      "created_at": "<TS>",
+      "id": "<UUID>",
+      "is_admin": true,
+      "likes_count": 0,
+      "parent_author": null,
+      "parent_content": null,
+      "parent_id": null,
+      "pen_name": "haeru",
+      "saves_count": 0,
+      "title": "Cek centang",
+      "visibility": "public"
+     },
+     {
+      "author_id": "snap-0001-e2e0-0000-000000000001",
+      "avatar_key": null,
+      "chains_count": 0,
+      "city": "Nusantara",
+      "content": "kijangemas10 lumut golden",
+      "created_at": "<TS>",
+      "id": "snap-post-000000000000000000000001",
+      "is_admin": false,
+      "likes_count": 1,
+      "parent_author": null,
+      "parent_content": null,
+      "parent_id": null,
+      "pen_name": "snap1",
+      "saves_count": 0,
+      "title": "Golden Warkah",
+      "visibility": "public"
+     }
+    ]
    }
   },
   "/api/posts?mode=following": {
@@ -51,17 +271,38 @@
    }
   },
   "/api/posts?mode=latest&q=kijangemas10": {
-   "status": 500,
+   "status": 200,
    "ct": "application/json",
    "body": {
-    "error": "Terjadi kesalahan internal. Coba lagi sebentar."
+    "mode": "latest",
+    "posts": [
+     {
+      "author_id": "snap-0001-e2e0-0000-000000000001",
+      "avatar_key": null,
+      "chains_count": 0,
+      "city": "Nusantara",
+      "content": "kijangemas10 lumut golden",
+      "created_at": "<TS>",
+      "id": "snap-post-000000000000000000000001",
+      "is_admin": false,
+      "likes_count": 1,
+      "parent_author": null,
+      "parent_content": null,
+      "parent_id": null,
+      "pen_name": "snap1",
+      "saves_count": 0,
+      "title": "Golden Warkah",
+      "visibility": "public"
+     }
+    ]
    }
   },
   "/api/posts?mode=latest&q=%25": {
-   "status": 500,
+   "status": 200,
    "ct": "application/json",
    "body": {
-    "error": "Terjadi kesalahan internal. Coba lagi sebentar."
+    "mode": "latest",
+    "posts": []
    }
   },
   "/api/users/suggest?q=snap": {
@@ -367,10 +608,11 @@
    }
   },
   "/api/posts?mode=following": {
-   "status": 500,
+   "status": 200,
    "ct": "application/json",
    "body": {
-    "error": "Terjadi kesalahan internal. Coba lagi sebentar."
+    "mode": "following",
+    "posts": []
    }
   },
   "/pasar": {

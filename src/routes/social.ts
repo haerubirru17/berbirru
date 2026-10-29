@@ -179,9 +179,10 @@ app.get('/api/posts', async (c: any) => {
   // Beranda = ruang publik. Warkah privat cuma muncul di tab Karya profil pemiliknya.
   const vis = { sql: "p.visibility = 'public'", binds: [] as any[] };
 
+  // Audit C-04: parent privat hanya dibocorkan ke pemiliknya/viewer-nya sendiri
+  // (kondisional CASE pada subquery parent_content; bind pertama = viewer id).
   let query = `
     SELECT p.*, u.pen_name, u.city, u.avatar_key, u.email AS author_email,
-      // Audit C-04: parent privat hanya dibocorkan ke penulisnya / viewer-nya sendiri.
       (SELECT CASE WHEN prnt.visibility != 'private' OR prnt.author_id = ? THEN prnt.content ELSE NULL END
          FROM posts prnt WHERE prnt.id = p.parent_id) as parent_content,
       (SELECT u2.pen_name FROM posts prnt JOIN users u2 ON prnt.author_id = u2.id WHERE prnt.id = p.parent_id) as parent_author
