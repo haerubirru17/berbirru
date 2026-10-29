@@ -36,6 +36,47 @@ export async function reconcileQris(db: any, env: Env, o: any): Promise<{ ok: bo
   return { ok: true, paid: true };
 }
 
+// ---- AUDIT R2-03/R2-04: expiry atomik & late-payment ----
+// Expiry order created: restore stok + event + flip dalam SATU batch (rollback utuh saat svc error).
+export async function sweepExpireBatch(db: any, o: any): Promise<{ changes: number }> {
+  const res = await db.batch([
+    db.prepare("UPDATE listings SET stock = MIN(stock + 1, 999) WHERE id = ? AND status != 'deleted' AND EXISTS (SELECT 1 FROM orders WHERE id = ? AND status = 'created')").bind(o.listing_id, o.id),
+    db.prepare("INSERT INTO order_events (order_id, actor, from_st, to_st, note) SELECT ?,?,?,?,? WHERE EXISTS (SELECT 1 FROM orders WHERE id = ? AND status = 'created')").bind(o.id, 'system', 'created', 'expired', 'Pesanan kedaluwarsa — stok dikembalikan', o.id),
+    db.prepare("UPDATE orders SET status = 'expired', updated_at = datetime('now') WHERE id = ? AND status = 'created'").bind(o.id),
+  ]);
+  return { changes: (res[2].meta?.changes || 0) };
+}
+
+// Pembayaran terlambat pada order expired: provider paid → masuk sengketa (bukan auto-paid,
+// stok mungkin sudah terjual lagi). Satu batch, guard status='expired'.
+export async function latePaymentToDispute(db: any, o: any): Promise<{ ok: boolean }> {
+  const res = await db.batch([
+    db.prepare("UPDATE orders SET status = 'disputed', updated_at = datetime('now') WHERE id = ? AND status = 'expired'").bind(o.id),
+    db.prepare("INSERT INTO order_events (order_id, actor, from_st, to_st, note) SELECT ?,?,?,?,? WHERE EXISTS (SELECT 1 FROM orders WHERE id = ? AND status = 'disputed')").bind(o.id, 'system', 'expired', 'disputed', 'Pembayaran QRIS terdeteksi setelah kedaluwarsa — masuk pemeriksaan owner', o.id),
+  ]);
+  if ((res[0].meta?.changes || 0) === 0) return { ok: false };
+  await notifyOrder(db, { userId: o.buyer_id, actorId: o.seller_id, type: 'order_late_payment', orderId: o.id });
+  await notifyOrder(db, { userId: o.seller_id, actorId: o.buyer_id, type: 'order_late_payment', orderId: o.id });
+  return { ok: true };
+}
+
+// Owner: periksa ulang provider utk order created|expired. Fail-closed saat provider error.
+export async function ownerReconcilePayment(db: any, env: any, orderId: string): Promise<{ ok: boolean; status?: string; error?: string }> {
+  const o: any = await db.prepare('SELECT * FROM orders WHERE id = ?').bind(orderId).first();
+  if (!o || (o.status !== 'created' && o.status !== 'expired') || !o.qris_order_id) return { ok: false, error: 'order tidak memenuhi syarat reconcile' };
+  const provider = await getQrisStatus(env, o.qris_order_id);
+  if (!provider.ok) return { ok: false, error: provider.error };
+  if (!provider.paid) return { ok: true, status: o.status };
+  if (o.status === 'created') {
+    const rr = await reconcileQris(db, env, o);
+    if (!rr.ok) return { ok: false, error: rr.error };
+    return { ok: true, status: 'paid' };
+  }
+  // expired + paid → disputed untuk keputusan owner (stok mungkin sudah terjual ulang).
+  const r = await latePaymentToDispute(db, o);
+  return { ok: r.ok, status: r.ok ? 'disputed' : o.status };
+}
+
 export function mountPasar(app: any) {
 // ================= PASAR BUKU (rekber marketplace) =================
 // Fee rekber 5.000/order ditanggung penjual; pembeli bayar harga+ongkir persis.
@@ -829,6 +870,17 @@ app.post('/api/klikqris/webhook', async (c: any) => {
   if (!body) return c.json({ ok: false }, 400);
   const o: any = await c.env.DB.prepare('SELECT * FROM orders WHERE qris_order_id = ?').bind(String(body.order_id || '')).first();
   if (!o) return c.json({ ok: false, error: 'order tak dikenal' }, 404);
+  // Audit R2-04: webhook pada order expired tetap memverifikasi; provider paid →
+  // masuk sengketa (bukan diabaikan), stok TIDAK dikembalikan lagi.
+  if (o.status === 'expired') {
+    const v = verifyWebhook(body, { qris_order_id: o.qris_order_id, qris_signature: o.qris_signature, final_amount: Number(o.qris_final_amount || Number(o.price) + Number(o.shipping)) });
+    if (!v.ok) return c.json({ ok: false, error: v.error }, 400);
+    const st = await getQrisStatus(c.env, o.qris_order_id);
+    if (!st.ok) return c.json({ ok: false, error: st.error }, 502);
+    if (!st.paid) return c.json({ ok: true, note: 'expired tanpa pembayaran' });
+    const r = await latePaymentToDispute(c.env.DB, o);
+    return c.json(r.ok ? { ok: true, note: 'late payment → disputed' } : { ok: false }, r.ok ? 200 : 409);
+  }
   if (o.status !== 'created') return c.json({ ok: true, note: 'sudah diproses' });
   const v = verifyWebhook(body, { qris_order_id: o.qris_order_id, qris_signature: o.qris_signature, final_amount: Number(o.qris_final_amount || Number(o.price) + Number(o.shipping)) });
   if (!v.ok) return c.json({ ok: false, error: v.error }, 400);

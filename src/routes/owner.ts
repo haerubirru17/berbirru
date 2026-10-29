@@ -5,7 +5,7 @@ import { settlementAmounts, PASAR_FEE } from '../lib/pasar-settlement';
 import { slugUnik } from '../lib/toko';
 import { cekResi } from '../kurir';
 import { logOrderEvent, notifyOrder, KURIR_MAP, sweepCursor, setSweepCursor, resetSweepCursor, sweepLock, sweepUnlock } from '../lib/pasar-core';
-import { reconcileQris } from './pasar';
+import { reconcileQris, sweepExpireBatch, ownerReconcilePayment } from './pasar';
 
 // Handlers owner dipindah verbatim dari index.ts (termasuk /api/owner/*).
 export function mountOwner(app: any) {
@@ -340,6 +340,16 @@ app.post('/api/owner/sweep', async (c: any) => {
   return c.json({ ok: true, hasil });
 });
 
+// Audit R2-04: periksa ulang pembayaran QRIS pada order created|expired
+// (fail-closed; expired+paid → disputed untuk keputusan owner).
+app.post('/api/owner/orders/:id/reconcile-payment', async (c: any) => {
+  const me = await getAuthUser(c);
+  if (!isOwner(c.env, me)) return c.json({ error: 'Tidak ditemukan' }, 404);
+  const r = await ownerReconcilePayment(c.env.DB, c.env, c.req.param('id'));
+  await logOwnerAction(c.env.DB, me?.email, 'reconcile-payment', 'order', c.req.param('id'), JSON.stringify(r));
+  return c.json(r, r.ok ? 200 : 502);
+});
+
 // Cron sweep per jam: expire order tak dibayar; handed D+5 tanpa gesekan → done;
 // anti-resi-hantu: handed ekspedisi D+1, resi nggak ketemu di kurir → flag disputes.
 // (duplikat nested sweepOrders/logOwnerAction dihapus — pakai definisi modul di bawah; audit D-09)
@@ -392,13 +402,9 @@ export async function sweepOrders(db: any, env: any): Promise<string> {
           }
         }
       }
-      const moved = await db.prepare(
-        "UPDATE orders SET status = 'expired', updated_at = datetime('now') WHERE id = ? AND status = 'created'"
-      ).bind(o.id).run();
-      if ((moved.meta?.changes || 0) > 0) {
+      const moved = await sweepExpireBatch(db, o);
+      if (moved.changes > 0) {
         expired++;
-        await db.prepare("UPDATE listings SET stock = MIN(stock + 1, 999) WHERE id = ? AND status != 'deleted'").bind(o.listing_id).run();
-        await logOrderEvent(db, o.id, 'system', 'created', 'expired', 'Pesanan kedaluwarsa — stok dikembalikan');
       }
       last1 = o;
     }
