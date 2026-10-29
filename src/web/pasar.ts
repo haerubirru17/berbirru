@@ -2,6 +2,7 @@
 // Desain owner-approved 2026-10-18; plan: .hermes/plans/2026-10-18-pasar-buku.md
 // Fee rekber 5.000/order ditanggung PENJUAL (tak tampil di harga pembeli).
 
+import { THEME } from './theme';
 import { escapeHtml } from '../lib/sanitize';
 import { renderBottomNav } from './layout';
 
@@ -124,24 +125,24 @@ export function renderPasarPage(user: any, listings: any[], f: { q?: string; con
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,700;1,6..72,500&family=Roboto+Mono:wght@600;700&display=swap" rel="stylesheet">
   <style>${BASE_CSS}
-    .admstrip{display:flex;justify-content:space-between;align-items:center;gap:10px;border:3px solid #0B192C;background:#FDE047;box-shadow:4px 5px 0 #26364A;padding:11px 13px;margin:0 0 14px}
+    .admstrip{display:flex;justify-content:space-between;align-items:center;gap:10px;border:3px solid var(--ink);background:var(--yellow);box-shadow:4px 5px 0 var(--ink-soft);padding:11px 13px;margin:0 0 14px}
     .admstrip b{display:block;font:900 12.5px 'DM Sans';letter-spacing:-.01em}
     .admstrip span{display:block;font:700 10px 'Roboto Mono';letter-spacing:.05em;color:#3F3F0F;margin-top:2px}
-    .admstrip a{border:2.5px solid #0B192C;background:#0B192C;color:#fff;text-decoration:none;font:900 11.5px 'DM Sans';padding:8px 10px;white-space:nowrap}
+    .admstrip a{border:2.5px solid var(--ink);background:var(--ink);color:#fff;text-decoration:none;font:900 11.5px 'DM Sans';padding:8px 10px;white-space:nowrap}
     .pasar-top{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:22px}.pasar-top .sec-title{font-size:clamp(42px,7vw,66px)}
-    .btn-jual{min-height:48px;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--yellow);color:var(--ink);border:var(--line);padding:11px 18px;font-weight:900;text-decoration:none;box-shadow:var(--small-shadow);cursor:pointer;white-space:nowrap}.btn-jual:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #26364A}
+    .btn-jual{min-height:48px;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--yellow);color:var(--ink);border:var(--line);padding:11px 18px;font-weight:900;text-decoration:none;box-shadow:var(--small-shadow);cursor:pointer;white-space:nowrap}.btn-jual:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink-soft)}
     .pf{display:grid;grid-template-columns:1fr 150px 130px 130px auto;gap:8px;margin:0 0 10px;align-items:center}
     .pf-q,.pf-max,.pf-sel{min-height:44px;border:var(--line);background:#fff;padding:9px 12px;font:700 13px 'DM Sans';color:var(--ink);box-shadow:var(--small-shadow)}
     .pf-q{width:100%}.pf-go{min-height:44px;border:var(--line);background:var(--blue);color:#fff;font:900 13px 'DM Sans';padding:9px 18px;box-shadow:var(--small-shadow);cursor:pointer}
-    .pf-go:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #26364A}
+    .pf-go:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink-soft)}
     .pf-info{display:flex;justify-content:space-between;align-items:center;margin:0 0 16px;font:800 11px 'Roboto Mono';color:#52627A}
     .pf-info a{color:var(--blue);font-weight:900;text-decoration:underline}
     .pager{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 16px;font:800 11px 'Roboto Mono';color:#52627A}
     .pager a,.pager .off{border:2px solid var(--ink);background:#fff;padding:7px 10px;text-decoration:none;color:var(--ink);box-shadow:var(--small-shadow)}
     .pager .off{opacity:.35;border-style:dashed;box-shadow:none}
-    .pager .pos{font-weight:800;color:#64748B}
+    .pager .pos{font-weight:800;color:var(--muted)}
     @media(max-width:880px){.pf{grid-template-columns:1fr 1fr}.pf-q{grid-column:1/-1}.pf-go{grid-column:1/-1}}
-    .book-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}.book-card{background:#fff;border:var(--line);box-shadow:var(--shadow);overflow:hidden;text-decoration:none;color:var(--ink);display:flex;flex-direction:column;transition:.08s}.book-card:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #26364A}.card-img{position:relative;aspect-ratio:4/5;background:var(--soft);border-bottom:var(--thin);overflow:hidden}.card-img img{width:100%;height:100%;object-fit:cover;display:block}.card-img-empty{display:grid;place-items:center}.card-img-empty svg{width:48px;height:48px;stroke:var(--blue);stroke-width:1.7;fill:none}.card-body{padding:14px;display:flex;flex-direction:column;gap:7px}.card-title{font:700 21px/1.08 'Newsreader',serif;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:45px}.card-price{font:400 18px 'Archivo Black';color:var(--deep)}.card-meta{display:flex;justify-content:space-between;align-items:center;gap:7px;flex-wrap:wrap}.cond-badge{font:700 9px 'Roboto Mono';letter-spacing:.04em;background:var(--yellow);border:2px solid var(--ink);padding:3px 7px}.card-ship{font-size:10px;font-weight:800;color:#607086}.rekber-note{margin-top:24px;background:var(--blue);color:#fff;border:var(--line);box-shadow:var(--shadow);padding:16px;font-size:13px;font-weight:700;line-height:1.55;display:flex;gap:10px;align-items:flex-start}.rekber-note svg{width:20px;height:20px;flex:none;stroke:var(--yellow);stroke-width:2.4;fill:none}.empty-state{text-align:center;padding:40px 16px;background:#fff;border:var(--line);box-shadow:var(--shadow)}.empty-state p{font-size:13px;font-weight:700;color:#64748B;margin-bottom:4px}
+    .book-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}.book-card{background:#fff;border:var(--line);box-shadow:var(--shadow);overflow:hidden;text-decoration:none;color:var(--ink);display:flex;flex-direction:column;transition:.08s}.book-card:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ink-soft)}.card-img{position:relative;aspect-ratio:4/5;background:var(--soft);border-bottom:var(--thin);overflow:hidden}.card-img img{width:100%;height:100%;object-fit:cover;display:block}.card-img-empty{display:grid;place-items:center}.card-img-empty svg{width:48px;height:48px;stroke:var(--blue);stroke-width:1.7;fill:none}.card-body{padding:14px;display:flex;flex-direction:column;gap:7px}.card-title{font:700 21px/1.08 'Newsreader',serif;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:45px}.card-price{font:400 18px 'Archivo Black';color:var(--deep)}.card-meta{display:flex;justify-content:space-between;align-items:center;gap:7px;flex-wrap:wrap}.cond-badge{font:700 9px 'Roboto Mono';letter-spacing:.04em;background:var(--yellow);border:2px solid var(--ink);padding:3px 7px}.card-ship{font-size:10px;font-weight:800;color:#607086}.rekber-note{margin-top:24px;background:var(--blue);color:#fff;border:var(--line);box-shadow:var(--shadow);padding:16px;font-size:13px;font-weight:700;line-height:1.55;display:flex;gap:10px;align-items:flex-start}.rekber-note svg{width:20px;height:20px;flex:none;stroke:var(--yellow);stroke-width:2.4;fill:none}.empty-state{text-align:center;padding:40px 16px;background:#fff;border:var(--line);box-shadow:var(--shadow)}.empty-state p{font-size:13px;font-weight:700;color:var(--muted);margin-bottom:4px}
     @media(max-width:880px){.book-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.container{max-width:680px}}
     @media(max-width:420px){.pasar-top{align-items:stretch;flex-direction:column}.btn-jual{width:100%}.book-grid{gap:11px}.card-title{font-size:17px;min-height:38px}.card-body{padding:10px}.card-price{font-size:15px}}
     ${BRAND_CSS}
@@ -210,13 +211,13 @@ export function renderJualPage(user: any): string {
       aspect-ratio: 1/1; border: 2px dashed #94A3B8; border-radius: var(--radius-sm);
       display: flex; align-items: center; justify-content: center; cursor: pointer; background: #FAFAFA; overflow: hidden; position: relative;
     }
-    .photo-slot svg { width: 20px; height: 20px; stroke: #64748B; stroke-width: 2; fill: none; }
+    .photo-slot svg { width: 20px; height: 20px; stroke: var(--muted); stroke-width: 2; fill: none; }
     .photo-slot img { width: 100%; height: 100%; object-fit: cover; }
     .photo-slot .ph-del {
       position: absolute; top: 2px; right: 2px; width: 17px; height: 17px; background: var(--ink); color: #fff;
       border-radius: 50%; font-size: 10px; font-weight: 900; display: flex; align-items: center; justify-content: center; line-height: 1;
     }
-    .hint { font-size: 10.5px; font-weight: 700; color: #64748B; margin-top: 4px; line-height: 1.5; }
+    .hint { font-size: 10.5px; font-weight: 700; color: var(--muted); margin-top: 4px; line-height: 1.5; }
     .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
     .chip-pick { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -517,21 +518,21 @@ export function renderListingDetail(user: any, p: any, seller: any, adminView = 
     .shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .detail-card { background: var(--bg-card); border: var(--border-med); border-radius: var(--radius); box-shadow: var(--shadow-hard); padding: 14px 16px; margin-top: 12px; }
     .d-title { font-size: 17px; font-weight: 900; line-height: 1.35; }
-    .d-author { font-size: 12px; font-weight: 700; color: #64748B; margin-top: 2px; }
+    .d-author { font-size: 12px; font-weight: 700; color: var(--muted); margin-top: 2px; }
     .d-price { font-family: 'Archivo Black', sans-serif; font-size: 22px; font-weight: 800; color: var(--blue-deep); margin: 8px 0 4px; }
     .d-ship { font-size: 11.5px; font-weight: 700; color: #475569; }
     .d-badges { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
     .badge { font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; background: var(--bg-blue-subtle); border: 1.5px solid var(--ink); border-radius: 6px; padding: 3px 8px; }
-    .badge-seller { background: #FDE047; }
+    .badge-seller { background: var(--yellow); }
     .d-descr { margin-top: 12px; font-size: 12.5px; font-weight: 600; line-height: 1.65; color: #334155; white-space: pre-wrap; word-break: break-word; }
-    .seller-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1.5px dashed #CBD5E1; }
+    .seller-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1.5px dashed var(--line-soft); }
     .seller-ava { width: 36px; height: 36px; border-radius: 50%; border: var(--border-thin); background: var(--blue-primary); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; overflow: hidden; flex-shrink: 0; }
     .seller-ava img { width: 100%; height: 100%; object-fit: cover; }
     .seller-name { font-size: 12.5px; font-weight: 800; text-decoration: none; color: var(--ink); }
-    .seller-city { font-size: 10.5px; font-weight: 700; color: #64748B; }
+    .seller-city { font-size: 10.5px; font-weight: 700; color: var(--muted); }
     .buy-wrap { position: sticky; bottom: 76px; margin-top: 14px; }
     .buy-row { background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius); box-shadow: var(--shadow-hard-lg); padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-    .buy-total-label { font-size: 9.5px; font-weight: 800; text-transform: uppercase; color: #64748B; letter-spacing: 0.4px; }
+    .buy-total-label { font-size: 9.5px; font-weight: 800; text-transform: uppercase; color: var(--muted); letter-spacing: 0.4px; }
     .buy-total { font-family: 'Archivo Black', sans-serif; font-size: 16px; font-weight: 800; color: var(--blue-deep); }
     .btn-buy {
       background: var(--blue-primary); color: #fff; border: var(--border-thick); border-radius: var(--radius-sm);
@@ -539,7 +540,7 @@ export function renderListingDetail(user: any, p: any, seller: any, adminView = 
       display: inline-flex; align-items: center; gap: 6px; text-decoration: none; font-family: inherit; white-space: nowrap;
     }
     .btn-buy:active { transform: translate(2px, 2px); box-shadow: none; }
-    .login-hint { text-align: center; font-size: 11px; font-weight: 700; color: #64748B; margin-top: 8px; }
+    .login-hint { text-align: center; font-size: 11px; font-weight: 700; color: var(--muted); margin-top: 8px; }
     ${BRAND_CSS}
   </style>
 </head>
@@ -627,10 +628,10 @@ export function renderListingDetail(user: any, p: any, seller: any, adminView = 
     .lap summary{cursor:pointer;padding:11px 13px;font:800 12px 'DM Sans';color:#991B1B;list-style:none}
     .lap summary::-webkit-details-marker{display:none}
     .lap-in{padding:0 13px 13px;display:flex;flex-direction:column;gap:8px}
-    .lap-l{font:800 10px 'Roboto Mono';color:#64748B;letter-spacing:.05em;text-transform:uppercase}
+    .lap-l{font:800 10px 'Roboto Mono';color:var(--muted);letter-spacing:.05em;text-transform:uppercase}
     .lap select,.lap textarea{width:100%;border:2px solid var(--ink);border-radius:8px;padding:9px 11px;font:600 13px 'DM Sans';background:#fff}
     .lap textarea{min-height:70px;resize:vertical}
-    .lap-go{min-height:42px;border:2.5px solid var(--ink);background:#FEE2E2;color:#991B1B;font:900 12.5px 'DM Sans';cursor:pointer;box-shadow:2px 3px 0 #26364A}
+    .lap-go{min-height:42px;border:2.5px solid var(--ink);background:#FEE2E2;color:#991B1B;font:900 12.5px 'DM Sans';cursor:pointer;box-shadow:2px 3px 0 var(--ink-soft)}
     .lap-msg{font:700 11.5px 'DM Sans';color:#0F7A3D}
   </style>
   <script>
@@ -668,12 +669,12 @@ export function renderEditListingPage(user: any, l: any): string {
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,700&display=swap" rel="stylesheet">
 ${PASAR_BASE_CSS}
 <style>
-  .ed{background:#fff;border:3px solid #0B192C;box-shadow:5px 6px 0 #26364A;border-radius:12px;padding:16px}
+  .ed{background:#fff;border:3px solid var(--ink);box-shadow:5px 6px 0 var(--ink-soft);border-radius:12px;padding:16px}
   .ed .f{margin-bottom:12px}
   .ed label{display:block;font:800 10.5px 'Roboto Mono';letter-spacing:.05em;color:#52627A;margin-bottom:5px;text-transform:uppercase}
-  .ed input,.ed select{width:100%;min-height:44px;border:2.5px solid #0B192C;border-radius:8px;padding:10px 12px;font:600 14px 'DM Sans'}
-  .ed .hint{font:600 10.5px 'DM Sans';color:#64748B;margin-top:4px}
-  .ed .btn{width:100%;min-height:46px;border:3px solid #0B192C;border-radius:8px;box-shadow:3px 4px 0 #26364A;font:900 13px 'DM Sans';cursor:pointer;background:#FDE047}
+  .ed input,.ed select{width:100%;min-height:44px;border:2.5px solid var(--ink);border-radius:8px;padding:10px 12px;font:600 14px 'DM Sans'}
+  .ed .hint{font:600 10.5px 'DM Sans';color:var(--muted);margin-top:4px}
+  .ed .btn{width:100%;min-height:46px;border:3px solid var(--ink);border-radius:8px;box-shadow:3px 4px 0 var(--ink-soft);font:900 13px 'DM Sans';cursor:pointer;background:var(--yellow)}
   .err{display:none;background:#FEE2E2;border:2.5px solid #B42318;color:#7F1D1D;padding:9px 11px;font:800 12px 'DM Sans';margin-bottom:12px;border-radius:8px}
 </style></head>
 <body>
