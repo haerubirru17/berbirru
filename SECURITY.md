@@ -1,7 +1,7 @@
 # 🛡️ Kebijakan & Kerangka Audit Keamanan (Enterprise Security & Audit Baseline) — BERBIRRU.COM
 
 > **Referensi Standar:** [Cloudflare Security Audit Framework (`cloudflare/security-audit-skill`)](https://github.com/cloudflare/security-audit-skill)  
-> **Ruang Lingkup:** `https://berbirru.com`, Cloudflare Edge Workers, Cloudflare D1 Database, Cloudflare KV, dan API Subdomain.  
+> **Ruang Lingkup:** `https://berbirru.com`, Cloudflare Edge Workers, Cloudflare D1 Database, dan API Subdomain.  
 > **Klasifikasi:** Enterprise Zero-Trust Security Baseline  
 > **Terakhir Diperbarui:** Oktober 2026
 
@@ -58,7 +58,7 @@ Mengadopsi taksonomi resmi **Cloudflare Security Audit Harness**, seluruh lapisa
 │    └── Data Minimization (Emails never exposed on public JSON routes)  │
 ├────────────────────────────────────────────────────────────────────────┤
 │ 5. RESOURCE EXHAUSTION & DoS (RESOURCE-EXHAUSTION-AND-AVAILABILITY.md) │
-│    ├── IP & User-based Rate Limiting (Cloudflare KV Edge Buckets)      │
+│    ├── IP & User-based Rate Limiting (bucket D1 rate_limits via hitRate)        │
 │    ├── Payload Size Enforcements (Max 50KB per warkah post)            │
 │    └── Unmetered Edge DDoS Layer 3/4/7 Absorption via Cloudflare Proxy │
 ├────────────────────────────────────────────────────────────────────────┤

@@ -178,17 +178,24 @@ app.post('/api/owner/orders/:id/resolve', async (c: any) => {
     // Refund = saldo pembeli (bisa dipakai belanja lagi atau ditarik). Uang tidak keluar dari sistem.
     const nominal = Number(o.qris_final_amount || (Number(o.price) + Number(o.shipping || 0)));
     const ref = String(body?.transfer_ref || '').trim().slice(0, 80) || null;
-    const r = await c.env.DB.batch([
-      c.env.DB.prepare(
-        `UPDATE orders SET status = 'refunded', resolution_note = ?, refund_ref = ?, refund_amount = ?,
-           refunded_at = datetime('now'), resolved_at = datetime('now'), updated_at = datetime('now')
-         WHERE id = ? AND status = 'disputed'`
-      ).bind(note, ref, nominal, o.id),
-      // Kredit hanya kalau update di atas benar-benar terjadi (idempoten, tidak dobel).
-      c.env.DB.prepare(
-        "INSERT INTO ledger (user_id, order_id, delta, kind) SELECT ?,?,?,? FROM orders WHERE id = ? AND status = 'refunded'"
-      ).bind(o.buyer_id, o.id, nominal, 'refund', o.id),
-    ]);
+    let r: any[];
+    try {
+      r = await c.env.DB.batch([
+        c.env.DB.prepare(
+          `UPDATE orders SET status = 'refunded', resolution_note = ?, refund_ref = ?, refund_amount = ?,
+             refunded_at = datetime('now'), resolved_at = datetime('now'), updated_at = datetime('now')
+           WHERE id = ? AND status = 'disputed'`
+        ).bind(note, ref, nominal, o.id),
+        // Kredit hanya kalau update di atas benar-benar terjadi (idempoten, tidak dobel).
+        c.env.DB.prepare(
+          "INSERT INTO ledger (user_id, order_id, delta, kind) SELECT ?,?,?,? FROM orders WHERE id = ? AND status = 'refunded'"
+        ).bind(o.buyer_id, o.id, nominal, 'refund', o.id),
+      ]);
+    } catch (e: any) {
+      // Audit B-09: idempoten tetapi kontraknya ramah — double-click race → 409 seperti branch release.
+      if (String(e?.message || e).includes('UNIQUE')) return c.json({ error: 'Sengketa sudah diputuskan' }, 409);
+      throw e;
+    }
     if ((r[0].meta?.changes || 0) === 0) return c.json({ error: 'Sengketa sudah diputuskan' }, 409);
     await logOrderEvent(c.env.DB, o.id, 'owner', 'disputed', 'refunded', `${note || 'Dana dikembalikan'} · saldo pembeli +Rp${nominal.toLocaleString('id-ID')}`);
     await notifyOrder(c.env.DB, { userId: o.buyer_id, actorId: me!.id, type: 'order_refund', orderId: o.id });
@@ -335,96 +342,8 @@ app.post('/api/owner/sweep', async (c: any) => {
 
 // Cron sweep per jam: expire order tak dibayar; handed D+5 tanpa gesekan → done;
 // anti-resi-hantu: handed ekspedisi D+1, resi nggak ketemu di kurir → flag disputes.
-// Jejak audit: satu baris per keputusan owner, tak bisa dihapus dari UI.
-async function logOwnerAction(db: any, email: string | undefined | null, action: string, targetType: string | null, targetId: string | null, note: string | null) {
-  await db.prepare(
-    "INSERT INTO owner_actions (id, owner_email, action, target_type, target_id, note) VALUES (?,?,?,?,?,?)"
-  ).bind(crypto.randomUUID(), email || '?', action, targetType, targetId, note).run();
-}
+// (duplikat nested sweepOrders/logOwnerAction dihapus — pakai definisi modul di bawah; audit D-09)
 
-async function sweepOrders(db: any, env: any): Promise<string> {
-  const expiring = await db.prepare(
-    "SELECT id, listing_id, qris_order_id FROM orders WHERE status = 'created' AND created_at < datetime('now', '-48 hours')"
-  ).all();
-  let expired = 0;
-  for (const o of (expiring.results || []) as any[]) {
-    // Audit B-05: sebelum dinyatakan expired, cek provider KlikQRIS — bayaran yang sudah settle
-    // tidak boleh 'kedaluwarsa' (uang hang itu belum bisa dikreditkan lagi otomatis).
-    if (env.KLIKQRIS_API_KEY && o.qris_order_id) {
-      const utuh = await db.prepare('SELECT * FROM orders WHERE id = ?').bind(o.id).first();
-      try {
-        const rr = await reconcileQris(db, env, utuh);
-        if (rr.paid) continue; // tercatat paid oleh reconcile — tidak jadi expired.
-      } catch (e) {
-        console.error('reconcile sebelum expire gagal', o.id, String(e));
-        continue; // belum diketahui — coba lagi jam berikutnya, jangan keliru-keliruan.
-      }
-    }
-    const moved = await db.prepare(
-      "UPDATE orders SET status = 'expired', updated_at = datetime('now') WHERE id = ? AND status = 'created'"
-    ).bind(o.id).run();
-    if ((moved.meta?.changes || 0) > 0) {
-      expired++;
-      await db.prepare("UPDATE listings SET stock = MIN(stock + 1, 999) WHERE id = ? AND status != 'deleted'").bind(o.listing_id).run();
-      await logOrderEvent(db, o.id, 'system', 'created', 'expired', 'Pesanan kedaluwarsa — stok dikembalikan');
-    }
-  }
-  // resi hantu: ekspedisi (kurir+resi terisi), handed >24 jam, belum completed/disputed
-  let ghosts = 0;
-  if (env.BINDERBYTE_KEY) {
-    const susp = await db.prepare(
-      "SELECT id, kurir, resi FROM orders WHERE status = 'handed' AND kurir IS NOT NULL AND resi IS NOT NULL AND handed_at < datetime('now', '-1 day')"
-    ).all();
-    for (const o of (susp.results || []) as any[]) {
-      const r = await cekResi(env, KURIR_MAP[o.kurir] || 'jne', o.resi);
-      if (r.kind === 'found') {
-        await db.prepare("UPDATE orders SET resi_verified = 1, resi_checked_at = datetime('now') WHERE id = ? AND resi_verified = 0").bind(o.id).run();
-        continue;
-      }
-      // Gangguan API BinderByte: JANGAN vonis penjual. Coba lagi jam berikutnya.
-      if (r.kind === 'error') continue;
-      const g = await db.prepare(
-        "UPDATE orders SET status = 'disputed', updated_at = datetime('now') WHERE id = ? AND status = 'handed'"
-      ).bind(o.id).run();
-      if ((g.meta?.changes || 0) > 0) {
-        ghosts++;
-        await logOrderEvent(db, o.id, 'system', 'handed', 'disputed', `Resi ${o.resi} tidak terdaftar di ${o.kurir} (cek otomatis 24 jam)`);
-      }
-    }
-  }
-  const stale = await db.prepare(
-    // Auto-selesai hanya kalau resi sudah terverifikasi kurir (atau tanpa resi/COD).
-    // Resi belum terverifikasi = dana ditahan, bukan dicairkan diam-diam.
-    "SELECT id, seller_id, price, shipping FROM orders WHERE status = 'handed' AND handed_at IS NOT NULL AND handed_at < datetime('now', '-5 days') AND (resi IS NULL OR resi_verified = 1)"
-  ).all();
-  let completed = 0;
-  for (const o of (stale.results || []) as any[]) {
-    const money = settlementAmounts(o.price, o.shipping, PASAR_FEE);
-    try {
-      const settled = await db.batch([
-        db.prepare("UPDATE orders SET status = 'completed', updated_at = datetime('now') WHERE id = ? AND status = 'handed'").bind(o.id),
-        db.prepare("INSERT INTO ledger (user_id, order_id, delta, kind) SELECT ?,?,?,? FROM orders WHERE id = ? AND status = 'completed'").bind(o.seller_id, o.id, money.sale, 'sale', o.id),
-        db.prepare("INSERT INTO ledger (user_id, order_id, delta, kind) SELECT ?,?,?,? FROM orders WHERE id = ? AND status = 'completed'").bind(o.seller_id, o.id, money.fee, 'fee', o.id),
-        db.prepare("INSERT INTO order_events (order_id, actor, from_st, to_st, note) SELECT ?,?,?,?,? FROM orders WHERE id = ? AND status = 'completed'").bind(o.id, 'system', 'handed', 'completed', 'Auto-selesai D+5', o.id),
-      ]);
-      if ((settled[0].meta?.changes || 0) > 0) completed++;
-    } catch (e: any) {
-      if (!String(e?.message || e).includes('UNIQUE')) throw e;
-    }
-  }
-  // Retensi dokumen penjual: disimpan 90 hari setelah keputusan, lalu objek R2 + barisnya dihapus.
-  let docsHapus = 0;
-  const dokLama = await db.prepare(
-    `SELECT d.user_id, d.kind, d.r2_key FROM seller_docs d JOIN users u ON u.id = d.user_id
-      WHERE u.seller_reviewed_at IS NOT NULL AND u.seller_reviewed_at < datetime('now','-90 days')`
-  ).all();
-  for (const d of (dokLama.results || []) as any[]) {
-    if (env.MEDIA) await env.MEDIA.delete(d.r2_key).catch(() => {});
-    await db.prepare('DELETE FROM seller_docs WHERE user_id = ? AND kind = ?').bind(d.user_id, d.kind).run();
-    docsHapus++;
-  }
-  return `expired=${expired} completed=${completed} docs=${docsHapus}`;
-}
 
 }
 

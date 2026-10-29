@@ -5,3 +5,12 @@ dist/
 .dev.vars
 review-v2/
 .hermes/
+
+# Audit D-01/D-11: backup DB & snapshot lokal tidak boleh masuk repo (dari findings run-1).
+backups/
+*.sql
+!migrations/*.sql
+!schema.sql
+!scripts/golden-fixture.sql
+golden/current.json
+*_dev.env

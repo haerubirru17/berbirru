@@ -4,8 +4,10 @@
 import { chromium } from "/home/ubuntu/.npm/_npx/d537ee5ee2a13f03/node_modules/playwright/index.mjs";
 
 const BASE = process.argv[2] || "https://berbirru-uji.haerubirru17.workers.dev";
-const PASS = "UjiAm4n!2026";
+// Audit D-02: password tidak lagi plaintext di repo — ambil dari env lokal tanpa default live.
+const PASS = process.env.E2E_PASS;
 const TURNSTILE = "XXXX.DUMMY.TOKEN.XXXX";
+if (!PASS) { console.error("E2E_PASS belum diset (isikan .dev.vars / export manual — jangan di-commit)."); process.exit(1); }
 
 const results = [];
 let failed = 0;

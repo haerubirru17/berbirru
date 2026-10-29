@@ -33,5 +33,10 @@ directory = "./public"
 [observability]
 enabled = true
 
-[triggers]
-crons = ["0 * * * *"]
+# Audit D-03: cron uji NONAKTIF (sebelumnya sweep per jam sandbox ikut menghapus objek dari
+# bucket media produksi — jalur hapus terbesar). Pembagian bucket penuh DITUNDA karena token
+# API tidak boleh membuat R2 bucket (auth error) — buat 'berbirru-media-uji' di dashboard,
+# lalu ganti bucket_name di atas menjadi bucket itu. Sampai itu: upload foto dari deployment uji
+# masih mendarat di bucket produksi (hanya tulis, tidak hapus).
+# [triggers]
+# crons = ["0 * * * *"]

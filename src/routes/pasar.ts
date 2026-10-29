@@ -135,9 +135,16 @@ app.post('/api/pasar/order/:id/evidence', async (c: any) => {
   const note = String(c.req.query('note') || '').trim().slice(0, 200);
   const r = await putFoto(c, (ext) => kunciBukti(o.id, me.id, ext));
   if ('error' in r) return c.json({ error: r.error }, r.status);
-  await c.env.DB.prepare(
-    'INSERT INTO order_evidence (id, order_id, uploader_id, role, r2_key, note) VALUES (?,?,?,?,?,?)'
-  ).bind(crypto.randomUUID(), o.id, me.id, me.id === o.buyer_id ? 'buyer' : 'seller', r.key, note || null).run();
+  // Audit B-12: count masuk INSERT atomik supaya dua unggahan konkuren tak melampaui cap per-pihak.
+  const ins = await c.env.DB.prepare(
+    `INSERT INTO order_evidence (id, order_id, uploader_id, role, r2_key, note)
+     SELECT ?, ?, ?, ?, ?, ? WHERE (
+       SELECT COUNT(*) FROM order_evidence WHERE order_id = ? AND uploader_id = ?
+     ) < ${MAKS_BUKTI_PER_PIHAK}`
+  ).bind(crypto.randomUUID(), o.id, me.id, me.id === o.buyer_id ? 'buyer' : 'seller', r.key, note || null, o.id, me.id).run();
+  if (!ins.meta.changes) {
+    return c.json({ error: `Maksimal ${MAKS_BUKTI_PER_PIHAK} foto per pihak` }, 409);
+  }
   return c.json({ ok: true });
 });
 
