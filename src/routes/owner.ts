@@ -5,7 +5,7 @@ import { settlementAmounts, PASAR_FEE } from '../lib/pasar-settlement';
 import { slugUnik } from '../lib/toko';
 import { cekResi } from '../kurir';
 import { logOrderEvent, notifyOrder, KURIR_MAP, sweepCursor, setSweepCursor, resetSweepCursor, sweepLock, sweepUnlock } from '../lib/pasar-core';
-import { reconcileQris } from './pasar';
+import { reconcileQris, sweepExpireBatch, ownerReconcilePayment } from './pasar';
 
 // Handlers owner dipindah verbatim dari index.ts (termasuk /api/owner/*).
 export function mountOwner(app: any) {
@@ -340,6 +340,16 @@ app.post('/api/owner/sweep', async (c: any) => {
   return c.json({ ok: true, hasil });
 });
 
+// Audit R2-04: periksa ulang pembayaran QRIS pada order created|expired
+// (fail-closed; expired+paid → disputed untuk keputusan owner).
+app.post('/api/owner/orders/:id/reconcile-payment', async (c: any) => {
+  const me = await getAuthUser(c);
+  if (!isOwner(c.env, me)) return c.json({ error: 'Tidak ditemukan' }, 404);
+  const r = await ownerReconcilePayment(c.env.DB, c.env, c.req.param('id'));
+  await logOwnerAction(c.env.DB, me?.email, 'reconcile-payment', 'order', c.req.param('id'), JSON.stringify(r));
+  return c.json(r, r.ok ? 200 : 502);
+});
+
 // Cron sweep per jam: expire order tak dibayar; handed D+5 tanpa gesekan → done;
 // anti-resi-hantu: handed ekspedisi D+1, resi nggak ketemu di kurir → flag disputes.
 // (duplikat nested sweepOrders/logOwnerAction dihapus — pakai definisi modul di bawah; audit D-09)
@@ -356,7 +366,8 @@ async function logOwnerAction(db: any, email: string | undefined | null, action:
 export async function sweepOrders(db: any, env: any): Promise<string> {
   // Audit D-04: watermark + batch per fase + lock satu-run. Volume besar tidak lagi membekukan
   // proses di batas subrequest; sisanya terlihat via `remaining_*`.
-  if (!(await sweepLock(db))) {
+  const lockToken = await sweepLock(db);
+  if (!lockToken) {
     return 'sweep sedang berjalan (lock aktif ≤10 menit)';
   }
   try {
@@ -369,30 +380,42 @@ export async function sweepOrders(db: any, env: any): Promise<string> {
     ).bind(c1.at, c1.at, c1.id).all();
     let expired = 0, qrisChecks = 0;
     const QRI_CK_MAX = 20;
+    let last1: any = null;      // baris terakhir yang benar-benar DIPUTUSKAN (audit R2-02)
+    let capStop = false;        // provider cap habis di tengah halaman → berhenti, jangan lompati
     for (const o of (expiring.results || []) as any[]) {
-      // Audit B-05: cek provider sebelum expire — uang yang sudah settle tak boleh 'kedaluwarsa'.
-      if (env.KLIKQRIS_API_KEY && o.qris_order_id && qrisChecks < QRI_CK_MAX) {
-        qrisChecks++;
-        const utuh = await db.prepare('SELECT * FROM orders WHERE id = ?').bind(o.id).first();
-        try {
-          const rr = await reconcileQris(db, env, utuh);
-          if (rr.paid) continue; // tercatat paid oleh reconcile — tidak jadi expired.
-        } catch (e) {
-          console.error('reconcile sebelum expire gagal', o.id, String(e));
-          continue; // belum diketahui — coba lagi jam berikutnya.
+      // Audit B-05/R2-01: order QRIS hanya boleh expired setelah provider menjawab
+      // SUKSES dan menyatakan belum dibayar. Error provider/network = fail-closed.
+      // R2-01 review A: tanpa API key provider, status pembayaran QRIS tak bisa
+      // dipastikan → freeze (jangan expire). Order non-QRIS tetap mengalir normal.
+      if (o.qris_order_id && !env.KLIKQRIS_API_KEY) { last1 = o; continue; }
+      if (o.qris_order_id) {
+        if (env.KLIKQRIS_API_KEY && qrisChecks >= QRI_CK_MAX) { capStop = true; break; }
+        if (env.KLIKQRIS_API_KEY) {
+          qrisChecks++;
+          const utuh = await db.prepare('SELECT * FROM orders WHERE id = ?').bind(o.id).first();
+          try {
+            const rr = await reconcileQris(db, env, utuh);
+            if (!rr.ok || rr.paid) {
+              last1 = o;
+              continue; // belum diketahui / sudah dibayar — TIDAK jadi expired.
+            }
+          } catch (e) {
+            console.error('reconcile sebelum expire gagal', o.id, String(e));
+            last1 = o;
+            continue; // belum diketahui — coba lagi run berikutnya.
+          }
         }
       }
-      const moved = await db.prepare(
-        "UPDATE orders SET status = 'expired', updated_at = datetime('now') WHERE id = ? AND status = 'created'"
-      ).bind(o.id).run();
-      if ((moved.meta?.changes || 0) > 0) {
+      const moved = await sweepExpireBatch(db, o);
+      if (moved.changes > 0) {
         expired++;
-        await db.prepare("UPDATE listings SET stock = MIN(stock + 1, 999) WHERE id = ? AND status != 'deleted'").bind(o.listing_id).run();
-        await logOrderEvent(db, o.id, 'system', 'created', 'expired', 'Pesanan kedaluwarsa — stok dikembalikan');
       }
+      last1 = o;
     }
-    const last1 = (expiring.results || []).slice(-1)[0];
-    if (last1 && (expiring.results || []).length === 100) {
+    // R2-02: watermark = baris terakhir yang DIPUTUSKAN. capStop berhenti di tengah
+    // halaman → cursor tetap maju ke last1 sehingga run berikut memeriksa sisanya;
+    // halaman penuh tanpa cap → set; halaman belum penuh → reset (wrap, antrean habis).
+    if (last1 && ((expiring.results || []).length === 100 || capStop)) {
       await setSweepCursor(db, 'expire', { at: last1.created_at, id: last1.id });
     } else {
       await resetSweepCursor(db, 'expire');
@@ -405,7 +428,7 @@ export async function sweepOrders(db: any, env: any): Promise<string> {
     const GHOST_MAX = 40;
     if (env.BINDERBYTE_KEY) {
       const susp = await db.prepare(
-        "SELECT id, kurir, resi FROM orders WHERE status = 'handed' AND kurir IS NOT NULL AND resi IS NOT NULL AND handed_at < datetime('now', '-1 day') LIMIT 40"
+        "SELECT id, kurir, resi FROM orders WHERE status = 'handed' AND kurir IS NOT NULL AND resi IS NOT NULL AND resi_verified = 0 AND handed_at < datetime('now', '-1 day') ORDER BY COALESCE(resi_checked_at, handed_at), id LIMIT 40"
       ).all();
       for (const o of (susp.results || []) as any[]) {
         if (ghostChecks >= GHOST_MAX) break;
@@ -415,8 +438,12 @@ export async function sweepOrders(db: any, env: any): Promise<string> {
           await db.prepare("UPDATE orders SET resi_verified = 1, resi_checked_at = datetime('now') WHERE id = ? AND resi_verified = 0").bind(o.id).run();
           continue;
         }
-        // Gangguan API BinderByte: JANGAN vonis penjual. Coba lagi jam berikutnya.
-        if (r.kind === 'error') continue;
+        // Gangguan API BinderByte: JANGAN vonis penjual. Catat attempt → COALESCE
+        // memutar baris error ke belakang antrean (anti-starvation, review B).
+        if (r.kind === 'error') {
+          await db.prepare("UPDATE orders SET resi_checked_at = datetime('now') WHERE id = ? AND resi_verified = 0").bind(o.id).run();
+          continue;
+        }
         const g = await db.prepare(
           "UPDATE orders SET status = 'disputed', updated_at = datetime('now') WHERE id = ? AND status = 'handed'"
         ).bind(o.id).run();
@@ -473,7 +500,7 @@ export async function sweepOrders(db: any, env: any): Promise<string> {
 
     // ---------- remaining counters (D-04: sisa antrean harus terlihat) ----------
     const rem1 = await db.prepare("SELECT COUNT(*) AS n FROM orders WHERE status = 'created' AND created_at < datetime('now', '-48 hours')").first('n');
-    const rem2 = await db.prepare("SELECT COUNT(*) AS n FROM orders WHERE status = 'handed' AND kurir IS NOT NULL AND resi IS NOT NULL AND handed_at < datetime('now', '-1 day')").first('n');
+    const rem2 = await db.prepare("SELECT COUNT(*) AS n FROM orders WHERE status = 'handed' AND kurir IS NOT NULL AND resi IS NOT NULL AND resi_verified = 0 AND handed_at < datetime('now', '-1 day')").first('n');
     const rem3 = await db.prepare("SELECT COUNT(*) AS n FROM orders WHERE status = 'handed' AND handed_at IS NOT NULL AND handed_at < datetime('now', '-5 days') AND (resi IS NULL OR resi_verified = 1)").first('n');
     summary.remaining_expire = Number(rem1 || 0);
     summary.remaining_ghosts = Number(rem2 || 0);
@@ -481,6 +508,6 @@ export async function sweepOrders(db: any, env: any): Promise<string> {
 
     return JSON.stringify(summary);
   } finally {
-    await sweepUnlock(db);
+    await sweepUnlock(db, lockToken);
   }
 }

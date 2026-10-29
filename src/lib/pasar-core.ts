@@ -53,17 +53,20 @@ export async function resetSweepCursor(db: any, phase: string): Promise<void> {
   await setSweepCursor(db, phase, SWEEP_EPOCH);
 }
 
-// Lock satu-run berTTL 10 menit: cron jam-sekali + sweep manual tidak bisa bentrok.
-export async function sweepLock(db: any): Promise<boolean> {
+// Lock satu-run berTTL 10 menit dengan token kepemilikan (R2-08):
+// hanya pemilik token yang boleh melepas — run lambat tak lagi menghapus lock run lain.
+export async function sweepLock(db: any): Promise<string | null> {
+  const token = crypto.randomUUID();
   const row: any = await db.prepare(
-    `INSERT INTO sweep_meta (key, value, updated_at) VALUES ('lock', datetime('now'), datetime('now'))
+    `INSERT INTO sweep_meta (key, value, updated_at) VALUES ('lock', ?, datetime('now'))
      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
      WHERE datetime(sweep_meta.updated_at, '+10 minutes') < datetime('now')
      RETURNING key`
-  ).first();
-  return !!row;
+  ).bind(token).first();
+  return row ? token : null;
 }
 
-export async function sweepUnlock(db: any): Promise<void> {
-  await db.prepare("DELETE FROM sweep_meta WHERE key = 'lock'").run();
+export async function sweepUnlock(db: any, token: string | null): Promise<void> {
+  if (!token) return;
+  await db.prepare("DELETE FROM sweep_meta WHERE key = 'lock' AND value = ?").bind(token).run();
 }

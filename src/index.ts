@@ -317,7 +317,7 @@ app.get('/chain/:id', async (c) => {
      WHERE p.parent_id = ? AND ${vis.sql} ORDER BY p.created_at ASC LIMIT 50`
   ).bind(orphans ? target.parent_id : root.id, ...vis.binds).all();
 
-  return c.html(renderChainPage({ user, root, rootAuthor, orphans, children: results || [] }));
+  return c.html(renderChainPage({ user, root: hardenPost(root), rootAuthor, orphans, children: (results || []).map(hardenPost) }));
 });
 
 mountKurir(app);
