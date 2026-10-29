@@ -1,3 +1,4 @@
+import { THEME } from './theme';
 import { renderBottomNav } from './layout';
 import { NOTIFY_HTML } from './notify';
 
@@ -17,7 +18,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
   <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,700;1,6..72,500&family=Roboto+Mono:wght@600;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root{--blue:#1D61E7;--deep:#0F3E99;--ink:#0B192C;--paper:#FFF9E9;--white:#FFFEF8;--yellow:#FDE047;--coral:#FF735F;--mint:#88E6BD;--soft:#E0EEFD;--red:#EF4444;--green:#059669;--line:3px solid var(--ink);--thin:2px solid var(--ink);--shadow:6px 7px 0 #26364A;--small-shadow:3px 4px 0 #26364A;--bg-main:var(--paper);--bg-card:#fff;--bg-blue-subtle:var(--soft);--shadow-ink:#26364A;--blue-primary:var(--blue);--blue-deep:var(--deep);--blue-light:#60A5FA;--accent-yellow:var(--yellow);--border-thick:var(--line);--border-med:3px solid var(--ink);--border-thin:var(--thin);--shadow-hard:var(--small-shadow);--shadow-hard-lg:var(--shadow);--shadow-hard-sm:2px 3px 0 #26364A;--radius:0;--radius-sm:0}
+    :root{--blue:${THEME.blue};--deep:${THEME.blueDeep};--ink:${THEME.ink};--paper:#FFF9E9;--white:#FFFEF8;--yellow:${THEME.accent};--coral:#FF735F;--mint:#88E6BD;--soft:#E0EEFD;--red:#EF4444;--green:#059669;--muted:${THEME.muted};--ink-soft:${THEME.inkSoft};--line-soft:${THEME.lineSoft};--line:3px solid var(--ink);--thin:2px solid var(--ink);--shadow:6px 7px 0 ${THEME.inkSoft};--small-shadow:3px 4px 0 ${THEME.inkSoft};--bg-main:var(--paper);--bg-card:#fff;--bg-blue-subtle:var(--soft);--shadow-ink:var(--ink-soft);--blue-primary:var(--blue);--blue-deep:var(--deep);--blue-light:#60A5FA;--accent-yellow:var(--yellow);--border-thick:var(--line);--border-med:3px solid var(--ink);--border-thin:var(--thin);--shadow-hard:var(--small-shadow);--shadow-hard-lg:var(--shadow);--shadow-hard-sm:2px 3px 0 ${THEME.inkSoft};--radius:0;--radius-sm:0}
     body {
       font-family: 'DM Sans', -apple-system, sans-serif;
       background:var(--paper); color: var(--ink); min-height: 100vh;
@@ -34,7 +35,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     /* Banner Gradasi Transparan Halus ke Bawah */
     .cover-banner {
       height: 120px; width: 100%;
-      background: linear-gradient(180deg, #1D61E7 0%, rgba(29, 97, 231, 0.45) 60%, rgba(251, 248, 243, 0) 100%);
+      background: linear-gradient(180deg, var(--blue) 0%, rgba(29, 97, 231, 0.45) 60%, rgba(251, 248, 243, 0) 100%);
       position: relative;
     }
 
@@ -45,13 +46,13 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     }
     .nav-btn-glass {
       background:#fff;
-      border: 1.5px solid #0B192C; border-radius: 99px; padding: 5px 12px;
+      border: 1.5px solid var(--ink); border-radius: 99px; padding: 5px 12px;
       font-size: 11.5px; font-weight: 800; color: var(--ink); text-decoration: none;
       box-shadow: 2px 2px 0 var(--shadow-ink); display: inline-flex; align-items: center; gap: 4px;
     }
     .nav-menu-glass {
       width: 32px; height: 32px; background:#fff;
-      border: 1.5px solid #0B192C; border-radius: 10px; display: grid; place-items: center;
+      border: 1.5px solid var(--ink); border-radius: 10px; display: grid; place-items: center;
       box-shadow: 2px 2px 0 var(--shadow-ink); cursor: pointer; color: var(--ink);
     }
     .nav-btn-glass:active, .nav-menu-glass:active { transform: translate(1px, 1px); box-shadow: none; }
@@ -103,7 +104,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       border-radius: 50%; display: grid; place-items: center; box-shadow: 2px 2px 0 var(--shadow-ink);
       cursor: pointer; transition: transform 0.1s ease; z-index: 5;
     }
-    .btn-follow-badge svg { width: 14px; height: 14px; stroke: #0B192C; stroke-width: 3; fill: none; }
+    .btn-follow-badge svg { width: 14px; height: 14px; stroke: var(--ink); stroke-width: 3; fill: none; }
     .btn-follow-badge:active { transform: scale(0.92); box-shadow: none; }
     .btn-follow-badge.is-following { background: var(--blue-primary); box-shadow: 2px 2px 0 var(--shadow-ink); }
     .profile-right-actions {
@@ -120,7 +121,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       letter-spacing: -0.5px; line-height: 1.15;
     }
     .display-name-main {
-      font-size: 12.5px; font-weight: 700; color: #64748B; letter-spacing: 0.2px;
+      font-size: 12.5px; font-weight: 700; color: var(--muted); letter-spacing: 0.2px;
     }
     .display-name-main::before { content: '• '; color: #94A3B8; }
     .bio-box {
@@ -128,7 +129,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     }
     
     /* Statistik inline: icon + angka, 1 baris (Varian 2) */
-    .vis-private { display: inline-flex; align-items: center; gap: 3px; margin-top: 2px; padding: 1px 6px; border: 1.5px solid #CBD5E1; border-radius: 999px; font: 800 9px 'Roboto Mono', monospace; color: #64748B; letter-spacing: .3px; }
+    .vis-private { display: inline-flex; align-items: center; gap: 3px; margin-top: 2px; padding: 1px 6px; border: 1.5px solid var(--line-soft); border-radius: 999px; font: 800 9px 'Roboto Mono', monospace; color: var(--muted); letter-spacing: .3px; }
     .vis-private svg { width: 9px; height: 9px; }
     .thread-name-row { display: flex; align-items: center; gap: 3px; }
     .vcheck { width: 13px; height: 13px; flex: none; }
@@ -144,13 +145,13 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     }
     .stats-button { border: 0; background: transparent; cursor: pointer; font: inherit; padding: 0; }
     .follow-sheet-backdrop { display:none; position:fixed; inset:0; z-index:900; background:rgba(11,25,44,.42); }
-    .follow-sheet { display:none; position:fixed; z-index:901; left:50%; bottom:0; transform:translateX(-50%); width:min(480px,100%); max-height:min(620px,86vh); overflow:auto; background:var(--paper); border:var(--border-thick); border-bottom:0; box-shadow:0 -6px 0 #26364A; padding:16px 16px 88px; }
+    .follow-sheet { display:none; position:fixed; z-index:901; left:50%; bottom:0; transform:translateX(-50%); width:min(480px,100%); max-height:min(620px,86vh); overflow:auto; background:var(--paper); border:var(--border-thick); border-bottom:0; box-shadow:0 -6px 0 var(--ink-soft); padding:16px 16px 88px; }
     .follow-sheet-head { display:flex; align-items:center; justify-content:space-between; padding-bottom:11px; border-bottom:2px solid #E2E8F0; }
     .follow-sheet-title { font-family:'Newsreader',serif; font-size:24px; font-weight:700; }
-    .follow-sheet-hint { color:#64748B; font-size:11px; font-weight:700; margin-top:3px; }
-    .follow-sheet-close { width:34px; height:34px; border:2px solid var(--ink); background:#FFF; box-shadow:2px 2px 0 #26364A; font-size:20px; font-weight:800; cursor:pointer; }
+    .follow-sheet-hint { color:var(--muted); font-size:11px; font-weight:700; margin-top:3px; }
+    .follow-sheet-close { width:34px; height:34px; border:2px solid var(--ink); background:#FFF; box-shadow:2px 2px 0 var(--ink-soft); font-size:20px; font-weight:800; cursor:pointer; }
     .follow-switch { display:grid; grid-template-columns:1fr 1fr; margin:13px 0 8px; border:2px solid var(--ink); background:#FFF; }
-    .follow-switch button { border:0; padding:9px 6px; background:#FFF; color:#64748B; font:800 11px 'DM Sans',sans-serif; cursor:pointer; }
+    .follow-switch button { border:0; padding:9px 6px; background:#FFF; color:var(--muted); font:800 11px 'DM Sans',sans-serif; cursor:pointer; }
     .follow-switch button.active { background:var(--blue); color:#FFF; }
     .follow-list { min-height:120px; }
     .follow-row { display:flex; align-items:center; gap:10px; padding:12px 0; border-bottom:1px solid #E2E8F0; }
@@ -158,16 +159,16 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     .follow-info { flex:1; min-width:0; }
     .follow-name { display:flex; align-items:center; gap:4px; font-size:13px; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .follow-verified { width:14px; height:14px; flex:none; }
-    .follow-meta { color:#64748B; font-size:10px; font-weight:700; margin-top:2px; }
-    .follow-action { border:2px solid var(--ink); background:var(--blue); color:#FFF; box-shadow:2px 2px 0 #26364A; padding:7px 10px; font-size:10px; font-weight:800; cursor:pointer; }
-    .follow-empty, .follow-loading { padding:34px 10px; text-align:center; color:#64748B; font-size:12px; font-weight:700; }
+    .follow-meta { color:var(--muted); font-size:10px; font-weight:700; margin-top:2px; }
+    .follow-action { border:2px solid var(--ink); background:var(--blue); color:#FFF; box-shadow:2px 2px 0 var(--ink-soft); padding:7px 10px; font-size:10px; font-weight:800; cursor:pointer; }
+    .follow-empty, .follow-loading { padding:34px 10px; text-align:center; color:var(--muted); font-size:12px; font-weight:700; }
 
     /* Tab Underline Bersih (Hanya 1 Aktif) */
     .profile-tabs-reddit {
       display: flex; border-bottom: 2px solid #E2E8F0; margin-bottom: 16px; justify-content: space-around; padding: 0 4px;
     }
     .tab-reddit-item {
-      padding: 9px 8px; font-size: 12.5px; font-weight: 700; color: #64748B;
+      padding: 9px 8px; font-size: 12.5px; font-weight: 700; color: var(--muted);
       cursor: pointer; position: relative; text-decoration: none; user-select: none;
     }
     .tab-reddit-item.active {
@@ -212,7 +213,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       font-family: 'Roboto Mono', monospace;
     }
     .time-main { font-size: 11px; font-weight: 800; color: var(--ink); }
-    .date-sub { font-size: 9.5px; font-weight: 700; color: #64748B; }
+    .date-sub { font-size: 9.5px; font-weight: 700; color: var(--muted); }
     .thread-body { padding: 14px 14px 12px; }
     .thread-title { font-family: 'Archivo Black', sans-serif; font-size: 15px; font-weight: 800; color: var(--ink); margin-bottom: 6px; }
     .thread-text { font-size: 14px; font-weight: 600; line-height: 1.6; color: #0F172A; }
@@ -259,7 +260,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     }
     .crop-stage {
       position: relative; overflow: hidden; border: 2px solid var(--ink); border-radius: 10px;
-      background: #0B192C; touch-action: none; cursor: grab;
+      background: var(--ink); touch-action: none; cursor: grab;
       height: 300px;
     }
     .crop-stage.round { border-radius: 50%; aspect-ratio: 1 / 1; }
@@ -268,7 +269,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       position: absolute; top: 50%; left: 50%; transform-origin: 0 0;
       max-width: none; user-select: none; -webkit-user-drag: none; pointer-events: none;
     }
-    .crop-hint { font-size: 11px; font-weight: 600; color: #64748B; margin-top: 8px; text-align: center; }
+    .crop-hint { font-size: 11px; font-weight: 600; color: var(--muted); margin-top: 8px; text-align: center; }
 
     .edit-modal {
       display: none; background: #FFF; border: var(--border-thick); border-radius: var(--radius);
@@ -298,7 +299,7 @@ gap:2px;text-decoration:none;color:#6A788D;font-size:10px;font-weight:800;cursor
     .btn-create-floating {
 width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);color:var(--ink);border:2.5px solid var(--ink);box-shadow:3px 3px 0 var(--ink);transform:rotate(-2deg)
     }
-    .btn-create-floating svg { width: 20px; height: 20px; stroke: #0B192C; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .btn-create-floating svg { width: 20px; height: 20px; stroke: var(--ink); stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .btn-create-floating:active { transform: translate(1.5px, 1.5px); box-shadow: none; }
 
     .bell-wrap { position: relative; }
@@ -415,32 +416,32 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
     <div class="edit-modal" id="editModal">
       <h3 style="font-family:'Archivo Black';font-size:15px;font-weight:800;margin-bottom:10px;">Perbarui Profil Anda</h3>
       <div style="margin-bottom:10px;">
-        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Nama Pena <span style="color:#64748B;font-weight:600;">(@handle, unik)</span></label>
-        <input type="text" id="editPenName" style="width:100%;padding:8px;border:2px solid #0B192C;border-radius:8px;font-weight:700;">
+        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Nama Pena <span style="color:var(--muted);font-weight:600;">(@handle, unik)</span></label>
+        <input type="text" id="editPenName" style="width:100%;padding:8px;border:2px solid var(--ink);border-radius:8px;font-weight:700;">
       </div>
       <div style="margin-bottom:10px;">
-        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Nama Tampilan <span style="color:#64748B;font-weight:600;">(opsional)</span></label>
-        <input type="text" id="editDisplayName" maxlength="40" placeholder="Kosongkan = pakai nama pena" style="width:100%;padding:8px;border:2px solid #0B192C;border-radius:8px;font-weight:700;">
+        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Nama Tampilan <span style="color:var(--muted);font-weight:600;">(opsional)</span></label>
+        <input type="text" id="editDisplayName" maxlength="40" placeholder="Kosongkan = pakai nama pena" style="width:100%;padding:8px;border:2px solid var(--ink);border-radius:8px;font-weight:700;">
       </div>
       <div style="margin-bottom:10px;">
         <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Kota / Asal</label>
-        <input type="text" id="editCity" style="width:100%;padding:8px;border:2px solid #0B192C;border-radius:8px;font-weight:700;">
+        <input type="text" id="editCity" style="width:100%;padding:8px;border:2px solid var(--ink);border-radius:8px;font-weight:700;">
       </div>
       <div style="margin-bottom:12px;">
-        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Bio / Catatan Pribadi <span id="bioCount" style="color:#64748B;font-weight:600;float:right;"></span></label>
-        <textarea id="editBio" maxlength="300" oninput="document.getElementById('bioCount').textContent=this.value.length + '/300';" style="width:100%;height:60px;padding:8px;border:2px solid #0B192C;border-radius:8px;font-weight:600;"></textarea>
+        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Bio / Catatan Pribadi <span id="bioCount" style="color:var(--muted);font-weight:600;float:right;"></span></label>
+        <textarea id="editBio" maxlength="300" oninput="document.getElementById('bioCount').textContent=this.value.length + '/300';" style="width:100%;height:60px;padding:8px;border:2px solid var(--ink);border-radius:8px;font-weight:600;"></textarea>
       </div>
       <div style="margin-bottom:12px;">
-        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Kata Sandi Baru <span style="color:#64748B;font-weight:600;">(opsional)</span></label>
-        <input type="password" id="editPassword" autocomplete="new-password" placeholder="Kosongkan bila tidak diganti" oninput="document.getElementById('currentPasswordRow').style.display=this.value?'block':'none'" style="width:100%;padding:8px;border:2px solid #0B192C;border-radius:8px;font-weight:700;">
+        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Kata Sandi Baru <span style="color:var(--muted);font-weight:600;">(opsional)</span></label>
+        <input type="password" id="editPassword" autocomplete="new-password" placeholder="Kosongkan bila tidak diganti" oninput="document.getElementById('currentPasswordRow').style.display=this.value?'block':'none'" style="width:100%;padding:8px;border:2px solid var(--ink);border-radius:8px;font-weight:700;">
       </div>
       <div style="margin-bottom:12px;display:none;" id="currentPasswordRow">
-        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Kata Sandi Saat Ini <span style="color:#64748B;font-weight:600;">(wajib bila ganti sandi)</span></label>
-        <input type="password" id="editCurrentPassword" autocomplete="current-password" placeholder="Sandi yang kamu pakai sekarang" style="width:100%;padding:8px;border:2px solid #0B192C;border-radius:8px;font-weight:700;">
+        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Kata Sandi Saat Ini <span style="color:var(--muted);font-weight:600;">(wajib bila ganti sandi)</span></label>
+        <input type="password" id="editCurrentPassword" autocomplete="current-password" placeholder="Sandi yang kamu pakai sekarang" style="width:100%;padding:8px;border:2px solid var(--ink);border-radius:8px;font-weight:700;">
       </div>
       <div style="display:flex;justify-content:flex-end;gap:8px;">
-        <button onclick="toggleEditModal(false)" style="padding:6px 12px;border:2px solid #0B192C;border-radius:6px;font-weight:800;background:#FFF;cursor:pointer;">Batal</button>
-        <button onclick="saveProfile()" style="padding:6px 14px;border:2px solid #0B192C;border-radius:6px;font-weight:900;background:#1D61E7;color:#FFF;cursor:pointer;">Simpan</button>
+        <button onclick="toggleEditModal(false)" style="padding:6px 12px;border:2px solid var(--ink);border-radius:6px;font-weight:800;background:#FFF;cursor:pointer;">Batal</button>
+        <button onclick="saveProfile()" style="padding:6px 14px;border:2px solid var(--ink);border-radius:6px;font-weight:900;background:var(--blue);color:#FFF;cursor:pointer;">Simpan</button>
       </div>
     </div>
 
@@ -453,8 +454,8 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
         </div>
         <div class="crop-hint">Geser untuk memindah • scroll/tonjol dua jari untuk memperbesar</div>
         <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px;">
-          <button onclick="cropCancel()" style="padding:6px 12px;border:2px solid #0B192C;border-radius:6px;font-weight:800;background:#FFF;cursor:pointer;">Batal</button>
-          <button onclick="cropSave()" style="padding:6px 14px;border:2px solid #0B192C;border-radius:6px;font-weight:900;background:#1D61E7;color:#FFF;cursor:pointer;">Simpan</button>
+          <button onclick="cropCancel()" style="padding:6px 12px;border:2px solid var(--ink);border-radius:6px;font-weight:800;background:#FFF;cursor:pointer;">Batal</button>
+          <button onclick="cropSave()" style="padding:6px 14px;border:2px solid var(--ink);border-radius:6px;font-weight:900;background:var(--blue);color:#FFF;cursor:pointer;">Simpan</button>
         </div>
       </div>
     </div>
@@ -571,7 +572,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
     }
 
     function getAvatarColor(name) {
-      const colors = ['#1D61E7', '#0F3E99', '#059669', '#D97706', '#7C3AED', '#DB2777', '#0891B2', '#4F46E5'];
+      const colors = ['var(--blue)', 'var(--deep)', '#059669', '#D97706', '#7C3AED', '#DB2777', '#0891B2', '#4F46E5'];
       const str = String(name || '');
       let sum = 0;
       for (let i = 0; i < str.length; i++) {
@@ -630,7 +631,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
       const d = new Date(isoStr.endsWith('Z') ? isoStr : isoStr + 'Z');
       const datePart = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' });
       const timePart = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' }).replace(':', '.');
-      return '<div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.25;font-family:Roboto Mono,monospace;"><span style="font-size:11px;font-weight:800;color:#0B192C;">' + timePart + ' WIB</span><span style="font-size:9.5px;font-weight:700;color:#64748B;">' + datePart + '</span></div>';
+      return '<div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.25;font-family:Roboto Mono,monospace;"><span style="font-size:11px;font-weight:800;color:var(--ink);">' + timePart + ' WIB</span><span style="font-size:9.5px;font-weight:700;color:var(--muted);">' + datePart + '</span></div>';
     }
 
 
@@ -933,7 +934,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
         const data = await res.json();
         const container = document.getElementById('profileFeed');
         if (!data.posts || !data.posts.length) {
-          container.innerHTML = '<div style="background:#FFF;padding:24px;border:3px solid #0B192C;border-radius:16px;text-align:center;font-weight:700;box-shadow:4px 4px 0 #1E293B;">Belum ada warkah di kategori ini.</div>';
+          container.innerHTML = '<div style="background:#FFF;padding:24px;border:3px solid var(--ink);border-radius:16px;text-align:center;font-weight:700;box-shadow:4px 4px 0 #1E293B;">Belum ada warkah di kategori ini.</div>';
           return;
         }
         container.innerHTML = data.posts.map(p => \`
@@ -941,7 +942,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
             <div class="thread-header-soft">
               <div class="thread-avatar-clip" style="background:\${getAvatarColor(p.pen_name)};\${p.avatar_key ? \`background-image:url(/media/\${freshKey(p.avatar_key)});background-size:cover;background-position:center;color:transparent;\` : ''}">
                 \${(p.pen_name[0] || 'D').toUpperCase()}
-                <svg class="paperclip-svg" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                <svg class="paperclip-svg" viewBox="0 0 24 24" fill="none" stroke="var(--line-soft)" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
               </div>
               <div class="thread-author-wrap">
                 <div class="thread-author-info">
@@ -958,7 +959,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
               <div class="thread-text">\${p.content}</div>
             </div>
             <div class="thread-footer">
-              <span style="font-size:11.5px;font-weight:800;color:#1D61E7;">\${p.likes_count || 0} Terpaut · \${p.saves_count || 0} Simpan · \${p.chains_count || 0} Sambungan</span>
+              <span style="font-size:11.5px;font-weight:800;color:var(--blue);">\${p.likes_count || 0} Terpaut · \${p.saves_count || 0} Simpan · \${p.chains_count || 0} Sambungan</span>
               ${isMe ? `
                 <button onclick="deletePost('\${p.id}')" title="Hapus Warkah" style="background:transparent;border:none;cursor:pointer;color:#EF4444;display:flex;align-items:center;padding:4px;flex-shrink:0;" aria-label="Hapus Warkah">
                   <svg style="width:15px;height:15px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>

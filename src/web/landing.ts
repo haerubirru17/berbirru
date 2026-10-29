@@ -1,3 +1,4 @@
+import { THEME } from './theme';
 import { WARKAH_CARD_CSS, WARKAH_EMPTY, renderWarkahCard } from './warkahCard';
 // Landing BERBIRRU — komposisi mengikuti template clone depobudget.com
 // (hero kobalt bergrid, marquee lime, kartu tebal berwarna, galeri ungu,
@@ -152,11 +153,11 @@ ${WARKAH_CARD_CSS}
   .screen img{width:100%;height:auto;display:block}
   .appbar{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;height:34px;padding:0 14px;background:#FAF7F2;font:700 12px var(--sans);color:#111;z-index:4}
   .appbar svg{width:38px;height:10px;display:block}
-  .appnav{position:sticky;bottom:0;display:grid;grid-template-columns:repeat(5,1fr);background:#fff;border-top:2px solid #0B192C;padding:6px 4px 8px;z-index:3}
+  .appnav{position:sticky;bottom:0;display:grid;grid-template-columns:repeat(5,1fr);background:#fff;border-top:2px solid var(--ink);padding:6px 4px 8px;z-index:3}
   .appnav span{display:flex;flex-direction:column;align-items:center;gap:2px;font:800 8px var(--mono);color:#6A788D;line-height:1}
   .appnav svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  .appnav .on{color:#1D61E7}
-  .appnav .fab{width:30px;height:30px;border:2.5px solid #0B192C;background:var(--yellow);color:#0B192C;box-shadow:3px 3px 0 #0B192C;transform:rotate(-2deg);display:grid;place-items:center;margin-top:-16px}
+  .appnav .on{color:var(--blue)}
+  .appnav .fab{width:30px;height:30px;border:2.5px solid var(--ink);background:var(--yellow);color:var(--ink);box-shadow:3px 3px 0 var(--ink);transform:rotate(-2deg);display:grid;place-items:center;margin-top:-16px}
   .hero-phone-frame .screen img{width:100%!important;height:auto!important;object-fit:fill!important}
   /* iPhone 18: Dynamic Island (pil hitam mengambang), bukan notch poni */
   .island{position:absolute;top:7px;left:50%;transform:translateX(-50%);width:30%;height:20px;background:#0B0B0C;border-radius:999px;z-index:6;box-shadow:inset 0 -1px 0 rgba(255,255,255,.06),0 1px 2px rgba(0,0,0,.25)}
@@ -201,22 +202,22 @@ ${WARKAH_CARD_CSS}
 
   /* Lembar Sambungan — disalin dari src/web/chain.ts */
   .lembar-wrap{background:#FFF9E9;border:3px solid var(--ink);border-radius:14px;padding:14px;box-shadow:6px 6px 0 #000}
-  .lembar{max-width:34rem;margin:0 auto;color:#0B192C}
+  .lembar{max-width:34rem;margin:0 auto;color:var(--ink)}
   .lembar .tcard{background:#fff;border:2.5px solid #22314A;border-radius:13px;box-shadow:3px 3px 0 #C9D6E8;padding:12px 13px;margin-bottom:12px;position:relative}
   .lembar .tcard.root{background:#F4F8FE}
   .lembar .root-tag{font:900 10px var(--mono);letter-spacing:1px;color:#5A6B85;text-transform:uppercase;margin-bottom:6px}
   .lembar .tmini{display:flex;align-items:center;gap:7px;margin-bottom:6px;flex-wrap:wrap}
-  .lembar .tava{width:28px;height:28px;flex:none;border-radius:50%;color:#fff;border:2px solid #0B192C;display:grid;place-items:center;font-family:var(--display);font-size:13px}
-  .lembar .tname{font-size:13px;font-weight:900;color:#0B192C;text-decoration:none}
+  .lembar .tava{width:28px;height:28px;flex:none;border-radius:50%;color:#fff;border:2px solid var(--ink);display:grid;place-items:center;font-family:var(--display);font-size:13px}
+  .lembar .tname{font-size:13px;font-weight:900;color:var(--ink);text-decoration:none}
   .lembar .ttime{font-size:10px;color:#8895AC;font-weight:600}
-  .lembar .ttitle{font-family:'Newsreader',serif;font-size:16.5px;font-weight:600;color:#0B192C;margin-bottom:4px}
+  .lembar .ttitle{font-family:'Newsreader',serif;font-size:16.5px;font-weight:600;color:var(--ink);margin-bottom:4px}
   .lembar .tbody{font-size:13.5px;line-height:1.65;color:#22314A}
   .lembar .tbody p{margin:0}
-  .lembar .tfoot-mini{margin-top:8px;font-size:11px;font-weight:800;color:#64748B}
+  .lembar .tfoot-mini{margin-top:8px;font-size:11px;font-weight:800;color:var(--muted)}
   .lembar .lbl{font:900 11px var(--mono);letter-spacing:1px;color:#5A6B85;text-transform:uppercase;margin:14px 2px 10px}
   .lembar .rail{position:relative;padding-left:17px;margin-top:6px}
   .lembar .rail:before{content:'';position:absolute;left:5px;top:6px;bottom:18px;width:2.5px;background:#B7D3F8;border-radius:2px}
-  .lembar .rail .knob{position:absolute;left:-17px;top:15px;width:9px;height:9px;background:#1D5FD6;border:2px solid #0B192C;border-radius:50%}
+  .lembar .rail .knob{position:absolute;left:-17px;top:15px;width:9px;height:9px;background:#1D5FD6;border:2px solid var(--ink);border-radius:50%}
   @media(min-width:900px){.lembar-wrap{padding:18px}}
 
   /* galeri ungu */

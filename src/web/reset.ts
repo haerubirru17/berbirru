@@ -1,3 +1,4 @@
+import { THEME } from './theme';
 import { escapeHtml } from '../lib/sanitize';
 
 /** Halaman reset sandi: 3 langkah (email → kode → sandi baru). */
@@ -10,24 +11,24 @@ export function renderResetPage(siteKey = ''): string {
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@500;600;700;800&family=Newsreader:opsz,wght@6..72,500;6..72,700&display=swap" rel="stylesheet">
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <style>
-  :root{--ink:#0B192C;--paper:#FFF9E9;--blue:#1D61E7;--yellow:#FDE047}
+  :root{--ink:${THEME.ink};--paper:#FFF9E9;--blue:${THEME.blue};--yellow:${THEME.accent}}
   *{box-sizing:border-box}
   body{margin:0;background:var(--paper);color:var(--ink);font-family:'DM Sans',sans-serif;min-height:100vh;display:grid;place-items:center;padding:24px 16px}
-  .card{width:min(440px,100%);background:#fff;border:3px solid var(--ink);box-shadow:6px 7px 0 #26364A;padding:22px}
+  .card{width:min(440px,100%);background:#fff;border:3px solid var(--ink);box-shadow:6px 7px 0 var(--ink-soft);padding:22px}
   h1{font:700 26px/1.1 'Newsreader';margin:0 0 6px}
   p.sub{font:600 12px/1.5 'DM Sans';color:#52627A;margin:0 0 18px}
   label{display:block;font:800 10px 'DM Sans';letter-spacing:.08em;text-transform:uppercase;color:#52627A;margin:0 0 6px}
   input{width:100%;min-height:46px;border:2.5px solid var(--ink);padding:10px 12px;font:700 14px 'DM Sans';outline:none;background:#fff}
   input:focus{box-shadow:3px 3px 0 var(--blue)}
   .f{margin-bottom:14px}
-  button{width:100%;min-height:48px;border:3px solid var(--ink);background:var(--blue);color:#fff;font:900 14px 'DM Sans';cursor:pointer;box-shadow:3px 4px 0 #26364A}
+  button{width:100%;min-height:48px;border:3px solid var(--ink);background:var(--blue);color:#fff;font:900 14px 'DM Sans';cursor:pointer;box-shadow:3px 4px 0 var(--ink-soft)}
   button.y{background:var(--yellow);color:var(--ink)}
   button:disabled{opacity:.55;cursor:not-allowed;box-shadow:none}
   .step{display:none}.step.on{display:block}
   .msg{font:700 12px/1.5 'DM Sans';padding:9px 11px;border:2px solid var(--ink);margin-bottom:12px;display:none}
   .msg.ok{background:#DCFCE7;border-color:#059669;color:#065F46;display:block}
   .msg.err{background:#FEE2E2;border-color:#991B1B;color:#991B1B;display:block}
-  .hint{font:600 11px/1.5 'DM Sans';color:#64748B;margin:8px 0 0}
+  .hint{font:600 11px/1.5 'DM Sans';color:var(--muted);margin:8px 0 0}
   a{color:var(--blue);font-weight:800}
   .cf-turnstile{margin:4px 0 12px}
 </style></head>

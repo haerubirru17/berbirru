@@ -1,3 +1,4 @@
+import { THEME } from './theme';
 import { NOTIFY_HTML } from './notify';
 
 export function renderLoginPage(turnstileSiteKey = ''): string {
@@ -17,7 +18,7 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
   ${turnstileSiteKey ? '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>' : ''}
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root{--blue:#1D61E7;--deep:#0F3E99;--ink:#0B192C;--paper:#FFF9E9;--white:#FFFEF8;--yellow:#FDE047;--coral:#FF735F;--mint:#88E6BD;--soft:#E0EEFD;--red:#EF4444;--green:#059669;--line:3px solid var(--ink);--thin:2px solid var(--ink);--shadow:6px 7px 0 #26364A;--small-shadow:3px 4px 0 #26364A;--bg-main:var(--paper);--bg-card:#fff;--bg-blue-subtle:var(--soft);--shadow-ink:#26364A;--blue-primary:var(--blue);--blue-deep:var(--deep);--blue-light:#60A5FA;--accent-yellow:var(--yellow);--border-thick:var(--line);--border-med:3px solid var(--ink);--border-thin:var(--thin);--shadow-hard:var(--small-shadow);--shadow-hard-lg:var(--shadow);--shadow-hard-sm:2px 3px 0 #26364A;--radius:0;--radius-sm:0}
+    :root{--blue:${THEME.blue};--deep:${THEME.blueDeep};--ink:${THEME.ink};--paper:#FFF9E9;--white:#FFFEF8;--yellow:${THEME.accent};--coral:#FF735F;--mint:#88E6BD;--soft:#E0EEFD;--red:#EF4444;--green:#059669;--muted:${THEME.muted};--ink-soft:${THEME.inkSoft};--line-soft:${THEME.lineSoft};--line:3px solid var(--ink);--thin:2px solid var(--ink);--shadow:6px 7px 0 ${THEME.inkSoft};--small-shadow:3px 4px 0 ${THEME.inkSoft};--bg-main:var(--paper);--bg-card:#fff;--bg-blue-subtle:var(--soft);--shadow-ink:var(--ink-soft);--blue-primary:var(--blue);--blue-deep:var(--deep);--blue-light:#60A5FA;--accent-yellow:var(--yellow);--border-thick:var(--line);--border-med:3px solid var(--ink);--border-thin:var(--thin);--shadow-hard:var(--small-shadow);--shadow-hard-lg:var(--shadow);--shadow-hard-sm:2px 3px 0 ${THEME.inkSoft};--radius:0;--radius-sm:0}
     body {
       font-family: 'DM Sans', -apple-system, sans-serif;
       background-color: var(--paper, #FBF8F3); color: var(--ink); min-height: 100vh;
@@ -54,7 +55,7 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
     }
     .auth-tab {
       padding: 12px; font-family: 'Archivo Black', sans-serif; font-size: 13.5px; font-weight: 800;
-      text-align: center; background: transparent; color: #64748B; border: none; cursor: pointer;
+      text-align: center; background: transparent; color: var(--muted); border: none; cursor: pointer;
       display: flex; justify-content: center; align-items: center; gap: 6px; transition: background 0.1s ease;
     }
     .auth-tab.active {
@@ -79,7 +80,7 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
       justify-content: center; align-items: center; gap: 8px; margin-top: 6px; transition: transform 0.05s ease;
     }
     .btn-submit-auth:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--shadow-ink); }
-    .auth-footer-help { margin-top: 14px; text-align: center; font-size: 11.5px; font-weight: 700; color: #64748B; }
+    .auth-footer-help { margin-top: 14px; text-align: center; font-size: 11.5px; font-weight: 700; color: var(--muted); }
     .auth-footer-help a { color: var(--blue-primary); text-decoration: underline; cursor: pointer; }
     .ico { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
   </style>
@@ -125,7 +126,7 @@ export function renderLoginPage(turnstileSiteKey = ''): string {
             <label class="form-label">Kata Sandi</label>
             <div style="position:relative;display:flex;align-items:center;">
               <input type="password" id="passwordInput" class="form-input" placeholder="••••••••" style="padding-right:42px;" required>
-              <button type="button" onclick="togglePasswordVisibility()" style="position:absolute;right:8px;background:none;border:none;cursor:pointer;color:#64748B;padding:4px;display:flex;align-items:center;">
+              <button type="button" onclick="togglePasswordVisibility()" style="position:absolute;right:8px;background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;display:flex;align-items:center;">
                 <svg class="ico" id="eyeIcon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
               </button>
             </div>

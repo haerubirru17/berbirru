@@ -1,3 +1,4 @@
+import { THEME } from './theme';
 import { renderBottomNav } from './layout';
 
 function esc(t: any): string {
@@ -46,9 +47,9 @@ export function renderChainPage(opts: {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,700;1,6..72,500&family=Roboto+Mono:wght@600;700&display=swap" rel="stylesheet">
   <style>
-    :root{--blue:#1D61E7;--deep:#0F3E99;--ink:#0B192C;--paper:#FFF9E9;--white:#FFFEF8;--yellow:#FDE047;--coral:#FF735F;--mint:#88E6BD;--soft:#E0EEFD;--red:#EF4444;--green:#059669;--line:3px solid var(--ink);--thin:2px solid var(--ink);--shadow:6px 7px 0 #26364A;--small-shadow:3px 4px 0 #26364A;--bg-main:var(--paper);--bg-card:#fff;--bg-blue-subtle:var(--soft);--shadow-ink:#26364A;--blue-primary:var(--blue);--blue-deep:var(--deep);--blue-light:#60A5FA;--accent-yellow:var(--yellow);--border-thick:var(--line);--border-med:3px solid var(--ink);--border-thin:var(--thin);--shadow-hard:var(--small-shadow);--shadow-hard-lg:var(--shadow);--shadow-hard-sm:2px 3px 0 #26364A;--radius:0;--radius-sm:0}
+    :root{--blue:${THEME.blue};--deep:${THEME.blueDeep};--ink:${THEME.ink};--paper:#FFF9E9;--white:#FFFEF8;--yellow:${THEME.accent};--coral:#FF735F;--mint:#88E6BD;--soft:#E0EEFD;--red:#EF4444;--green:#059669;--muted:${THEME.muted};--ink-soft:${THEME.inkSoft};--line-soft:${THEME.lineSoft};--line:3px solid var(--ink);--thin:2px solid var(--ink);--shadow:6px 7px 0 ${THEME.inkSoft};--small-shadow:3px 4px 0 ${THEME.inkSoft};--bg-main:var(--paper);--bg-card:#fff;--bg-blue-subtle:var(--soft);--shadow-ink:var(--ink-soft);--blue-primary:var(--blue);--blue-deep:var(--deep);--blue-light:#60A5FA;--accent-yellow:var(--yellow);--border-thick:var(--line);--border-med:3px solid var(--ink);--border-thin:var(--thin);--shadow-hard:var(--small-shadow);--shadow-hard-lg:var(--shadow);--shadow-hard-sm:2px 3px 0 ${THEME.inkSoft};--radius:0;--radius-sm:0}
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background:var(--paper); font-family: 'DM Sans', sans-serif; color: #0B192C; padding-bottom: 96px; }
+    body { background:var(--paper); font-family: 'DM Sans', sans-serif; color: var(--ink); padding-bottom: 96px; }
     .wrap { max-width: 560px; margin: 0 auto; padding: 14px; }
     .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
     /* Logo resmi — verbatim .brand-header login.ts (z-index lapisan ikut disalin) */
@@ -70,22 +71,22 @@ export function renderChainPage(opts: {
       content: ''; position: absolute; left: -24px; bottom: -3px; width: calc(100% + 28px); height: 6px;
       background: var(--accent-yellow); border-radius: 3px; z-index: -1;
     }
-    .back { font-size: 12.5px; font-weight: 900; border: 2px solid #0B192C; background: #FFF; border-radius: 9px; padding: 6px 12px; box-shadow: 2px 2px 0 #1E293B; text-decoration: none; color: #0B192C; }
+    .back { font-size: 12.5px; font-weight: 900; border: 2px solid var(--ink); background: #FFF; border-radius: 9px; padding: 6px 12px; box-shadow: 2px 2px 0 #1E293B; text-decoration: none; color: var(--ink); }
     .notice { background: #FFF8E6; border: 2px dashed #C79A2E; border-radius: 12px; padding: 11px 13px; font-size: 12.5px; font-weight: 600; color: #7A5A00; margin-bottom: 12px; line-height: 1.5; }
     .tcard { background: #FFF; border: 2.5px solid #22314A; border-radius: 13px; box-shadow: 3px 3px 0 #C9D6E8; padding: 12px 13px; margin-bottom: 12px; position: relative; }
     .tcard.root { background: #F4F8FE; }
     .root-tag { font-size: 10px; font-weight: 900; letter-spacing: 1px; color: #5A6B85; text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .tmini { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; flex-wrap: wrap; }
-    .tava { width: 28px; height: 28px; flex: none; border-radius: 50%; background: #1D5FD6; color: #FFF; border: 2px solid #0B192C; display: grid; place-items: center; font-family: 'Archivo Black'; font-weight: 900; font-size: 13px; }
-    .tname { font-size: 13px; font-weight: 900; color: #0B192C; text-decoration: none; }
+    .tava { width: 28px; height: 28px; flex: none; border-radius: 50%; background: #1D5FD6; color: #FFF; border: 2px solid var(--ink); display: grid; place-items: center; font-family: 'Archivo Black'; font-weight: 900; font-size: 13px; }
+    .tname { font-size: 13px; font-weight: 900; color: var(--ink); text-decoration: none; }
     .ttime { font-size:10px; color: #8895AC; font-weight: 600; }
-    .ttitle { font-family: 'Newsreader', serif; font-size: 16.5px; font-weight: 600; color: #0B192C; margin-bottom: 4px; }
+    .ttitle { font-family: 'Newsreader', serif; font-size: 16.5px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
     .tbody { font-size: 13.5px; line-height: 1.65; color: #22314A; }
     .tbody p { margin-bottom: 8px; }
-    .tfoot-mini { margin-top: 8px; font-size: 11px; font-weight: 800; color: #64748B; }
+    .tfoot-mini { margin-top: 8px; font-size: 11px; font-weight: 800; color: var(--muted); }
     .rail { position: relative; padding-left: 17px; margin-top: 14px; }
     .rail::before { content: ''; position: absolute; left: 5px; top: 6px; bottom: 30px; width: 2.5px; background: #B7D3F8; border-radius: 2px; }
-    .rail .tcard .knob { position: absolute; left: -17px; top: 15px; width: 9px; height: 9px; background: #1D5FD6; border: 2px solid #0B192C; border-radius: 50%; }
+    .rail .tcard .knob { position: absolute; left: -17px; top: 15px; width: 9px; height: 9px; background: #1D5FD6; border: 2px solid var(--ink); border-radius: 50%; }
     /* 5-TAB DOCKED BOTTOM NAVBAR — kembar search/feed (renderBottomNav menyuntik HTML-nya,
        CSS-nya harus ikut di setiap halaman yang memakai navbar) */
     .bottom-navbar {
@@ -107,14 +108,14 @@ gap:2px;text-decoration:none;color:#6A788D;font-size:10px;font-weight:800;cursor
     .btn-create-floating {
 width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);color:var(--ink);border:2.5px solid var(--ink);box-shadow:3px 3px 0 var(--ink);transform:rotate(-2deg)
     }
-    .btn-create-floating svg { width: 20px; height: 20px; stroke: #0B192C; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .btn-create-floating svg { width: 20px; height: 20px; stroke: var(--ink); stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .btn-create-floating:active { transform: translate(1.5px, 1.5px); box-shadow: none; }
     .bell-wrap { position: relative; }
     .notif-dot { position: absolute; top: -4px; right: -6px; width: 9px; height: 9px; background: #E11D48; border: 1.5px solid #FFF; border-radius: 50%; }
     .lbl { font-size: 11px; font-weight: 900; letter-spacing: 1px; color: #5A6B85; text-transform: uppercase; margin: 16px 2px 10px; }
-    .cta { display: flex; align-items: center; justify-content: center; gap: 7px; background: #FFD834; border: 2.5px solid #0B192C; border-radius: 11px; box-shadow: 3px 3px 0 #1E293B; padding: 11px; text-align: center; font-weight: 900; font-size: 13.5px; text-decoration: none; color: #0B192C; }
+    .cta { display: flex; align-items: center; justify-content: center; gap: 7px; background: #FFD834; border: 2.5px solid var(--ink); border-radius: 11px; box-shadow: 3px 3px 0 #1E293B; padding: 11px; text-align: center; font-weight: 900; font-size: 13.5px; text-decoration: none; color: var(--ink); }
     .cta:active { transform: translate(2px, 2px); box-shadow: none; }
-    .ico { width: 16px; height: 16px; stroke: #0B192C; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .ico { width: 16px; height: 16px; stroke: var(--ink); stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     /* Kotak jawab cepat ala Threads — sambung tanpa meninggalkan lembar */
     .reply-box { background: #FFF; border: 2.5px solid #22314A; border-radius: 13px; box-shadow: 3px 3px 0 #C9D6E8; padding: 11px 12px; margin-top: 14px; }
     .reply-hint { font-size: 11.5px; font-weight: 700; color: #5A6B85; margin-bottom: 7px; }
@@ -122,7 +123,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
     #quickReply:focus { outline: none; border-color: var(--blue-primary); }
     .reply-foot { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 7px; }
     #replyMsg { font-size: 11px; font-weight: 700; color: #B42318; }
-    .reply-send { background: var(--accent-yellow); border: 2.5px solid #0B192C; border-radius: 9px; box-shadow: 2px 2px 0 #1E293B; padding: 8px 16px; font-weight: 900; font-size: 12.5px; font-family: inherit; cursor: pointer; }
+    .reply-send { background: var(--accent-yellow); border: 2.5px solid var(--ink); border-radius: 9px; box-shadow: 2px 2px 0 #1E293B; padding: 8px 16px; font-weight: 900; font-size: 12.5px; font-family: inherit; cursor: pointer; }
     .reply-send:active { transform: translate(2px, 2px); box-shadow: none; }
     .vcheck{width:12px;height:12px;margin-left:3px;vertical-align:-1px}
 </style>
@@ -157,7 +158,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
 
     <div class="lbl">Sambungan (${children.length})</div>
     <div class="rail">
-      ${childrenHtml || '<div style="font-size:12.5px;font-weight:600;color:#64748B;padding:6px 0;">Belum ada yang menyambung bait ini.</div>'}
+      ${childrenHtml || '<div style="font-size:12.5px;font-weight:600;color:var(--muted);padding:6px 0;">Belum ada yang menyambung bait ini.</div>'}
     </div>
 
     ${user ? `

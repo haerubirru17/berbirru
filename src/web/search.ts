@@ -1,3 +1,4 @@
+import { THEME } from './theme';
 import { renderBottomNav } from './layout';
 
 export function renderSearchPage(user: any = null): string {
@@ -15,7 +16,7 @@ export function renderSearchPage(user: any = null): string {
   <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,700;1,6..72,500&family=Roboto+Mono:wght@600;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root{--blue:#1D61E7;--deep:#0F3E99;--ink:#0B192C;--paper:#FFF9E9;--white:#FFFEF8;--yellow:#FDE047;--coral:#FF735F;--mint:#88E6BD;--soft:#E0EEFD;--red:#EF4444;--green:#059669;--line:3px solid var(--ink);--thin:2px solid var(--ink);--shadow:6px 7px 0 #26364A;--small-shadow:3px 4px 0 #26364A;--bg-main:var(--paper);--bg-card:#fff;--bg-blue-subtle:var(--soft);--shadow-ink:#26364A;--blue-primary:var(--blue);--blue-deep:var(--deep);--blue-light:#60A5FA;--accent-yellow:var(--yellow);--border-thick:var(--line);--border-med:3px solid var(--ink);--border-thin:var(--thin);--shadow-hard:var(--small-shadow);--shadow-hard-lg:var(--shadow);--shadow-hard-sm:2px 3px 0 #26364A;--radius:0;--radius-sm:0}
+    :root{--blue:${THEME.blue};--deep:${THEME.blueDeep};--ink:${THEME.ink};--paper:#FFF9E9;--white:#FFFEF8;--yellow:${THEME.accent};--coral:#FF735F;--mint:#88E6BD;--soft:#E0EEFD;--red:#EF4444;--green:#059669;--muted:${THEME.muted};--ink-soft:${THEME.inkSoft};--line-soft:${THEME.lineSoft};--line:3px solid var(--ink);--thin:2px solid var(--ink);--shadow:6px 7px 0 ${THEME.inkSoft};--small-shadow:3px 4px 0 ${THEME.inkSoft};--bg-main:var(--paper);--bg-card:#fff;--bg-blue-subtle:var(--soft);--shadow-ink:var(--ink-soft);--blue-primary:var(--blue);--blue-deep:var(--deep);--blue-light:#60A5FA;--accent-yellow:var(--yellow);--border-thick:var(--line);--border-med:3px solid var(--ink);--border-thin:var(--thin);--shadow-hard:var(--small-shadow);--shadow-hard-lg:var(--shadow);--shadow-hard-sm:2px 3px 0 ${THEME.inkSoft};--radius:0;--radius-sm:0}
     body {
       font-family: 'DM Sans', -apple-system, sans-serif;
       background-color: #FBF8F3; color: var(--ink); min-height: 100vh;
@@ -54,7 +55,7 @@ export function renderSearchPage(user: any = null): string {
     .suggest-item .chip-avatar { width: 32px; height: 32px; border-radius: 10px; font-size: 13px; }
     .suggest-item .chip-pen { font-weight: 800; font-size: 13px; }
     .suggest-item .chip-city { font-size: 11px; }
-    .result-section-title { font-size: 11.5px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; color: #64748B; margin: 18px 0 8px; }
+    .result-section-title { font-size: 11.5px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin: 18px 0 8px; }
     .user-chip {
       display: flex; align-items: center; gap: 10px; background: var(--bg-card);
       border: var(--border-thin); border-radius: var(--radius-sm); padding: 10px 12px;
@@ -68,7 +69,7 @@ export function renderSearchPage(user: any = null): string {
     }
     .chip-meta { min-width: 0; }
     .chip-pen { font-weight: 800; font-size: 13.5px; }
-    .chip-city { font-size: 11.5px; color: #64748B; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chip-city { font-size: 11.5px; color: var(--muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     /* Kartu warkah hasil cari — kembar kartu feed (desain terkunci) */
     .thread-card {
       background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
@@ -113,7 +114,7 @@ gap:2px;text-decoration:none;color:#6A788D;font-size:10px;font-weight:800;cursor
     .btn-create-floating {
 width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);color:var(--ink);border:2.5px solid var(--ink);box-shadow:3px 3px 0 var(--ink);transform:rotate(-2deg)
     }
-    .btn-create-floating svg { width: 20px; height: 20px; stroke: #0B192C; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .btn-create-floating svg { width: 20px; height: 20px; stroke: var(--ink); stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .btn-create-floating:active { transform: translate(1.5px, 1.5px); box-shadow: none; }
   </style>
 </head>
@@ -176,7 +177,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
                 + (u.city ? '<div class="chip-city">' + escapeHtml(u.city) + '</div>' : '')
                 + '</div></a>';
             } else if (res.status === 404) {
-              usersHTML = '<h2 class="result-section-title">Penulis</h2><p style="font-size:12.5px;color:#64748B;font-weight:600;">Penulis @' + escapeHtml(uname) + ' tidak ditemukan.</p>';
+              usersHTML = '<h2 class="result-section-title">Penulis</h2><p style="font-size:12.5px;color:var(--muted);font-weight:600;">Penulis @' + escapeHtml(uname) + ' tidak ditemukan.</p>';
             }
           }
         }
@@ -209,9 +210,9 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
         + (p.title ? '<div style="font-family:\\'Newsreader\\',serif;font-size:17px;font-weight:600;margin-bottom:6px;">' + escapeHtml(p.title) + '</div>' : '')
         + '<div style="font-size:14px;line-height:1.6;color:#334155;">' + String(p.content || '') + '</div>'
         + '</div>'
-        + '<div class="thread-footer"><span style="font-size:11.5px;font-weight:800;color:#1D61E7;">'
+        + '<div class="thread-footer"><span style="font-size:11.5px;font-weight:800;color:var(--blue);">'
         + (p.likes_count || 0) + ' Terpaut · ' + (p.saves_count || 0) + ' Simpan · ' + (p.chains_count || 0) + ' Sambungan</span>'
-        + '<a href="' + href + '" style="font-size:11.5px;font-weight:800;color:#64748B;text-decoration:none;flex-shrink:0;">Lihat</a>'
+        + '<a href="' + href + '" style="font-size:11.5px;font-weight:800;color:var(--muted);text-decoration:none;flex-shrink:0;">Lihat</a>'
         + '</div></div>';
     }
 
