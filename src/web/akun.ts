@@ -48,7 +48,8 @@ export function renderAkunPage(user: any, refunds: any[] = [], owner = false): s
 <link rel="icon" type="image/svg+xml" href="/favicon.ico">
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,700&display=swap" rel="stylesheet">
 ${PASAR_BASE_CSS}
-<style>${CSS}</style></head>
+<style>
+    :root{--muted:${THEME.muted};--ink-soft:${THEME.inkSoft};--line-soft:${THEME.lineSoft};}${CSS}</style></head>
 <body>
 <div class="wrap">
   ${KEPALA('Akun', penjual ? 'Kelola pesanan, toko, dan saldo.' : 'Pesanan, alamat, dan pengaturan akun.')}

@@ -44,7 +44,8 @@ const bungkus = (user: any, judul: string, isi: string) => `<!DOCTYPE html>
 <title>${judul} | BERBIRRU</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.ico">
 ${PASAR_BASE_CSS}
-<style>${CSS}</style></head>
+<style>
+    :root{--muted:${THEME.muted};--ink-soft:${THEME.inkSoft};--line-soft:${THEME.lineSoft};}${CSS}</style></head>
 <body>
 <div class="wrap">${isi}</div>
 ${renderBottomNav('akun' as any, user, false, { mode: 'pasar', marketTab: 'akun' as any })}
