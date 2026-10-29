@@ -1,5 +1,6 @@
 // Pusat Pasar Buku — satu halaman untuk pesanan, toko, saldo, dan aktivitas transaksi.
 // Isi tiap tab memakai renderer yang sudah ada (mode embed), jadi tidak ada duplikasi markup.
+import { THEME } from './theme';
 import { escapeHtml } from '../lib/sanitize';
 import { renderBottomNav } from './layout';
 import { PASAR_BASE_CSS } from './pasar';
@@ -13,57 +14,57 @@ const SHELL_CSS = `
   .wrap.hub-top{padding-bottom:0}
   .hub-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin:4px 0 14px}
   .hub-head h1{margin:0;font:700 clamp(32px,5.8vw,44px)/.98 'Newsreader';letter-spacing:-.035em}
-  .hub-head .sub{margin:5px 0 0;font-size:12px;font-weight:700;color:#64748B}
+  .hub-head .sub{margin:5px 0 0;font-size:12px;font-weight:700;color:var(--muted)}
   .verif{display:inline-flex;align-items:center;gap:5px;font:800 9px 'Roboto Mono';letter-spacing:.05em;text-transform:uppercase;
-    background:#DCFCE7;border:2px solid #0B192C;padding:4px 7px;box-shadow:2px 2px 0 #26364A;white-space:nowrap;margin-top:2px}
-  .verif svg{width:10px;height:10px;stroke:#0B192C;stroke-width:3;fill:none}
-  .verif.gate{background:#FDE047}
+    background:#DCFCE7;border:2px solid var(--ink);padding:4px 7px;box-shadow:2px 2px 0 var(--ink-soft);white-space:nowrap;margin-top:2px}
+  .verif svg{width:10px;height:10px;stroke:var(--ink);stroke-width:3;fill:none}
+  .verif.gate{background:var(--yellow)}
   .hub-body{padding-top:14px}
   .hub-body .wrap{padding-top:0;padding-bottom:24px}
-  .hub-tabs{display:grid;grid-template-columns:repeat(4,1fr);border:2.5px solid #0B192C;background:#fff;
-    box-shadow:4px 5px 0 #26364A;margin-bottom:0}
+  .hub-tabs{display:grid;grid-template-columns:repeat(4,1fr);border:2.5px solid var(--ink);background:#fff;
+    box-shadow:4px 5px 0 var(--ink-soft);margin-bottom:0}
   .hub-tab{padding:9px 2px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-    font:800 9.5px/1.15 'DM Sans';letter-spacing:-.01em;color:#0B192C;text-decoration:none;border-right:2px solid #0B192C;text-align:center;position:relative}
+    font:800 9.5px/1.15 'DM Sans';letter-spacing:-.01em;color:var(--ink);text-decoration:none;border-right:2px solid var(--ink);text-align:center;position:relative}
   .hub-tab:last-child{border-right:0}
-  .hub-tab .c{font:700 9px 'Roboto Mono';color:#64748B}
+  .hub-tab .c{font:700 9px 'Roboto Mono';color:var(--muted)}
   /* mode pasar: aksen kuning-amber, konsisten dengan navbar */
   .hub-tab.on{background:#B45309;color:#fff}.hub-tab.on .c{color:#FEF3C7}
   .hub-body .tab.on,.hub-body .tabs .tab.on,.hub-body .tabs-seller .tab.on{background:#B45309;color:#fff}
   .hub-body .tab.on .c,.hub-body .tabs .tab.on .c,.hub-body .tabs-seller .tab.on .c{color:#FEF3C7}
-  .hub-tab.locked{color:#94A3B8}.hub-tab.locked .c{color:#CBD5E1}
+  .hub-tab.locked{color:#94A3B8}.hub-tab.locked .c{color:var(--line-soft)}
   .hub-tab .dot{position:absolute;top:5px;right:6px;min-width:15px;height:15px;border-radius:9px;background:#B42318;color:#fff;
     font:800 9px/15px 'Roboto Mono';text-align:center;padding:0 3px;border:1.5px solid #fff}
-  .akt{display:flex;gap:10px;align-items:flex-start;background:#fff;border:2.5px solid #0B192C;box-shadow:4px 5px 0 #26364A;
-    padding:11px 12px;margin-bottom:9px;text-decoration:none;color:#0B192C}
+  .akt{display:flex;gap:10px;align-items:flex-start;background:#fff;border:2.5px solid var(--ink);box-shadow:4px 5px 0 var(--ink-soft);
+    padding:11px 12px;margin-bottom:9px;text-decoration:none;color:var(--ink)}
   .akt:active{transform:translate(2px,3px);box-shadow:none}
-  .akt .ic{width:26px;height:26px;flex:none;display:grid;place-items:center;border:2px solid #0B192C;background:#DBEAFE}
-  .akt .ic svg{width:13px;height:13px;stroke:#0B192C;stroke-width:2.4;fill:none}
+  .akt .ic{width:26px;height:26px;flex:none;display:grid;place-items:center;border:2px solid var(--ink);background:#DBEAFE}
+  .akt .ic svg{width:13px;height:13px;stroke:var(--ink);stroke-width:2.4;fill:none}
   .akt .tx{min-width:0;flex:1}
   .akt .t1{font:700 12.5px/1.35 'DM Sans'}
-  .akt .t2{font:600 10.5px 'DM Sans';color:#64748B;margin-top:3px;overflow-wrap:anywhere}
-  .akt.unread{border-left:6px solid #1D61E7}
+  .akt .t2{font:600 10.5px 'DM Sans';color:var(--muted);margin-top:3px;overflow-wrap:anywhere}
+  .akt.unread{border-left:6px solid var(--blue)}
   .akt .go{font:800 10px 'Roboto Mono';color:#94A3B8;align-self:center}
   .akt-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 10px}
-  .akt-bar .lbl{font:700 10px 'Roboto Mono';color:#64748B;letter-spacing:.04em;text-transform:uppercase}
-  .akt-bar button{font:900 10.5px 'DM Sans';background:#fff;border:2px solid #0B192C;padding:5px 9px;box-shadow:2px 2px 0 #26364A;cursor:pointer}
+  .akt-bar .lbl{font:700 10px 'Roboto Mono';color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+  .akt-bar button{font:900 10.5px 'DM Sans';background:#fff;border:2px solid var(--ink);padding:5px 9px;box-shadow:2px 2px 0 var(--ink-soft);cursor:pointer}
   .akt-bar button:active{transform:translate(1px,2px);box-shadow:none}
-  .shop-link{background:#fff;border:2.5px solid #0B192C;box-shadow:4px 5px 0 #26364A;padding:12px;margin-top:4px}
-  .shop-link .sl-t{font:800 9.5px 'Roboto Mono';color:#64748B;letter-spacing:.05em;text-transform:uppercase}
-  .shop-link .sl-u{font:700 12px 'Roboto Mono';color:#0F3E99;margin-top:5px;overflow-wrap:anywhere}
+  .shop-link{background:#fff;border:2.5px solid var(--ink);box-shadow:4px 5px 0 var(--ink-soft);padding:12px;margin-top:4px}
+  .shop-link .sl-t{font:800 9.5px 'Roboto Mono';color:var(--muted);letter-spacing:.05em;text-transform:uppercase}
+  .shop-link .sl-u{font:700 12px 'Roboto Mono';color:var(--deep);margin-top:5px;overflow-wrap:anywhere}
   .shop-link .sl-b{display:flex;gap:8px;margin-top:9px}
   .shop-link .sl-b a,.shop-link .sl-b button{flex:1;min-height:38px;display:inline-flex;align-items:center;justify-content:center;
-    border:2px solid #0B192C;background:#fff;font:900 11px 'DM Sans';color:#0B192C;text-decoration:none;cursor:pointer;box-shadow:2px 2px 0 #26364A}
-  .shop-link .sl-b a{background:#1D61E7;color:#fff}
-  .jual-cta{display:block;text-align:center;font:800 11px 'DM Sans';color:#0B192C;text-decoration:none;
+    border:2px solid var(--ink);background:#fff;font:900 11px 'DM Sans';color:var(--ink);text-decoration:none;cursor:pointer;box-shadow:2px 2px 0 var(--ink-soft)}
+  .shop-link .sl-b a{background:var(--blue);color:#fff}
+  .jual-cta{display:block;text-align:center;font:800 11px 'DM Sans';color:var(--ink);text-decoration:none;
     background:#FFFDF2;border:2px dashed #94A3B8;padding:11px;margin-top:4px}
-  .locked-box{background:#FFFDF2;border:2.5px solid #0B192C;box-shadow:4px 5px 0 #26364A;padding:16px}
+  .locked-box{background:#FFFDF2;border:2.5px solid var(--ink);box-shadow:4px 5px 0 var(--ink-soft);padding:16px}
   .locked-box h2{margin:0 0 6px;font:700 20px 'Newsreader'}
   .locked-box p{margin:0 0 12px;font-size:12.5px;font-weight:600;color:#475569;line-height:1.6}
-  .locked-box a{display:inline-flex;min-height:44px;align-items:center;background:#1D61E7;color:#fff;border:2.5px solid #0B192C;
-    padding:9px 14px;font:900 12.5px 'DM Sans';text-decoration:none;box-shadow:3px 3px 0 #26364A}
+  .locked-box a{display:inline-flex;min-height:44px;align-items:center;background:var(--blue);color:#fff;border:2.5px solid var(--ink);
+    padding:9px 14px;font:900 12.5px 'DM Sans';text-decoration:none;box-shadow:3px 3px 0 var(--ink-soft)}
   .cari-wrap{margin:0 0 12px}
-  .cari-wrap input{width:100%;min-height:44px;border:2.5px solid #0B192C;border-radius:8px;padding:10px 12px;font:600 13.5px 'DM Sans';background:#fff}
-  .empty-akt{background:#F8FAFC;border:2px dashed #CBD5E1;padding:18px 14px;text-align:center;font:700 12px 'DM Sans';color:#64748B;line-height:1.6}
+  .cari-wrap input{width:100%;min-height:44px;border:2.5px solid var(--ink);border-radius:8px;padding:10px 12px;font:600 13.5px 'DM Sans';background:#fff}
+  .empty-akt{background:#F8FAFC;border:2px dashed var(--line-soft);padding:18px 14px;text-align:center;font:700 12px 'DM Sans';color:var(--muted);line-height:1.6}
 `;
 
 const AKT_LABEL: Record<string, string> = {
@@ -150,7 +151,8 @@ export function renderPasarSaya(user: any, tab: string, sub: string, d: HubData)
 <html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pasar Saya — BERBIRRU</title>
 ${PASAR_BASE_CSS}
-<style>${SHELL_CSS}${PESANAN_CSS}${TOKO_CSS}${SALDO_CSS}</style></head>
+<style>
+    :root{--muted:${THEME.muted};--ink-soft:${THEME.inkSoft};--line-soft:${THEME.lineSoft};}${SHELL_CSS}${PESANAN_CSS}${TOKO_CSS}${SALDO_CSS}</style></head>
 <body>
 <div class="wrap hub-top">
   <div class="hub-head">
