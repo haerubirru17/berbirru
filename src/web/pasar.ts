@@ -267,6 +267,13 @@ export function renderJualPage(user: any): string {
           <input class="form-input" id="fPrice" type="number" min="1000" max="10000000" step="500" placeholder="50000">
         </div>
         <div>
+          <label class="form-label" for="fStock">Jumlah stok *</label>
+          <input class="form-input" id="fStock" type="number" min="1" max="999" step="1" inputmode="numeric" value="1">
+          <div class="hint">Berapa buku fisik yang siap dijual.</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <div>
           <label class="form-label">Perkiraan tebal buku *</label>
           <div class="chip-pick" id="fWeightChips">
             <button type="button" class="chip on" data-w="300">Ringan &lt;500 g</button>
@@ -289,7 +296,7 @@ export function renderJualPage(user: any): string {
           <button type="button" class="chip" data-c="pos">POS</button>
           <button type="button" class="chip" data-c="anteraja">AnterAja</button>
         </div>
-        <div class="hint">Pilih kurir yang kamu siap kirim. Pembeli nanti pilih layanan + lihat tarif live sesuai kotanya. <b>Satu listing = satu buku fisik</b> — untuk 2 copy, buat 2 listing.</div>
+        <div class="hint">Pilih kurir yang kamu siap kirim. Pembeli nanti pilih layanan + lihat tarif live sesuai kotanya.</div>
       </div>
       <div class="form-group">
         <label class="form-label">Kota asal pengiriman *</label>
@@ -438,6 +445,7 @@ export function renderJualPage(user: any): string {
     if (busy) return;
     var title = document.getElementById('fTitle').value.trim();
     var price = parseInt(document.getElementById('fPrice').value, 10);
+    var stock = parseInt(document.getElementById('fStock').value, 10);
     var wChip = document.querySelector('#fWeightChips .chip.on');
     var weight = wChip ? parseInt(wChip.getAttribute('data-w'), 10) : 0;
     if (weight >= 1500) weight = parseInt(document.getElementById('fWeightGram').value, 10) || 0;
@@ -445,6 +453,7 @@ export function renderJualPage(user: any): string {
     if (!title) { showErr('Judul buku wajib diisi.'); return; }
     if (!price || price < 1000) { showErr('Harga minimal Rp1.000.'); return; }
     if (price > 10000000) { showErr('Harga maksimal Rp10.000.000.'); return; }
+    if (!Number.isInteger(stock) || stock < 1 || stock > 999) { showErr('Jumlah stok harus 1–999.'); return; }
     if (!weight || weight < 100) { showErr('Isi berat buku dalam gram (mis. 1500) untuk buku tebal.'); return; }
     if (!kurir.length) { showErr('Pilih minimal satu layanan pengiriman.'); return; }
     if (!fKec.value) { showErr('Pilih kecamatan asal pengiriman.'); return; }
@@ -459,6 +468,7 @@ export function renderJualPage(user: any): string {
         descr: document.getElementById('fDescr').value.trim(),
         cond: document.getElementById('fCond').value,
         price: price,
+        stock: stock,
         weight_g: weight,
         couriers: kurir,
         origin_id: fKec.value,
@@ -563,6 +573,7 @@ export function renderListingDetail(user: any, p: any, seller: any, adminView = 
       <div class="d-badges">
         <span class="badge">${escapeHtml(COND_LABEL[p.cond] || escapeHtml(p.cond))}</span>
         <span class="badge">Rekber BERBIRRU</span>
+        <span class="badge">${Number(p.stock || 0) > 0 ? `Stok ${Number(p.stock)}` : 'Stok habis'}</span>
       </div>
       ${p.descr ? `<div class="d-descr">${escapeHtml(p.descr)}</div>` : ''}
       <div class="seller-row">
@@ -586,7 +597,7 @@ export function renderListingDetail(user: any, p: any, seller: any, adminView = 
         ${user
           ? (user.id === p.seller_id
             ? `<span class="badge" style="align-self:center;">Listingmu</span>`
-            : `<button class="btn-buy" id="btnBeli" data-id="${escapeHtml(p.id)}">Beli</button>`)
+            : (Number(p.stock || 0) > 0 ? `<button class="btn-buy" id="btnBeli" data-id="${escapeHtml(p.id)}">Beli</button>` : `<span class="badge" style="align-self:center;">Stok habis</span>`))
           : `<a class="btn-buy" href="/login">Masuk untuk Beli</a>`}
       </div>
       ${user ? '' : '<div class="login-hint">Belum punya akun? Daftar dulu — gratis.</div>'}
@@ -673,6 +684,8 @@ ${PASAR_BASE_CSS}
     <div class="f"><label>Judul buku</label><input id="fTitle" maxlength="120" value="${escapeHtml(l.title || '')}"></div>
     <div class="f"><label>Harga (Rp)</label><input id="fPrice" type="number" min="1000" max="50000000" step="500" value="${Number(l.price || 0)}">
       <div class="hint">Biaya rekber Rp5.000 dipotong dari harga ini saat dana dilepas.</div></div>
+    <div class="f"><label>Jumlah stok</label><input id="fStock" type="number" min="0" max="999" step="1" inputmode="numeric" value="${Number(l.stock || 0)}">
+      <div class="hint">Isi 0 jika stok sedang habis. Maksimal 999.</div></div>
     <div class="f"><label>Kondisi</label>
       <select id="fCond">
         <option value="baru"${cond === 'baru' ? ' selected' : ''}>Baru</option>
@@ -688,6 +701,7 @@ async function simpan(e){
   const err=document.getElementById('err'); err.style.display='none';
   const body={title:document.getElementById('fTitle').value.trim(),
     price:Number(document.getElementById('fPrice').value),
+    stock:Number(document.getElementById('fStock').value),
     cond:document.getElementById('fCond').value};
   const r=await fetch('/api/pasar/listings/${escapeHtml(l.id)}',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   const j=await r.json().catch(()=>({}));

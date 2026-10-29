@@ -18,6 +18,7 @@ async function sha256hex(s: string): Promise<string> {
 import { renderLoginPage } from './web/login';
 import { renderResetPage } from './web/reset';
 import { cekResi, validasiFormatResi, ambilWilayah, cekTarifOngkir, KURIR_DIDUKUNG, KURIR_LABEL } from './kurir';
+import { validStock } from './lib/pasar-inventory';
 import { renderFeedPage } from './web/feed';
 import { renderSearchPage } from './web/search';
 import { renderProfilePage } from './web/profile';
@@ -1305,6 +1306,7 @@ app.post('/api/pasar/listings', async (c) => {
   const descr = String(body.descr || '').trim().slice(0, 800);
   const cond = ['baru', 'bekas_bagus', 'bekas_layak'].includes(body.cond) ? body.cond : 'bekas_bagus';
   const price = Number(body.price);
+  const stock = validStock(body.stock);
   // Ongkir dari layanan kurir: penjual pilih kurir + berat + kecamatan asal (bukan angka tebakan).
   const couriers: string[] = (Array.isArray(body.couriers) ? body.couriers : [])
     .map((x: any) => String(x).toLowerCase())
@@ -1316,6 +1318,7 @@ app.post('/api/pasar/listings', async (c) => {
   photos = photos.filter((k) => new RegExp(`^${PHOTO_DIR}/${me.id}_[0-9]+_[a-z0-9]+\\.(jpg|png|webp)$`).test(k)).slice(0, MAX_LISTING_PHOTOS);
   if (!title || title.length > 140) return c.json({ error: 'Judul wajib diisi (maks 140 karakter)' }, 400);
   if (!Number.isInteger(price) || price < 1000 || price > 10_000_000) return c.json({ error: 'Harga harus Rp1.000–10.000.000' }, 400);
+  if (stock === null) return c.json({ error: 'Stok harus bilangan bulat 1–999' }, 400);
   if (!couriers.length) return c.json({ error: 'Pilih minimal satu layanan pengiriman' }, 400);
   if (!Number.isInteger(weightG) || weightG < 100 || weightG > 30_000) return c.json({ error: 'Berat buku harus 100–30.000 gram' }, 400);
   if (!originId) return c.json({ error: 'Pilih kecamatan asal pengiriman' }, 400);
@@ -1325,8 +1328,8 @@ app.post('/api/pasar/listings', async (c) => {
     .bind(originId, originName || null, me.id).run();
   const id = crypto.randomUUID();
   await c.env.DB.prepare(
-    'INSERT INTO listings (id, seller_id, title, author, descr, cond, price, shipping_flat, weight_g, couriers, status, photos) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)'
-  ).bind(id, me.id, title, author, descr, cond, price, 0, weightG, JSON.stringify(couriers), 'active', JSON.stringify(photos)).run();
+    'INSERT INTO listings (id, seller_id, title, author, descr, cond, price, stock, shipping_flat, weight_g, couriers, status, photos) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)'
+  ).bind(id, me.id, title, author, descr, cond, price, stock, 0, weightG, JSON.stringify(couriers), 'active', JSON.stringify(photos)).run();
   return c.json({ ok: true, id });
 });
 
@@ -1343,7 +1346,7 @@ app.post('/api/pasar/ongkir', async (c) => {
   const body: any = await c.req.json().catch(() => null);
   const destId = String(body?.dest_id || '').trim();
   const destName = String(body?.dest_name || '').trim().slice(0, 120);
-  const p: any = await c.env.DB.prepare("SELECT id, seller_id, weight_g, couriers FROM listings WHERE id = ? AND status = 'active'")
+  const p: any = await c.env.DB.prepare("SELECT id, seller_id, weight_g, couriers FROM listings WHERE id = ? AND status = 'active' AND stock > 0")
     .bind(String(body?.listing_id || '')).first();
   if (!p) return c.json({ error: 'Listing tidak tersedia' }, 404);
   if (!destId) return c.json({ error: 'Pilih kecamatan tujuan dulu' }, 400);
@@ -1369,7 +1372,7 @@ app.get('/pasar', async (c) => {
 
   const perPage = 24;
   const hal = Math.max(1, Math.min(99, Number.parseInt(String(c.req.query('hal') || '1'), 10) || 1));
-  let where = " FROM listings WHERE status = 'active'";
+  let where = " FROM listings WHERE status = 'active' AND stock > 0";
   const binds: any[] = [];
   if (q) {
     const pola = '%' + q.replace(/[\\%_]/g, '\\$&') + '%';
@@ -1548,7 +1551,7 @@ app.post('/akun/alamat/:id/hapus', async (c) => {
 app.get('/pasar/listing/:id/edit', async (c) => {
   const me = await getAuthUser(c);
   if (!me) return c.redirect('/login');
-  const l: any = await c.env.DB.prepare('SELECT id, seller_id, title, price, cond, status FROM listings WHERE id = ?')
+  const l: any = await c.env.DB.prepare('SELECT id, seller_id, title, price, cond, status, stock FROM listings WHERE id = ?')
     .bind(c.req.param('id')).first();
   if (!l || l.seller_id !== me.id) return c.notFound();
   if (l.status === 'sold') return c.redirect('/pasar/saya?tab=toko');
@@ -1580,11 +1583,11 @@ app.get('/toko/:slug', async (c) => {
   const perPage = 24;
   const hal = Math.max(1, Math.min(99, Number.parseInt(String(c.req.query('hal') || '1'), 10) || 1));
   const jumlah: any = await c.env.DB.prepare(
-    "SELECT COUNT(*) AS n FROM listings WHERE seller_id = ? AND status = 'active'"
+    "SELECT COUNT(*) AS n FROM listings WHERE seller_id = ? AND status = 'active' AND stock > 0"
   ).bind(toko.id).first();
   const rows = await c.env.DB.prepare(
-    `SELECT id, title, price, cond, photos FROM listings
-      WHERE seller_id = ? AND status = 'active' ORDER BY created_at DESC LIMIT ? OFFSET ?`
+    `SELECT id, title, price, cond, photos, stock FROM listings
+      WHERE seller_id = ? AND status = 'active' AND stock > 0 ORDER BY created_at DESC LIMIT ? OFFSET ?`
   ).bind(toko.id, perPage, (hal - 1) * perPage).all();
   const done: any = await c.env.DB.prepare(
     "SELECT COUNT(*) AS n FROM orders WHERE seller_id = ? AND status = 'completed'"
@@ -1623,9 +1626,9 @@ app.get('/pasar/saya', async (c) => {
       WHERE o.seller_id = ? ORDER BY o.created_at DESC LIMIT 60`
   ).bind(user.id).all() : { results: [] as any[] };
   const bukuRows = approved ? await c.env.DB.prepare(
-    `SELECT id, title, price, status, photos,
+    `SELECT id, title, price, status, photos, stock,
             (SELECT COUNT(*) FROM orders o WHERE o.listing_id = listings.id) AS jumlah_pesanan
-       FROM listings WHERE seller_id = ? ORDER BY created_at DESC LIMIT 60`
+       FROM listings WHERE seller_id = ? AND status != 'deleted' ORDER BY created_at DESC LIMIT 60`
   ).bind(user.id).all() : { results: [] as any[] };
 
   const saldo = await sellerBalance(c.env.DB, user.id);
@@ -1682,7 +1685,7 @@ app.get('/pasar/:id', async (c) => {
   const user = await getAuthUser(c);
   const owner = isOwner(c.env, user);
   const p: any = await c.env.DB.prepare(
-    owner ? 'SELECT * FROM listings WHERE id = ?' : "SELECT * FROM listings WHERE id = ? AND status != 'hidden'"
+    owner ? 'SELECT * FROM listings WHERE id = ?' : "SELECT * FROM listings WHERE id = ? AND status NOT IN ('hidden','deleted')"
   ).bind(c.req.param('id')).first();
   if (!p) return c.notFound();
   const seller: any = await c.env.DB.prepare(
@@ -1717,7 +1720,7 @@ async function logOrderEvent(db: any, orderId: string, actor: string, fromSt: st
 app.get('/pasar/:id/beli', async (c) => {
   const user = await getAuthUser(c);
   if (!user) return c.redirect('/login');
-  const p: any = await c.env.DB.prepare("SELECT * FROM listings WHERE id = ? AND status = 'active'")
+  const p: any = await c.env.DB.prepare("SELECT * FROM listings WHERE id = ? AND status = 'active' AND stock > 0")
     .bind(c.req.param('id')).first();
   if (!p) return c.notFound();
   if (p.seller_id === user.id) return c.redirect(`/pasar/${p.id}`);
@@ -1736,16 +1739,19 @@ app.post('/api/pasar/orders', async (c) => {
   const kesepakatan = String(body.kesepakatan || '').trim().slice(0, 500);
   if (kesepakatan.length < 10) return c.json({ error: 'Tuliskan kesepakatan minimal 10 karakter' }, 400);
 
-  const p: any = await c.env.DB.prepare("SELECT * FROM listings WHERE id = ? AND status = 'active'")
+  const p: any = await c.env.DB.prepare("SELECT * FROM listings WHERE id = ? AND status = 'active' AND stock > 0")
     .bind(String(body.listing_id || '')).first();
   if (!p) return c.json({ error: 'Listing tidak tersedia' }, 404);
   if (p.seller_id === me.id) return c.json({ error: 'Tidak bisa membeli barang sendiri' }, 400);
 
-  // satu order aktif per listing: kalau ada created/paid yang masih hidup, tolak
+  // Satu checkout aktif per listing sampai idempotency key per checkout tersedia.
   const live: any = await c.env.DB.prepare(
     "SELECT id FROM orders WHERE listing_id = ? AND status IN ('created','paid','handed') LIMIT 1"
   ).bind(p.id).first();
-  if (live) return c.json({ error: 'Ada pesanan aktif untuk buku ini. Coba lagi nanti.' }, 409);
+  if (live) return c.json({ error: 'Ada pesanan aktif untuk buku ini. Coba lagi setelah selesai atau batal.' }, 409);
+
+  // Stok dikunci setelah semua validasi/kuotasi selesai, tepat sebelum order dibuat.
+  // Guard atomik `stock > 0` menjadi sumber kebenaran saat beberapa pembeli bersamaan.
 
   // Ongkir: harga TIDAK dipercaya dari klien — kuotasi ulang di server lalu samakan.
   const destId = String(body.dest_id || '').trim();
@@ -1796,12 +1802,14 @@ app.post('/api/pasar/orders', async (c) => {
         `INSERT INTO orders (id, listing_id, buyer_id, seller_id, price, shipping, status, kesepakatan,
            qris_final_amount, paid_with, courier_code, courier_name, service, eta,
            dest_district_id, dest_district_name, dest_address, receiver_name, receiver_phone, postal_code)
-         SELECT ?,?,?,?,?,?,'paid',?,?,'saldo',?,?,?,?,?,?,?,?,?,?
-         WHERE ? <= (SELECT COALESCE(SUM(delta),0) FROM ledger WHERE user_id = ?)
+         SELECT ?,?,?,?,?,?,'paid',?,?,'saldo',?,?,?,?,?,?,?,?,?,? FROM listings
+         WHERE id = ? AND status = 'active' AND stock > 0
+           AND ? <= (SELECT COALESCE(SUM(delta),0) FROM ledger WHERE user_id = ?)
                   - (SELECT COALESCE(SUM(amount + fee),0) FROM withdrawals WHERE user_id = ? AND status = 'requested')`
       ).bind(id, p.id, me.id, p.seller_id, p.price, shipping, kesepakatan, total,
         picked.courier, picked.courierName, picked.service, picked.eta, destId, destName || null, destAddress,
-        receiverName, receiverPhone, postalCode, total, me.id, me.id),
+        receiverName, receiverPhone, postalCode, p.id, total, me.id, me.id),
+      c.env.DB.prepare("UPDATE listings SET stock = stock - 1 WHERE id = ? AND EXISTS (SELECT 1 FROM orders WHERE id = ?)").bind(p.id, id),
       // Potong saldo sekali saja (NOT EXISTS = idempoten kalau request diulang).
       c.env.DB.prepare(
         `INSERT INTO ledger (user_id, order_id, delta, kind)
@@ -1809,40 +1817,47 @@ app.post('/api/pasar/orders', async (c) => {
           WHERE id = ? AND status = 'paid'
             AND NOT EXISTS (SELECT 1 FROM ledger WHERE order_id = ? AND kind = 'purchase')`
       ).bind(id, id),
-      c.env.DB.prepare("UPDATE listings SET status = 'sold' WHERE id = ? AND status = 'active'").bind(p.id),
-      c.env.DB.prepare("INSERT INTO order_events (order_id, actor, from_st, to_st, note) VALUES (?,?,?,?,?)")
-        .bind(id, 'buyer', null, 'created', 'Dibayar penuh dengan saldo'),
+      c.env.DB.prepare("INSERT INTO order_events (order_id, actor, from_st, to_st, note) SELECT ?,?,?,?,? WHERE EXISTS (SELECT 1 FROM orders WHERE id = ?)")
+        .bind(id, 'buyer', null, 'created', 'Dibayar penuh dengan saldo', id),
     ]);
-    if ((r[0].meta?.changes || 0) === 0) return c.json({ error: 'Saldo tidak cukup untuk tagihan ini' }, 409);
+    if ((r[0].meta?.changes || 0) === 0) {
+      return c.json({ error: 'Stok habis, ada pesanan aktif, atau saldo tidak cukup' }, 409);
+    }
     await logOrderEvent(c.env.DB, id, 'system', 'created', 'paid', 'Pembayaran saldo terverifikasi');
     await notifyOrder(c.env.DB, { userId: p.seller_id, actorId: me.id, type: 'order_paid', orderId: id });
     return c.json({ ok: true, id, paid_with: 'saldo' });
   }
 
+  const reserve = await c.env.DB.batch([
+    c.env.DB.prepare(
+      `INSERT INTO orders (id, listing_id, buyer_id, seller_id, price, shipping, status, kesepakatan,
+         qris_order_id, qris_final_amount, courier_code, courier_name, service, eta,
+         dest_district_id, dest_district_name, dest_address, receiver_name, receiver_phone, postal_code)
+       SELECT ?,?,?,?,?,?,'created',?,?,?,?,?,?,?,?,?,?,?,?,? FROM listings
+        WHERE id = ? AND status = 'active' AND stock > 0`
+    ).bind(id, p.id, me.id, p.seller_id, p.price, shipping, kesepakatan, qrisOrderId, total,
+      picked.courier, picked.courierName, picked.service, picked.eta, destId, destName || null, destAddress,
+      receiverName, receiverPhone, postalCode, p.id),
+    c.env.DB.prepare("UPDATE listings SET stock = stock - 1 WHERE id = ? AND EXISTS (SELECT 1 FROM orders WHERE id = ?)").bind(p.id, id),
+    c.env.DB.prepare('INSERT INTO order_events (order_id, actor, from_st, to_st, note) SELECT ?,?,?,?,? WHERE EXISTS (SELECT 1 FROM orders WHERE id = ?)')
+      .bind(id, 'buyer', null, 'created', `Kwitansi dibuat oleh ${me.pen_name}`, id),
+  ]).catch(() => null);
+  if (!reserve || (reserve[0].meta?.changes || 0) === 0) return c.json({ error: 'Stok buku baru saja habis atau ada pesanan aktif' }, 409);
+
   const qris = await createQrisTransaction(c.env as unknown as KlikQrisEnv, {
     orderId: qrisOrderId, amount: total, description: `Pasar Buku: ${p.title.slice(0, 60)}`,
   });
-  if (!qris.ok) return c.json({ error: qris.error || 'Gagal menyiapkan pembayaran' }, 502);
-
-  try {
+  if (!qris.ok) {
     await c.env.DB.batch([
-      c.env.DB.prepare(
-        `INSERT INTO orders (id, listing_id, buyer_id, seller_id, price, shipping, status, kesepakatan,
-           qris_order_id, qris_signature, qris_url, qris_final_amount, qris_expired_at,
-           courier_code, courier_name, service, eta, dest_district_id, dest_district_name, dest_address,
-           receiver_name, receiver_phone, postal_code)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
-      ).bind(id, p.id, me.id, p.seller_id, p.price, shipping, 'created', kesepakatan,
-        qrisOrderId, qris.signature || null, qris.qrisUrl || null, qris.finalAmount || total, qris.expiredAt || null,
-        picked.courier, picked.courierName, picked.service, picked.eta, destId, destName || null, destAddress,
-        receiverName, receiverPhone, postalCode),
-      c.env.DB.prepare('INSERT INTO order_events (order_id, actor, from_st, to_st, note) VALUES (?,?,?,?,?)')
-        .bind(id, 'buyer', null, 'created', `Kwitansi dibuat oleh ${me.pen_name}`),
+      c.env.DB.prepare("UPDATE orders SET status = 'cancelled', updated_at = datetime('now') WHERE id = ? AND status = 'created'").bind(id),
+      c.env.DB.prepare("UPDATE listings SET stock = MIN(stock + 1, 999) WHERE id = ? AND status != 'deleted'").bind(p.id),
     ]);
-  } catch (e: any) {
-    if (String(e?.message || e).includes('UNIQUE')) return c.json({ error: 'Ada pesanan aktif untuk buku ini. Coba lagi nanti.' }, 409);
-    throw e;
+    return c.json({ error: qris.error || 'Gagal menyiapkan pembayaran' }, 502);
   }
+
+  await c.env.DB.prepare(
+    'UPDATE orders SET qris_signature = ?, qris_url = ?, qris_final_amount = ?, qris_expired_at = ? WHERE id = ? AND status = ?'
+  ).bind(qris.signature || null, qris.qrisUrl || null, qris.finalAmount || total, qris.expiredAt || null, id, 'created').run();
   if (body.save_address) {
     const pId = String(body.dest_province_id || '').slice(0, 20) || null;
     const pNm = String(body.dest_province_name || '').slice(0, 120) || null;
@@ -1935,7 +1950,6 @@ async function reconcileQris(db: any, env: Env, o: any): Promise<{ ok: boolean; 
   const res = await db.prepare("UPDATE orders SET status = 'paid', updated_at = datetime('now') WHERE id = ? AND status = 'created'").bind(o.id).run();
   if ((res.meta?.changes || 0) > 0) {
     await logOrderEvent(db, o.id, 'system', 'created', 'paid', 'Status KlikQRIS terverifikasi');
-    await db.prepare("UPDATE listings SET status = 'sold' WHERE id = ? AND status = 'active'").bind(o.listing_id).run();
     await notifyOrder(db, { userId: o.seller_id, actorId: o.buyer_id, type: 'order_paid', orderId: o.id });
   }
   return { ok: true, paid: true };
@@ -1983,16 +1997,24 @@ app.post('/api/pasar/order/:id/cancel', async (c) => {
   ).bind(c.req.param('id')).first();
   if (!o || o.buyer_id !== me.id) return c.json({ error: 'Pesanan tidak ditemukan' }, 404);
 
-  // Belum dibayar: batal tanpa uang berpindah.
+  // Belum dibayar: batal tanpa uang berpindah; marker membuat restore stok retry-safe.
   if (o.status === 'created') {
-    const res = await c.env.DB.prepare(
-      "UPDATE orders SET status = 'cancelled', updated_at = datetime('now') WHERE id = ? AND status = 'created'"
-    ).bind(o.id).run();
-    if ((res.meta?.changes || 0) === 0) return c.json({ error: 'Pesanan sudah berubah status' }, 409);
-    await c.env.DB.prepare("UPDATE listings SET status = 'active' WHERE id = ? AND status = 'sold'").bind(o.listing_id).run();
-    await logOrderEvent(c.env.DB, o.id, 'buyer', 'created', 'cancelled', 'Dibatalkan pembeli sebelum dibayar');
+    const res = await c.env.DB.batch([
+      c.env.DB.prepare(
+        "UPDATE listings SET stock = MIN(stock + 1, 999) WHERE id = ? AND status != 'deleted' AND EXISTS (SELECT 1 FROM orders WHERE id = ? AND status = 'created')"
+      ).bind(o.listing_id, o.id),
+      c.env.DB.prepare(
+        "UPDATE orders SET status = 'cancelled', updated_at = datetime('now') WHERE id = ? AND status = 'created'"
+      ).bind(o.id),
+      c.env.DB.prepare(
+        "INSERT INTO order_events (order_id, actor, from_st, to_st, note) SELECT ?,?,?,?,? WHERE EXISTS (SELECT 1 FROM orders WHERE id = ? AND status = 'cancelled')"
+      ).bind(o.id, 'buyer', 'created', 'cancelled', 'Dibatalkan pembeli sebelum dibayar', o.id),
+    ]);
+    if ((res[1].meta?.changes || 0) === 0) return c.json({ error: 'Pesanan sudah berubah status' }, 409);
     return c.json({ ok: true });
   }
+
+  if (o.status === 'cancelled' || o.status === 'expired') return c.json({ error: 'Pesanan sudah dibatalkan atau kedaluwarsa — stok sudah dikembalikan' }, 409);
 
   // Sudah dibayar, penjual BELUM serahkan: boleh batal, tapi uang harus kembali.
   if (o.status === 'paid') {
@@ -2000,10 +2022,11 @@ app.post('/api/pasar/order/:id/cancel', async (c) => {
       return c.json({ error: 'Pembayaran QRIS harus lewat sengketa supaya dana bisa dikembalikan owner' }, 409);
     }
     const nominal = Number(o.qris_final_amount || (Number(o.price) + Number(o.shipping || 0)));
-    const res = await c.env.DB.batch([
-      c.env.DB.prepare(
-        "UPDATE orders SET status = 'cancelled', resolution_note = ?, updated_at = datetime('now') WHERE id = ? AND status = 'paid' AND paid_with = 'saldo'"
-      ).bind('Dibatalkan pembeli sebelum dikirim — saldo dikembalikan', o.id),
+    const moved = await c.env.DB.prepare(
+      "UPDATE orders SET status = 'cancelled', resolution_note = ?, updated_at = datetime('now') WHERE id = ? AND status = 'paid' AND paid_with = 'saldo'"
+    ).bind('Dibatalkan pembeli sebelum dikirim — saldo dikembalikan', o.id).run();
+    if ((moved.meta?.changes || 0) === 0) return c.json({ error: 'Pesanan sudah berubah status' }, 409);
+    await c.env.DB.batch([
       // Kembalikan saldo, sekali saja (NOT EXISTS = idempoten).
       c.env.DB.prepare(
         `INSERT INTO ledger (user_id, order_id, delta, kind)
@@ -2011,11 +2034,10 @@ app.post('/api/pasar/order/:id/cancel', async (c) => {
           WHERE id = ? AND status = 'cancelled'
             AND NOT EXISTS (SELECT 1 FROM ledger WHERE order_id = ? AND kind = 'refund')`
       ).bind(o.id, o.id),
-      c.env.DB.prepare("UPDATE listings SET status = 'active' WHERE id = ? AND status = 'sold'").bind(o.listing_id),
+      c.env.DB.prepare("UPDATE listings SET stock = MIN(stock + 1, 999) WHERE id = ? AND status != 'deleted'").bind(o.listing_id),
       c.env.DB.prepare("INSERT INTO order_events (order_id, actor, from_st, to_st, note) VALUES (?,?,?,?,?)")
         .bind(o.id, 'buyer', 'paid', 'cancelled', 'Dibatalkan pembeli sebelum dikirim — saldo dikembalikan'),
     ]);
-    if ((res[0].meta?.changes || 0) === 0) return c.json({ error: 'Pesanan sudah berubah status' }, 409);
     await notifyOrder(c.env.DB, { userId: o.seller_id, actorId: me.id, type: 'order_cancel', orderId: o.id });
     return c.json({ ok: true, refunded: nominal });
   }
@@ -2256,24 +2278,30 @@ app.get('/pesanan', async (c) => {
   return c.redirect(`/pasar/saya?tab=pesanan&sub=${encodeURIComponent(sub)}`);
 });
 
-// ---- Kelola ketersediaan buku (1 buku = 1 listing; tanpa stok) ----
+// ---- Kelola listing dan stok buku ----
 app.patch('/api/pasar/listings/:id', async (c) => {
   const me = await getAuthUser(c);
   if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
   const body: any = await c.req.json().catch(() => ({}));
   const title = String(body?.title || '').trim().slice(0, 120);
   const price = Number(body?.price || 0);
+  const stock = validStock(body?.stock, true);
   const cond = ['baru', 'bekas_bagus', 'bekas_layak'].includes(String(body?.cond)) ? String(body.cond) : '';
   if (title.length < 3) return c.json({ error: 'Judul minimal 3 karakter' }, 400);
   if (!(price >= 1000 && price <= 50_000_000)) return c.json({ error: 'Harga harus Rp1.000–Rp50.000.000' }, 400);
+  if (stock === null) return c.json({ error: 'Stok harus bilangan bulat 0–999' }, 400);
   if (!cond) return c.json({ error: 'Kondisi buku tidak dikenal' }, 400);
 
   const l: any = await c.env.DB.prepare('SELECT id, seller_id, status FROM listings WHERE id = ?').bind(c.req.param('id')).first();
   if (!l || l.seller_id !== me.id) return c.json({ error: 'Tidak ditemukan' }, 404);
-  if (l.status === 'sold') return c.json({ error: 'Buku sudah terjual — tidak bisa diubah' }, 409);
+  if (l.status === 'sold' || l.status === 'deleted') return c.json({ error: 'Listing ini tidak bisa diubah' }, 409);
+  const live: any = await c.env.DB.prepare(
+    "SELECT 1 FROM orders WHERE listing_id = ? AND status IN ('created','paid','handed','disputed') LIMIT 1"
+  ).bind(l.id).first();
+  if (live) return c.json({ error: 'Ada pesanan berjalan — stok belum bisa diubah' }, 409);
 
-  await c.env.DB.prepare('UPDATE listings SET title = ?, price = ?, cond = ? WHERE id = ?')
-    .bind(title, Math.round(price), cond, l.id).run();
+  await c.env.DB.prepare('UPDATE listings SET title = ?, price = ?, cond = ?, stock = ? WHERE id = ?')
+    .bind(title, Math.round(price), cond, stock, l.id).run();
   return c.json({ ok: true });
 });
 
@@ -2318,6 +2346,22 @@ app.post('/api/pasar/listings/:id/status', async (c) => {
 
   await c.env.DB.prepare('UPDATE listings SET status = ? WHERE id = ?').bind(next, l.id).run();
   return c.json({ ok: true, status: next });
+});
+
+app.delete('/api/pasar/listings/:id', async (c) => {
+  const me = await getAuthUser(c);
+  if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
+  const l: any = await c.env.DB.prepare('SELECT id, seller_id, status FROM listings WHERE id = ?')
+    .bind(c.req.param('id')).first();
+  if (!l || l.seller_id !== me.id) return c.json({ error: 'Tidak ditemukan' }, 404);
+  if (l.status === 'deleted') return c.json({ ok: true });
+  const live: any = await c.env.DB.prepare(
+    "SELECT 1 FROM orders WHERE listing_id = ? AND status IN ('created','paid','handed','disputed') LIMIT 1"
+  ).bind(l.id).first();
+  if (live) return c.json({ error: 'Ada pesanan berjalan — listing belum bisa dihapus' }, 409);
+  await c.env.DB.prepare("UPDATE listings SET status = 'deleted', stock = 0 WHERE id = ? AND seller_id = ?")
+    .bind(l.id, me.id).run();
+  return c.json({ ok: true });
 });
 
 // ---- Dashboard penjual (hanya yang sudah approved) ----
@@ -2694,9 +2738,20 @@ async function logOwnerAction(db: any, email: string | undefined | null, action:
 }
 
 async function sweepOrders(db: any, env: any): Promise<string> {
-  const exp = await db.prepare(
-    "UPDATE orders SET status = 'expired', updated_at = datetime('now') WHERE status = 'created' AND created_at < datetime('now', '-48 hours')"
-  ).run();
+  const expiring = await db.prepare(
+    "SELECT id, listing_id FROM orders WHERE status = 'created' AND created_at < datetime('now', '-48 hours')"
+  ).all();
+  let expired = 0;
+  for (const o of (expiring.results || []) as any[]) {
+    const moved = await db.prepare(
+      "UPDATE orders SET status = 'expired', updated_at = datetime('now') WHERE id = ? AND status = 'created'"
+    ).bind(o.id).run();
+    if ((moved.meta?.changes || 0) > 0) {
+      expired++;
+      await db.prepare("UPDATE listings SET stock = MIN(stock + 1, 999) WHERE id = ? AND status != 'deleted'").bind(o.listing_id).run();
+      await logOrderEvent(db, o.id, 'system', 'created', 'expired', 'Pesanan kedaluwarsa — stok dikembalikan');
+    }
+  }
   // resi hantu: ekspedisi (kurir+resi terisi), handed >24 jam, belum completed/disputed
   let ghosts = 0;
   if (env.BINDERBYTE_KEY) {
@@ -2751,7 +2806,7 @@ async function sweepOrders(db: any, env: any): Promise<string> {
     await db.prepare('DELETE FROM seller_docs WHERE user_id = ? AND kind = ?').bind(d.user_id, d.kind).run();
     docsHapus++;
   }
-  return `expired=${exp.meta?.changes || 0} completed=${completed} docs=${docsHapus}`;
+  return `expired=${expired} completed=${completed} docs=${docsHapus}`;
 }
 
 app.get('/notifications', async (c) => {

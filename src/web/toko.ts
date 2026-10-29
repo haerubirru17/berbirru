@@ -72,6 +72,7 @@ const PAGE_CSS = `
   .mini{margin-top:7px;font:900 10px 'DM Sans';background:#fff;border:2px solid #0B192C;padding:4px 8px;
     box-shadow:2px 2px 0 #26364A;cursor:pointer}
   .mini:active{transform:translate(1px,2px);box-shadow:none}
+  .mini.danger{background:#FEE2E2;color:#991B1B;border-color:#991B1B}
 
   .empty{background:#F8FAFC;border:2px dashed #CBD5E1;padding:18px 14px;text-align:center;
     font-size:12px;font-weight:700;color:#64748B;line-height:1.6;margin-bottom:9px}
@@ -140,19 +141,20 @@ export function renderTokoPage(user: any, orders: any[], listings: any[], saldo:
     try { keys = JSON.parse(l.photos || '[]'); } catch { keys = []; }
     const st = LISTING_STATUS[String(l.status)] || { cls: 'off', label: String(l.status) };
     const jml = Number(l.jumlah_pesanan || 0);
+    const stock = Number(l.stock || 0);
     const edit = l.status === 'sold' ? ''
       : `<a class="mini" href="/pasar/listing/${escapeHtml(l.id)}/edit" onclick="event.stopPropagation()" style="display:inline-block;text-decoration:none;">Edit</a>`;
     const aksi = l.status === 'active'
-      ? `${edit} <button class="mini" onclick="event.stopPropagation();setListing('${escapeHtml(l.id)}','hidden',this)">Sembunyikan</button>`
+      ? `${edit} <button class="mini" onclick="event.stopPropagation();setListing('${escapeHtml(l.id)}','hidden',this)">Sembunyikan</button> <button class="mini danger" onclick="event.stopPropagation();hapusListing('${escapeHtml(l.id)}',this)">Hapus</button>`
       : l.status === 'hidden'
-        ? `${edit} <button class="mini" onclick="event.stopPropagation();setListing('${escapeHtml(l.id)}','active',this)">Aktifkan</button>`
+        ? `${edit} <button class="mini" onclick="event.stopPropagation();setListing('${escapeHtml(l.id)}','active',this)">Aktifkan</button> <button class="mini danger" onclick="event.stopPropagation();hapusListing('${escapeHtml(l.id)}',this)">Hapus</button>`
         : edit;
     return `
       <div class="b-row" onclick="location.href='/pasar/${escapeHtml(l.id)}'">
         <div class="thumb">${keys[0] ? `<img src="/media/${escapeHtml(keys[0])}" alt="" loading="lazy">` : escapeHtml(String(l.title || '?').charAt(0).toUpperCase())}</div>
         <div class="b-main">
           <div class="b-title">${escapeHtml(l.title || 'Buku')}</div>
-          <div class="b-meta">${rupiah(Number(l.price))}${jml ? ` · ${jml} pesanan` : ' · belum ada pesanan'}</div>
+          <div class="b-meta">${rupiah(Number(l.price))} · ${stock > 0 ? `Stok ${stock}` : 'HABIS'}${jml ? ` · ${jml} pesanan` : ' · belum ada pesanan'}</div>
           ${aksi}
         </div>
         <span class="chip sm ${st.cls}">${st.label}</span>
@@ -208,6 +210,15 @@ async function setListing(id, status, btn){
   var j = await r.json().catch(function(){ return {}; });
   if (r.ok) { location.reload(); return; }
   alert(j.error || 'Gagal mengubah status buku.');
+  btn.disabled = false;
+}
+async function hapusListing(id, btn){
+  if (!confirm('Hapus listing ini dari Pasar Buku? Riwayat pesanan tetap tersimpan.')) return;
+  btn.disabled = true;
+  var r = await fetch('/api/pasar/listings/' + id, {method:'DELETE'});
+  var j = await r.json().catch(function(){ return {}; });
+  if (r.ok) { location.reload(); return; }
+  alert(j.error || 'Gagal menghapus listing.');
   btn.disabled = false;
 }
 </script>`;
