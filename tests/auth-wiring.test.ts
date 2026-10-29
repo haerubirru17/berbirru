@@ -2,7 +2,8 @@
 // Tes gate murni saja pernah hijau sementara handler produksi memakai fallback.
 import { readFileSync } from 'node:fs';
 
-const src = readFileSync(new URL('../src/index.ts', import.meta.url), 'utf8');
+const src = readFileSync(new URL('../src/index.ts', import.meta.url), 'utf8')
+  + readFileSync(new URL('../src/routes/auth.ts', import.meta.url), 'utf8');
 const ui = readFileSync(new URL('../src/web/login.ts', import.meta.url), 'utf8');
 const schema = readFileSync(new URL('../schema.sql', import.meta.url), 'utf8');
 const assert = (ok: unknown, msg: string) => { if (!ok) throw new Error('GAGAL: ' + msg); };
