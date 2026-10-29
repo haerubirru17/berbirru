@@ -369,17 +369,27 @@ export async function sweepOrders(db: any, env: any): Promise<string> {
     ).bind(c1.at, c1.at, c1.id).all();
     let expired = 0, qrisChecks = 0;
     const QRI_CK_MAX = 20;
+    let last1: any = null;      // baris terakhir yang benar-benar DIPUTUSKAN (audit R2-02)
+    let capStop = false;        // provider cap habis di tengah halaman → berhenti, jangan lompati
     for (const o of (expiring.results || []) as any[]) {
-      // Audit B-05: cek provider sebelum expire — uang yang sudah settle tak boleh 'kedaluwarsa'.
-      if (env.KLIKQRIS_API_KEY && o.qris_order_id && qrisChecks < QRI_CK_MAX) {
-        qrisChecks++;
-        const utuh = await db.prepare('SELECT * FROM orders WHERE id = ?').bind(o.id).first();
-        try {
-          const rr = await reconcileQris(db, env, utuh);
-          if (rr.paid) continue; // tercatat paid oleh reconcile — tidak jadi expired.
-        } catch (e) {
-          console.error('reconcile sebelum expire gagal', o.id, String(e));
-          continue; // belum diketahui — coba lagi jam berikutnya.
+      // Audit B-05/R2-01: order QRIS hanya boleh expired setelah provider menjawab
+      // SUKSES dan menyatakan belum dibayar. Error provider/network = fail-closed.
+      if (o.qris_order_id) {
+        if (env.KLIKQRIS_API_KEY && qrisChecks >= QRI_CK_MAX) { capStop = true; break; }
+        if (env.KLIKQRIS_API_KEY) {
+          qrisChecks++;
+          const utuh = await db.prepare('SELECT * FROM orders WHERE id = ?').bind(o.id).first();
+          try {
+            const rr = await reconcileQris(db, env, utuh);
+            if (!rr.ok || rr.paid) {
+              last1 = o;
+              continue; // belum diketahui / sudah dibayar — TIDAK jadi expired.
+            }
+          } catch (e) {
+            console.error('reconcile sebelum expire gagal', o.id, String(e));
+            last1 = o;
+            continue; // belum diketahui — coba lagi run berikutnya.
+          }
         }
       }
       const moved = await db.prepare(
@@ -390,9 +400,12 @@ export async function sweepOrders(db: any, env: any): Promise<string> {
         await db.prepare("UPDATE listings SET stock = MIN(stock + 1, 999) WHERE id = ? AND status != 'deleted'").bind(o.listing_id).run();
         await logOrderEvent(db, o.id, 'system', 'created', 'expired', 'Pesanan kedaluwarsa — stok dikembalikan');
       }
+      last1 = o;
     }
-    const last1 = (expiring.results || []).slice(-1)[0];
-    if (last1 && (expiring.results || []).length === 100) {
+    // R2-02: watermark = baris terakhir yang DIPUTUSKAN. capStop berhenti di tengah
+    // halaman → cursor tetap maju ke last1 sehingga run berikut memeriksa sisanya;
+    // halaman penuh tanpa cap → set; halaman belum penuh → reset (wrap, antrean habis).
+    if (last1 && ((expiring.results || []).length === 100 || capStop)) {
       await setSweepCursor(db, 'expire', { at: last1.created_at, id: last1.id });
     } else {
       await resetSweepCursor(db, 'expire');
