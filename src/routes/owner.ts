@@ -385,6 +385,9 @@ export async function sweepOrders(db: any, env: any): Promise<string> {
     for (const o of (expiring.results || []) as any[]) {
       // Audit B-05/R2-01: order QRIS hanya boleh expired setelah provider menjawab
       // SUKSES dan menyatakan belum dibayar. Error provider/network = fail-closed.
+      // R2-01 review A: tanpa API key provider, status pembayaran QRIS tak bisa
+      // dipastikan → freeze (jangan expire). Order non-QRIS tetap mengalir normal.
+      if (o.qris_order_id && !env.KLIKQRIS_API_KEY) { last1 = o; continue; }
       if (o.qris_order_id) {
         if (env.KLIKQRIS_API_KEY && qrisChecks >= QRI_CK_MAX) { capStop = true; break; }
         if (env.KLIKQRIS_API_KEY) {
@@ -435,8 +438,12 @@ export async function sweepOrders(db: any, env: any): Promise<string> {
           await db.prepare("UPDATE orders SET resi_verified = 1, resi_checked_at = datetime('now') WHERE id = ? AND resi_verified = 0").bind(o.id).run();
           continue;
         }
-        // Gangguan API BinderByte: JANGAN vonis penjual. Coba lagi jam berikutnya.
-        if (r.kind === 'error') continue;
+        // Gangguan API BinderByte: JANGAN vonis penjual. Catat attempt → COALESCE
+        // memutar baris error ke belakang antrean (anti-starvation, review B).
+        if (r.kind === 'error') {
+          await db.prepare("UPDATE orders SET resi_checked_at = datetime('now') WHERE id = ? AND resi_verified = 0").bind(o.id).run();
+          continue;
+        }
         const g = await db.prepare(
           "UPDATE orders SET status = 'disputed', updated_at = datetime('now') WHERE id = ? AND status = 'handed'"
         ).bind(o.id).run();
@@ -493,7 +500,7 @@ export async function sweepOrders(db: any, env: any): Promise<string> {
 
     // ---------- remaining counters (D-04: sisa antrean harus terlihat) ----------
     const rem1 = await db.prepare("SELECT COUNT(*) AS n FROM orders WHERE status = 'created' AND created_at < datetime('now', '-48 hours')").first('n');
-    const rem2 = await db.prepare("SELECT COUNT(*) AS n FROM orders WHERE status = 'handed' AND kurir IS NOT NULL AND resi IS NOT NULL AND handed_at < datetime('now', '-1 day')").first('n');
+    const rem2 = await db.prepare("SELECT COUNT(*) AS n FROM orders WHERE status = 'handed' AND kurir IS NOT NULL AND resi IS NOT NULL AND resi_verified = 0 AND handed_at < datetime('now', '-1 day')").first('n');
     const rem3 = await db.prepare("SELECT COUNT(*) AS n FROM orders WHERE status = 'handed' AND handed_at IS NOT NULL AND handed_at < datetime('now', '-5 days') AND (resi IS NULL OR resi_verified = 1)").first('n');
     summary.remaining_expire = Number(rem1 || 0);
     summary.remaining_ghosts = Number(rem2 || 0);

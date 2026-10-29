@@ -204,6 +204,8 @@ app.post('/api/auth/register', async (c: any) => {
       if (!/UNIQUE/i.test(String(e?.message || e))) throw e;
       const race: any = await c.env.DB.prepare('SELECT id, email_verified FROM users WHERE email = ? LIMIT 1').bind(cleanEmail).first();
       if (!race) throw e;
+      // Paritas jalur byEmail (A-6): akun yang sudah aktif tidak tersentuh & tanpa OTP ulang.
+      if (race.email_verified !== 0) return c.json(UNIFORM);
       userId = race.id;
     }
   }

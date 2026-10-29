@@ -48,13 +48,15 @@ export async function sweepExpireBatch(db: any, o: any): Promise<{ changes: numb
 }
 
 // Pembayaran terlambat pada order expired: provider paid → masuk sengketa (bukan auto-paid,
-// stok mungkin sudah terjual lagi). Satu batch, guard status='expired'.
+// stok mungkin sudah terjual lagi). Satu batch, guard status='expired'. Event dahulu (guard
+// EXISTS expired), flip terakhir — dua caller konkuren: batch kedua gagal event+flip sekaligus
+// (review A: tanpa urutan ini event duplikat bisa lolos meski flip gagal).
 export async function latePaymentToDispute(db: any, o: any): Promise<{ ok: boolean }> {
   const res = await db.batch([
+    db.prepare("INSERT INTO order_events (order_id, actor, from_st, to_st, note) SELECT ?,?,?,?,? WHERE EXISTS (SELECT 1 FROM orders WHERE id = ? AND status = 'expired')").bind(o.id, 'system', 'expired', 'disputed', 'Pembayaran QRIS terdeteksi setelah kedaluwarsa — masuk pemeriksaan owner', o.id),
     db.prepare("UPDATE orders SET status = 'disputed', updated_at = datetime('now') WHERE id = ? AND status = 'expired'").bind(o.id),
-    db.prepare("INSERT INTO order_events (order_id, actor, from_st, to_st, note) SELECT ?,?,?,?,? WHERE EXISTS (SELECT 1 FROM orders WHERE id = ? AND status = 'disputed')").bind(o.id, 'system', 'expired', 'disputed', 'Pembayaran QRIS terdeteksi setelah kedaluwarsa — masuk pemeriksaan owner', o.id),
   ]);
-  if ((res[0].meta?.changes || 0) === 0) return { ok: false };
+  if ((res[1].meta?.changes || 0) === 0) return { ok: false };
   await notifyOrder(db, { userId: o.buyer_id, actorId: o.seller_id, type: 'order_late_payment', orderId: o.id });
   await notifyOrder(db, { userId: o.seller_id, actorId: o.buyer_id, type: 'order_late_payment', orderId: o.id });
   return { ok: true };
