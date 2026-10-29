@@ -29,3 +29,41 @@ export async function sellerBalance(db: any, userId: string): Promise<number> {
 }
 
 export const KURIR_MAP: Record<string, string> = { 'JNE': 'jne', 'J&T': 'jnt', 'SiCepat': 'sicepat', 'POS': 'pos', 'TIKI': 'tiki', 'AnterAja': 'anteraja' };
+
+// ---- AUDIT D-04: watermark sweep (cursor per fase + lock satu-run) ----
+// Value di sweep_meta: JSON {at: string('1970-01-01 00:00:00'), id: string('')}
+// supaya komposit (created_at, id) deterministik walaupun kolom waktu tidak unik.
+export interface SweepCursor { at: string; id: string }
+const SWEEP_EPOCH: SweepCursor = { at: '1970-01-01 00:00:00', id: '' };
+
+export async function sweepCursor(db: any, phase: string): Promise<SweepCursor> {
+  const row: any = await db.prepare('SELECT value FROM sweep_meta WHERE key = ?').bind('cur:' + phase).first();
+  if (!row) return SWEEP_EPOCH;
+  try { return JSON.parse(String(row.value)) as SweepCursor; } catch { return SWEEP_EPOCH; }
+}
+
+export async function setSweepCursor(db: any, phase: string, cur: SweepCursor): Promise<void> {
+  await db.prepare(
+    "INSERT INTO sweep_meta (key, value, updated_at) VALUES (?, ?, datetime('now')) " +
+    "ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')"
+  ).bind('cur:' + phase, JSON.stringify(cur)).run();
+}
+
+export async function resetSweepCursor(db: any, phase: string): Promise<void> {
+  await setSweepCursor(db, phase, SWEEP_EPOCH);
+}
+
+// Lock satu-run berTTL 10 menit: cron jam-sekali + sweep manual tidak bisa bentrok.
+export async function sweepLock(db: any): Promise<boolean> {
+  const row: any = await db.prepare(
+    `INSERT INTO sweep_meta (key, value, updated_at) VALUES ('lock', datetime('now'), datetime('now'))
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+     WHERE datetime(sweep_meta.updated_at, '+10 minutes') < datetime('now')
+     RETURNING key`
+  ).first();
+  return !!row;
+}
+
+export async function sweepUnlock(db: any): Promise<void> {
+  await db.prepare("DELETE FROM sweep_meta WHERE key = 'lock'").run();
+}
