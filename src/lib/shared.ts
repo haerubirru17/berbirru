@@ -1,6 +1,7 @@
 // Util dipindah verbatim dari index.ts (refactor modular). Jangan ubah perilaku.
 import { getCookie } from 'hono/cookie';
 import { sanitizeRich } from './sanitize';
+import { Env } from '../env';
 
 export async function sha256hex(s: string): Promise<string> {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
@@ -77,3 +78,8 @@ export async function getAuthUser(c: any): Promise<{ id: string; email: string; 
 }
 
 // ---- WEB PAGES (SSR) ----
+
+export const isOwner = (env: Env, u: any): boolean =>
+  !!u && !!env.OWNER_EMAIL && String(u.email || '').toLowerCase() === env.OWNER_EMAIL.toLowerCase();
+
+// Saldo = total ledger − pencairan yang masih diproses (belum dipotong di ledger).
