@@ -678,6 +678,14 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
       updateWordCounter();
     }
 
+    // Bug UX (laporan owner): tombol tulis di halaman selain feed fallback ke
+    // /feed?action=compose — tanpa handler ini modal tidak terbuka otomatis dan
+    // pengguna harus klik dua kali. Sekali klik di halaman mana pun = bilik terbuka.
+    if (new URLSearchParams(location.search).get('action') === 'compose') {
+      history.replaceState(null, '', '/feed');
+      openStudioModal();
+    }
+
     function closeStudioModal() {
       document.getElementById('studioModal').style.display = 'none';
       document.body.style.overflow = 'auto';
