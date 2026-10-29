@@ -1,5 +1,6 @@
 import { getAuthUser, hardenPost, withAdmin, visibilityClause, hitRate } from '../lib/shared';
 import { sanitizeRich, escapeHtml, stripTags } from '../lib/sanitize';
+import { ftsQuery, ftsUpsert, ftsDelete, ensureFtsFilled } from '../lib/fts';
 
 // 12 handler sosial dipindah verbatim dari index.ts.
 export function mountSocial(app: any) {
@@ -192,10 +193,26 @@ app.get('/api/posts', async (c: any) => {
   const binds: any[] = [user?.id || ''];
 
   if (q) {
-    // Escape wildcard LIKE (% _) — tanpa ini, q=%25 membocorkan seluruh katalog.
-    const qesc = q.replace(/[\\%_]/g, (m: any) => '\\' + m);
-    query += ` WHERE (p.content LIKE ? ESCAPE '\\' OR u.pen_name LIKE ? ESCAPE '\\') AND ${vis.sql} ORDER BY p.created_at DESC LIMIT 40`;
-    binds.push(`%${qesc}%`, `%${qesc}%`, ...vis.binds);
+    if (q.length < 2) {
+      return c.json({ mode, posts: [] });
+    }
+    // Audit D-08: FTS5 (tokenizer trigram = substring tetap bekerja) menggantikan
+    // leading-wildcard LIKE pada konten. Query FTS dibangun dari token bersih (aman),
+    // pen_name tetap cari lewat LIKE tapi di-escape. Nomor baris: hasil dibatasi 40.
+    await ensureFtsFilled(c.env.DB);
+    const fq = ftsQuery(q);
+    if (fq) {
+      // FTS meliputi judul+isi; pen_name tetap dicari via LIKE ter-escape (parity behavior).
+      const qesc = q.replace(/[\\%_]/g, (m: any) => '\\' + m);
+      query += ` WHERE (p.id IN (SELECT id FROM posts_fts WHERE posts_fts MATCH ?) OR u.pen_name LIKE ? ESCAPE '\\')
+                 AND ${vis.sql} ORDER BY p.created_at DESC LIMIT 40`;
+      binds.push(fq, `%${qesc}%`, ...vis.binds);
+    } else {
+      // q tanpa token bermakna — kembali ke pen_name saja (escape wildcard tetap ada).
+      const qesc = q.replace(/[\\%_]/g, (m: any) => '\\' + m);
+      query += ` WHERE (u.pen_name LIKE ? ESCAPE '\\') AND ${vis.sql} ORDER BY p.created_at DESC LIMIT 40`;
+      binds.push(`%${qesc}%`, ...vis.binds);
+    }
   } else if (mode === 'following') {
     if (!user) return c.json({ mode, posts: [], message: 'Silakan masuk untuk melihat warkah penulis yang Anda ikuti.' });
     query += ` JOIN follows f ON p.author_id = f.following_id WHERE f.follower_id = ? AND ${vis.sql} ORDER BY p.created_at DESC LIMIT 40`;
@@ -310,6 +327,8 @@ app.post('/api/posts', async (c: any) => {
   await c.env.DB.prepare(
     'INSERT INTO posts (id, author_id, title, content, parent_id, visibility) VALUES (?, ?, ?, ?, ?, ?)'
   ).bind(postId, user.id, cleanTitle, cleanContent, parentId, cleanVisibility).run();
+  // Audit D-08: sinkron index FTS (hanya teks bersih yang masuk).
+  await ftsUpsert(c.env.DB, postId, cleanTitle, cleanContent);
 
   // Notif chain dibuat SETELAH post ada (bug fungsional GLM: dulu INSERT sebelum
   // post → FK melanggar, tiap reply lintas-penulis 500 + flood jadi mungkin).
@@ -345,6 +364,7 @@ app.delete('/api/posts/:id', async (c: any) => {
     c.env.DB.prepare('DELETE FROM notifications WHERE post_id = ?').bind(postId),
     c.env.DB.prepare('DELETE FROM posts WHERE id = ?').bind(postId),
   ]);
+  await ftsDelete(c.env.DB, postId);
 
   if (post.parent_id) {
     await c.env.DB.prepare('UPDATE posts SET chains_count = MAX(0, chains_count - 1) WHERE id = ?').bind(post.parent_id).run();
