@@ -242,7 +242,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
       return groups.map(g => ({
         id: g.ids[0], ids: g.ids, type: g.type, post_id: g.post_id,
         post_title: g.post_title, post_content: g.post_content,
-        is_read: g.actors.some(a => !a.is_read),
+        is_read: g.actors.every(a => !!a.is_read),
         created_at: g.created_at,
         actor_pen_name: g.actors[0].actor_pen_name,
         actors: g.actors
