@@ -194,9 +194,18 @@ app.post('/api/auth/register', async (c: any) => {
   } else {
     userId = crypto.randomUUID();
     const pwdHash = await hashPassword(password);
-    await c.env.DB.prepare(
-      'INSERT INTO users (id, email, password_hash, pen_name, city, bio, email_verified) VALUES (?, ?, ?, ?, ?, ?, 0)'
-    ).bind(userId, cleanEmail, pwdHash, cleanPenName, city ? String(city).trim() : 'Nusantara', 'Goresan perenungan rasa dan bait kata.').run();
+    try {
+      await c.env.DB.prepare(
+        'INSERT INTO users (id, email, password_hash, pen_name, city, bio, email_verified) VALUES (?, ?, ?, ?, ?, ?, 0)'
+      ).bind(userId, cleanEmail, pwdHash, cleanPenName, city ? String(city).trim() : 'Nusantara', 'Goresan perenungan rasa dan bait kata.').run();
+    } catch (e: any) {
+      // Audit R2-13: race dua registrasi bersamaan → UNIQUE diangkat sebagai 500.
+      // Normalkan: pemenang tetap satu; yang kalah mengikuti jalur byEmail normal.
+      if (!/UNIQUE/i.test(String(e?.message || e))) throw e;
+      const race: any = await c.env.DB.prepare('SELECT id, email_verified FROM users WHERE email = ? LIMIT 1').bind(cleanEmail).first();
+      if (!race) throw e;
+      userId = race.id;
+    }
   }
 
   // Tidak ada sesi login di sini: akun baru hanya aktif setelah OTP terbukti masuk ke inbox.
@@ -240,6 +249,12 @@ app.post('/api/auth/login', async (c: any) => {
 
   const check = await verifyPassword(password, user.password_hash);
   if (!check.ok) {
+    // Audit R2-15: hash non-PBKDF2 (mis. otp-disabled) bypass PBKDF2 di verify —
+    // jalankan dummy PBKDF2 agar timing paritas dengan jalur lain tetap terjaga.
+    if (!String(user.password_hash || '').startsWith('pbkdf2$')) {
+      await verifyPassword(password, DUMMY_PBKDF2_HASH);
+      return c.json(BAD_CRED, 401);
+    }
     return c.json(BAD_CRED, 401);
   }
 

@@ -366,7 +366,8 @@ async function logOwnerAction(db: any, email: string | undefined | null, action:
 export async function sweepOrders(db: any, env: any): Promise<string> {
   // Audit D-04: watermark + batch per fase + lock satu-run. Volume besar tidak lagi membekukan
   // proses di batas subrequest; sisanya terlihat via `remaining_*`.
-  if (!(await sweepLock(db))) {
+  const lockToken = await sweepLock(db);
+  if (!lockToken) {
     return 'sweep sedang berjalan (lock aktif ≤10 menit)';
   }
   try {
@@ -424,7 +425,7 @@ export async function sweepOrders(db: any, env: any): Promise<string> {
     const GHOST_MAX = 40;
     if (env.BINDERBYTE_KEY) {
       const susp = await db.prepare(
-        "SELECT id, kurir, resi FROM orders WHERE status = 'handed' AND kurir IS NOT NULL AND resi IS NOT NULL AND handed_at < datetime('now', '-1 day') LIMIT 40"
+        "SELECT id, kurir, resi FROM orders WHERE status = 'handed' AND kurir IS NOT NULL AND resi IS NOT NULL AND resi_verified = 0 AND handed_at < datetime('now', '-1 day') ORDER BY COALESCE(resi_checked_at, handed_at), id LIMIT 40"
       ).all();
       for (const o of (susp.results || []) as any[]) {
         if (ghostChecks >= GHOST_MAX) break;
@@ -500,6 +501,6 @@ export async function sweepOrders(db: any, env: any): Promise<string> {
 
     return JSON.stringify(summary);
   } finally {
-    await sweepUnlock(db);
+    await sweepUnlock(db, lockToken);
   }
 }

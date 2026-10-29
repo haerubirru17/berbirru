@@ -704,6 +704,8 @@ app.post('/api/pasar/orders', async (c: any) => {
     if (saldo < total) {
       return c.json({ error: `Saldo ${saldo.toLocaleString('id-ID')} tidak cukup untuk tagihan ${total.toLocaleString('id-ID')}. Bayar penuh dengan QRIS.` }, 409);
     }
+    // Audit R2-07: UNIQUE (satu live order per listing) saat checkout saldo konkuren
+    // dinormalkan ke 409, bukan 500. Statement saldo-guard tetap hakim utama.
     const r = await c.env.DB.batch([
       c.env.DB.prepare(
         `INSERT INTO orders (id, listing_id, buyer_id, seller_id, price, shipping, status, kesepakatan,
@@ -726,8 +728,8 @@ app.post('/api/pasar/orders', async (c: any) => {
       ).bind(id, id),
       c.env.DB.prepare("INSERT INTO order_events (order_id, actor, from_st, to_st, note) SELECT ?,?,?,?,? WHERE EXISTS (SELECT 1 FROM orders WHERE id = ?)")
         .bind(id, 'buyer', null, 'created', 'Dibayar penuh dengan saldo', id),
-    ]);
-    if ((r[0].meta?.changes || 0) === 0) {
+    ]).catch(() => null);
+    if (!r || (r[0].meta?.changes || 0) === 0) {
       return c.json({ error: 'Stok habis, ada pesanan aktif, atau saldo tidak cukup' }, 409);
     }
     await logOrderEvent(c.env.DB, id, 'system', 'created', 'paid', 'Pembayaran saldo terverifikasi');
@@ -1043,6 +1045,8 @@ app.post('/pasar/order/:id/track', async (c: any) => {
   // owner ikut boleh: dia yang memutus sengketa, butuh melihat perjalanan paket
   if (!o || (o.buyer_id !== me.id && o.seller_id !== me.id && !isOwner(c.env, me))) return c.json({ error: 'Tidak ditemukan' }, 404);
   if (!o.kurir || !o.resi) return c.json({ error: 'Resi belum tercatat' }, 409);
+  // Audit R2-11: bound kuota BinderByte per pihak. 20/60 detik cukup utk UX normal.
+  if (await hitRate(c.env.DB, `track:${me.id}`, 20, 60)) return c.json({ error: 'Terlalu banyak cek lacak. Tunggu sebentar.' }, 429);
   const r = await cekResi(c.env, KURIR_MAP[o.kurir] || 'jne', o.resi);
   if (r.kind === 'found' && !o.resi_verified) {
     await c.env.DB.prepare("UPDATE orders SET resi_verified = 1, resi_checked_at = datetime('now') WHERE id = ? AND resi_verified = 0").bind(o.id).run();
@@ -1163,7 +1167,15 @@ app.post('/api/saldo/withdraw', async (c: any) => {
      SELECT ?,?,?,?,?,?,?, 'requested', ?
      WHERE ? <= (SELECT COALESCE(SUM(delta),0) FROM ledger WHERE user_id = ?)
               - (SELECT COALESCE(SUM(amount + fee),0) FROM withdrawals WHERE user_id = ? AND status = 'requested')`
-  ).bind(id, me.id, amount, fee, kind, method, account, kode, total, me.id, me.id).run();
+  ).bind(id, me.id, amount, fee, kind, method, account, kode, total, me.id, me.id).run().catch((e: any) => {
+    // Audit R2-07/R2-10: collision kode (idx_wd_kode) atau pengajuan-aktif ganda
+    // (idx_wd_one_requested_user, 0031) → 409, bukan 500. Uang tetap aman (rollback).
+    if (/UNIQUE/i.test(String(e?.message || e))) {
+      return { meta: { changes: -1 }, unique: true } as any;
+    }
+    throw e;
+  });
+  if ((res.meta?.changes || 0) < 0) return c.json({ error: 'Pengajuan bertabrakan, coba lagi' }, 409);
   if ((res.meta?.changes || 0) === 0) return c.json({ error: 'Saldo tidak cukup untuk jumlah + biaya tarik' }, 409);
   return c.json({ ok: true, id, kode, fee, net: amount });
 });
