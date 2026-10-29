@@ -1,5 +1,6 @@
 // Halaman owner — konsol admin (Tabler, dual mode terang/gelap).
 // Isi & alur keputusan tidak berubah: setiap keputusan wajib bercatatan sebagai bukti.
+import { THEME } from './theme';
 import { escapeHtml } from '../lib/sanitize';
 import { rupiah } from './pasar';
 
@@ -8,8 +9,8 @@ const PAGE_CSS = `
   .navbar-vertical.navbar-expand-lg{width:238px;position:sticky;top:0;height:100vh;border-right:1px solid var(--tblr-border-color);padding-top:2px}
   .navbar-vertical .navbar-collapse{display:block!important}
   .page-wrapper{display:grid;grid-template-columns:238px minmax(0,1fr);align-items:start}
-  .brandmark{width:30px;height:30px;border-radius:8px;background:linear-gradient(140deg,#3DD6D0,#1D61E7);display:grid;place-items:center;font-weight:800;color:#04121F;font-size:14px}
-  .badge-owner{background:#1D61E7;color:#fff;font-weight:700;letter-spacing:.06em}
+  .brandmark{width:30px;height:30px;border-radius:8px;background:linear-gradient(140deg,#3DD6D0,var(--blue));display:grid;place-items:center;font-weight:800;color:#04121F;font-size:14px}
+  .badge-owner{background:var(--blue);color:#fff;font-weight:700;letter-spacing:.06em}
   .num{font-variant-numeric:tabular-nums;font-weight:700;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
   .muted{color:var(--tblr-secondary);font-size:.78rem;line-height:1.45}
   .table td,.table th{vertical-align:middle}
@@ -17,9 +18,9 @@ const PAGE_CSS = `
   .sect{scroll-margin-top:70px}
   .navmobile{display:none;gap:6px;overflow-x:auto;padding:8px 12px;border-bottom:1px solid var(--tblr-border-color);background:var(--tblr-bg-surface);position:sticky;top:0;z-index:20}
   .navmobile a{white-space:nowrap;font-size:13px;font-weight:600;color:var(--tblr-secondary);text-decoration:none;padding:6px 10px;border-radius:8px;background:var(--tblr-bg-surface-secondary)}
-  .navmobile a.on{background:#1D61E7;color:#fff}
+  .navmobile a.on{background:var(--blue);color:#fff}
   .trk{margin-top:8px}
-  .trk .row{border-left:3px solid #1D61E7;padding:5px 0 5px 10px;margin-bottom:6px;background:var(--tblr-bg-surface-secondary);border-radius:0 6px 6px 0}
+  .trk .row{border-left:3px solid var(--blue);padding:5px 0 5px 10px;margin-bottom:6px;background:var(--tblr-bg-surface-secondary);border-radius:0 6px 6px 0}
   .trk .d{font-weight:700;font-size:.68rem;color:var(--tblr-secondary)}
   .trk .m{font-weight:600;font-size:.78rem}
   .trk .l{font-size:.72rem;color:var(--tblr-secondary)}
@@ -235,7 +236,8 @@ export function renderOwnerPage(disputes: any[], withdrawals: any[], calonPenjua
 <title>Owner — Pasar Buku BERBIRRU</title>
 <script>${THEME_JS}</script>
 <link rel="stylesheet" href="/assets/tabler.min.css">
-<style>${PAGE_CSS}</style></head>
+<style>
+    :root{--muted:${THEME.muted};--ink-soft:${THEME.inkSoft};--line-soft:${THEME.lineSoft};}${PAGE_CSS}</style></head>
 <body>
 <header class="navbar navbar-expand-md d-print-none">
   <div class="container-xl">

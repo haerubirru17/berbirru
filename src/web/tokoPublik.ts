@@ -1,45 +1,46 @@
 // Halaman toko publik penjual: /toko/<slug>
+import { THEME } from './theme';
 import { escapeHtml } from '../lib/sanitize';
 import { PASAR_BASE_CSS, rupiah } from './pasar';
 
 const PAGE_CSS = `
   .wrap{width:min(1080px,calc(100% - 28px));margin:auto;padding:18px 0 60px}
-  .shop-head{background:#fff;border:3px solid #0B192C;box-shadow:6px 7px 0 #26364A;padding:18px;margin-bottom:16px}
+  .shop-head{background:#fff;border:3px solid var(--ink);box-shadow:6px 7px 0 var(--ink-soft);padding:18px;margin-bottom:16px}
   .shop-name{margin:0;font:700 clamp(30px,6vw,46px)/1 'Newsreader',serif;letter-spacing:-.035em}
-  .shop-sub{margin:8px 0 0;font:700 11.5px 'Roboto Mono';color:#64748B;letter-spacing:.02em}
+  .shop-sub{margin:8px 0 0;font:700 11.5px 'Roboto Mono';color:var(--muted);letter-spacing:.02em}
   .verif{display:inline-flex;align-items:center;gap:5px;font:800 9px 'Roboto Mono';letter-spacing:.05em;text-transform:uppercase;
-    background:#DCFCE7;border:2px solid #0B192C;padding:4px 7px;box-shadow:2px 2px 0 #26364A;margin-top:10px}
-  .verif svg{width:10px;height:10px;stroke:#0B192C;stroke-width:3;fill:none}
+    background:#DCFCE7;border:2px solid var(--ink);padding:4px 7px;box-shadow:2px 2px 0 var(--ink-soft);margin-top:10px}
+  .verif svg{width:10px;height:10px;stroke:var(--ink);stroke-width:3;fill:none}
   .shop-act{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
   .shop-act button,.shop-act a{flex:1;min-width:130px;min-height:42px;display:inline-flex;align-items:center;justify-content:center;gap:6px;
-    border:2.5px solid #0B192C;background:#fff;color:#0B192C;font:900 11.5px 'DM Sans';cursor:pointer;text-decoration:none;box-shadow:3px 3px 0 #26364A;padding:8px 10px}
-  .shop-act .wa{background:#25D366;color:#0B192C}
+    border:2.5px solid var(--ink);background:#fff;color:var(--ink);font:900 11.5px 'DM Sans';cursor:pointer;text-decoration:none;box-shadow:3px 3px 0 var(--ink-soft);padding:8px 10px}
+  .shop-act .wa{background:#25D366;color:var(--ink)}
   .shop-act button:active,.shop-act a:active{transform:translate(2px,2px);box-shadow:none}
   .stats{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
-  .stat{flex:1;min-width:120px;background:#F6F8FB;border:2px solid #0B192C;padding:9px 11px}
-  .stat b{display:block;font:400 17px 'Archivo Black';color:#0F3E99}
-  .stat span{font:700 9.5px 'Roboto Mono';color:#64748B;letter-spacing:.05em;text-transform:uppercase}
+  .stat{flex:1;min-width:120px;background:#F6F8FB;border:2px solid var(--ink);padding:9px 11px}
+  .stat b{display:block;font:400 17px 'Archivo Black';color:var(--deep)}
+  .stat span{font:700 9.5px 'Roboto Mono';color:var(--muted);letter-spacing:.05em;text-transform:uppercase}
   .sec-title{font:700 clamp(26px,4.5vw,36px)/1 'Newsreader',serif;letter-spacing:-.03em;margin:22px 0 12px}
   .pg{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 14px;font:800 11px 'Roboto Mono';color:#52627A}
-  .pg a,.pg .off{border:2px solid #0B192C;background:#fff;padding:7px 10px;text-decoration:none;color:#0B192C;box-shadow:3px 4px 0 #26364A}
+  .pg a,.pg .off{border:2px solid var(--ink);background:#fff;padding:7px 10px;text-decoration:none;color:var(--ink);box-shadow:3px 4px 0 var(--ink-soft)}
   .pg .off{opacity:.35;border-style:dashed;box-shadow:none}
   .book-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
-  .book-card{background:#fff;border:3px solid #0B192C;box-shadow:6px 7px 0 #26364A;overflow:hidden;text-decoration:none;color:#0B192C;display:flex;flex-direction:column}
-  .book-card:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #26364A}
-  .card-img{position:relative;aspect-ratio:4/5;background:#EEF2F7;border-bottom:2px solid #0B192C;overflow:hidden}
+  .book-card{background:#fff;border:3px solid var(--ink);box-shadow:6px 7px 0 var(--ink-soft);overflow:hidden;text-decoration:none;color:var(--ink);display:flex;flex-direction:column}
+  .book-card:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ink-soft)}
+  .card-img{position:relative;aspect-ratio:4/5;background:#EEF2F7;border-bottom:2px solid var(--ink);overflow:hidden}
   .card-img img{width:100%;height:100%;object-fit:cover;display:block}
   .card-img-empty{display:grid;place-items:center}
-  .card-img-empty svg{width:44px;height:44px;stroke:#1D61E7;stroke-width:1.7;fill:none}
+  .card-img-empty svg{width:44px;height:44px;stroke:var(--blue);stroke-width:1.7;fill:none}
   .card-body{padding:13px;display:flex;flex-direction:column;gap:6px}
   .card-title{font:700 20px/1.08 'Newsreader',serif;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:44px}
-  .card-price{font:400 17px 'Archivo Black';color:#0F3E99}
+  .card-price{font:400 17px 'Archivo Black';color:var(--deep)}
   .card-meta{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap}
-  .cond-badge{font:700 9px 'Roboto Mono';background:#FDE047;border:2px solid #0B192C;padding:3px 7px}
+  .cond-badge{font:700 9px 'Roboto Mono';background:var(--yellow);border:2px solid var(--ink);padding:3px 7px}
   .card-ship{font-size:10px;font-weight:800;color:#607086}
-  .empty{background:#fff;border:3px solid #0B192C;box-shadow:6px 7px 0 #26364A;padding:26px 18px;text-align:center}
-  .empty p{margin:0 0 10px;font:700 13px 'DM Sans';color:#64748B}
-  .empty a{display:inline-flex;min-height:44px;align-items:center;background:#1D61E7;color:#fff;border:2.5px solid #0B192C;padding:9px 14px;font:900 12.5px 'DM Sans';text-decoration:none;box-shadow:3px 3px 0 #26364A}
-  .back{display:inline-block;margin-top:22px;font:800 11.5px 'DM Sans';color:#1D61E7;text-decoration:none}
+  .empty{background:#fff;border:3px solid var(--ink);box-shadow:6px 7px 0 var(--ink-soft);padding:26px 18px;text-align:center}
+  .empty p{margin:0 0 10px;font:700 13px 'DM Sans';color:var(--muted)}
+  .empty a{display:inline-flex;min-height:44px;align-items:center;background:var(--blue);color:#fff;border:2.5px solid var(--ink);padding:9px 14px;font:900 12.5px 'DM Sans';text-decoration:none;box-shadow:3px 3px 0 var(--ink-soft)}
+  .back{display:inline-block;margin-top:22px;font:800 11.5px 'DM Sans';color:var(--blue);text-decoration:none}
   @media (max-width:760px){.book-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}}
 `;
 
@@ -101,7 +102,8 @@ export function renderTokoPublikPage(toko: any, listings: any[], opts: { isOwner
 <meta property="og:image" content="${escapeHtml(fotoOg)}">
 <meta property="og:url" content="${escapeHtml(url)}">
 ${PASAR_BASE_CSS}
-<style>${PAGE_CSS}</style></head>
+<style>
+    :root{--muted:${THEME.muted};--ink-soft:${THEME.inkSoft};--line-soft:${THEME.lineSoft};}${PAGE_CSS}</style></head>
 <body>
 <div class="wrap">
   <div class="shop-head">

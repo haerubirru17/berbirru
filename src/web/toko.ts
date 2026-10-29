@@ -1,5 +1,6 @@
 // Dashboard penjual — satu pintu: pesanan, buku, saldo.
 // Hanya untuk penjual approved; gate-nya di route (/toko), bukan di sini.
+import { THEME } from './theme';
 import { escapeHtml } from '../lib/sanitize';
 import { PASAR_FEE } from '../lib/pasar-settlement';
 import { PASAR_BASE_CSS, rupiah } from './pasar';
@@ -9,79 +10,79 @@ const PAGE_CSS = `
   .wrap{width:min(680px,calc(100% - 26px));margin:auto;padding:16px 0 40px}
   .head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin:4px 0 16px}
   .head h1{margin:0;font:700 clamp(34px,6vw,48px)/.98 'Newsreader';letter-spacing:-.035em}
-  .head .sub{margin:5px 0 0;font-size:12px;font-weight:700;color:#64748B}
+  .head .sub{margin:5px 0 0;font-size:12px;font-weight:700;color:var(--muted)}
   .verif{display:inline-flex;align-items:center;gap:5px;font:800 9.5px 'Roboto Mono';letter-spacing:.05em;text-transform:uppercase;
-    background:#DCFCE7;border:2px solid #0B192C;padding:4px 8px;box-shadow:2px 2px 0 #26364A;white-space:nowrap;margin-top:2px}
-  .verif svg{width:11px;height:11px;stroke:#0B192C;stroke-width:3;fill:none}
+    background:#DCFCE7;border:2px solid var(--ink);padding:4px 8px;box-shadow:2px 2px 0 var(--ink-soft);white-space:nowrap;margin-top:2px}
+  .verif svg{width:11px;height:11px;stroke:var(--ink);stroke-width:3;fill:none}
 
   .dash{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:0 0 6px}
-  .dbox{border:2.5px solid #0B192C;box-shadow:4px 5px 0 #26364A;padding:10px 12px;background:#fff}
-  .dbox .dk{font:700 9px 'Roboto Mono';letter-spacing:.06em;text-transform:uppercase;color:#64748B}
+  .dbox{border:2.5px solid var(--ink);box-shadow:4px 5px 0 var(--ink-soft);padding:10px 12px;background:#fff}
+  .dbox .dk{font:700 9px 'Roboto Mono';letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
   .dbox .dn{font:400 19px 'Archivo Black';margin-top:3px;letter-spacing:-.02em}
   .d-saldo{background:#DCFCE7}.d-escrow{background:#FEF3C7}.d-gmv{background:#DBEAFE}.d-produk{background:#fff}
-  .dash-hint{font:600 9.5px 'DM Sans';color:#64748B;margin:0 0 12px;line-height:1.45}
+  .dash-hint{font:600 9.5px 'DM Sans';color:var(--muted);margin:0 0 12px;line-height:1.45}
   .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:14px}
-  .stat{background:#fff;border:2.5px solid #0B192C;box-shadow:4px 5px 0 #26364A;padding:12px 12px 11px;min-width:0;display:flex;flex-direction:column;justify-content:space-between;gap:8px}
-  .stat .n{font:400 clamp(17px,4.6vw,21px)/1.05 'Archivo Black';color:#0F3E99;letter-spacing:-.02em;overflow-wrap:anywhere}
-  .stat .k{font:700 8.5px/1.45 'Roboto Mono';letter-spacing:.05em;text-transform:uppercase;color:#64748B;min-height:24px}
+  .stat{background:#fff;border:2.5px solid var(--ink);box-shadow:4px 5px 0 var(--ink-soft);padding:12px 12px 11px;min-width:0;display:flex;flex-direction:column;justify-content:space-between;gap:8px}
+  .stat .n{font:400 clamp(17px,4.6vw,21px)/1.05 'Archivo Black';color:var(--deep);letter-spacing:-.02em;overflow-wrap:anywhere}
+  .stat .k{font:700 8.5px/1.45 'Roboto Mono';letter-spacing:.05em;text-transform:uppercase;color:var(--muted);min-height:24px}
   .stat.urgent .n{color:#92400E}
   .stat.potong .n{font-size:clamp(14px,3.8vw,17px)}
 
-  .strip{display:flex;align-items:center;gap:10px;border:2.5px solid #0B192C;padding:11px 12px;margin-bottom:12px;
-    font-size:12px;font-weight:800;line-height:1.45;box-shadow:4px 5px 0 #26364A;text-decoration:none;color:#0B192C}
-  .strip.warn{background:#FDE047}
+  .strip{display:flex;align-items:center;gap:10px;border:2.5px solid var(--ink);padding:11px 12px;margin-bottom:12px;
+    font-size:12px;font-weight:800;line-height:1.45;box-shadow:4px 5px 0 var(--ink-soft);text-decoration:none;color:var(--ink)}
+  .strip.warn{background:var(--yellow)}
   .strip.danger{background:#FEE2E2}
-  .strip svg{width:16px;height:16px;flex:none;stroke:#0B192C;stroke-width:2.6;fill:none}
+  .strip svg{width:16px;height:16px;flex:none;stroke:var(--ink);stroke-width:2.6;fill:none}
   .strip span{min-width:0}
   .strip .go{margin-left:auto;flex:none;font:800 10px 'Roboto Mono';white-space:nowrap;padding-left:4px}
 
-  .tabs-seller{display:grid;grid-template-columns:repeat(3,1fr);border:2.5px solid #0B192C;background:#fff;box-shadow:4px 5px 0 #26364A;margin-bottom:14px}
+  .tabs-seller{display:grid;grid-template-columns:repeat(3,1fr);border:2.5px solid var(--ink);background:#fff;box-shadow:4px 5px 0 var(--ink-soft);margin-bottom:14px}
   .tabs-seller .tab{padding:9px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-    font:800 11px/1.2 'DM Sans';color:#0B192C;text-decoration:none;border-right:2px solid #0B192C}
+    font:800 11px/1.2 'DM Sans';color:var(--ink);text-decoration:none;border-right:2px solid var(--ink)}
   .tabs-seller .tab:last-child{border-right:0}
-  .tabs-seller .tab .c{font:700 9px 'Roboto Mono';color:#64748B;line-height:1}
-  .tabs-seller .tab.on{background:#1D61E7;color:#fff}
+  .tabs-seller .tab .c{font:700 9px 'Roboto Mono';color:var(--muted);line-height:1}
+  .tabs-seller .tab.on{background:var(--blue);color:#fff}
   .tabs-seller .tab.on .c{color:#DBEAFE}
 
   .sec{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:18px 0 9px}
   .sec h2{margin:0;font:700 19px 'Newsreader';letter-spacing:-.02em}
-  .sec .n{font:700 10px 'Roboto Mono';color:#64748B;position:relative;top:-1px}
+  .sec .n{font:700 10px 'Roboto Mono';color:var(--muted);position:relative;top:-1px}
 
-  .o-card,.b-row{display:flex;gap:11px;align-items:center;background:#fff;border:2.5px solid #0B192C;
-    box-shadow:4px 5px 0 #26364A;padding:11px 12px;margin-bottom:9px;text-decoration:none;color:#0B192C}
+  .o-card,.b-row{display:flex;gap:11px;align-items:center;background:#fff;border:2.5px solid var(--ink);
+    box-shadow:4px 5px 0 var(--ink-soft);padding:11px 12px;margin-bottom:9px;text-decoration:none;color:var(--ink)}
   .b-row{cursor:pointer}
   .o-card:active,.b-row:active{transform:translate(2px,3px);box-shadow:none}
   .o-main{min-width:0;flex:1}
   .o-title{font:700 15px/1.2 'Newsreader';display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .o-sub{font:600 10.5px 'DM Sans';color:#64748B;margin-top:4px;overflow-wrap:anywhere}
+  .o-sub{font:600 10.5px 'DM Sans';color:var(--muted);margin-top:4px;overflow-wrap:anywhere}
   .o-right{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:3px}
-  .o-amt{font:400 14px 'Archivo Black';color:#0F3E99;letter-spacing:-.01em}
-  .o-net{font:600 9.5px 'Roboto Mono';color:#64748B;margin-top:2px}
+  .o-amt{font:400 14px 'Archivo Black';color:var(--deep);letter-spacing:-.01em}
+  .o-net{font:600 9.5px 'Roboto Mono';color:var(--muted);margin-top:2px}
   .chip{display:inline-block;font:800 8.5px 'Roboto Mono';letter-spacing:.04em;text-transform:uppercase;
-    border:2px solid #0B192C;padding:2px 6px;margin-bottom:5px;white-space:nowrap}
+    border:2px solid var(--ink);padding:2px 6px;margin-bottom:5px;white-space:nowrap}
   .chip.sm{min-width:66px;text-align:center;font-size:8px;padding:3px 5px;margin:0}
-  .chip.perlu{background:#FDE047}.chip.kirim{background:#DBEAFE}.chip.selesai{background:#DCFCE7}
+  .chip.perlu{background:var(--yellow)}.chip.kirim{background:#DBEAFE}.chip.selesai{background:#DCFCE7}
   .chip.refund{background:#FEE2E2}.chip.sengketa{background:#FED7AA}.chip.off{background:#E2E8F0}
 
-  .thumb{width:44px;height:56px;flex:none;border:2px solid #0B192C;background:#EEF2F7;overflow:hidden;
+  .thumb{width:44px;height:56px;flex:none;border:2px solid var(--ink);background:#EEF2F7;overflow:hidden;
     display:grid;place-items:center;font:900 15px 'Archivo Black';color:#94A3B8}
   .thumb img{width:100%;height:100%;object-fit:cover;display:block}
   .b-main{min-width:0;flex:1}
   .b-title{font:700 14px/1.25 'Newsreader';display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .b-meta{font:600 10.5px 'DM Sans';color:#64748B;margin-top:4px}
-  .mini{margin-top:7px;font:900 10px 'DM Sans';background:#fff;border:2px solid #0B192C;padding:4px 8px;
-    box-shadow:2px 2px 0 #26364A;cursor:pointer}
+  .b-meta{font:600 10.5px 'DM Sans';color:var(--muted);margin-top:4px}
+  .mini{margin-top:7px;font:900 10px 'DM Sans';background:#fff;border:2px solid var(--ink);padding:4px 8px;
+    box-shadow:2px 2px 0 var(--ink-soft);cursor:pointer}
   .mini:active{transform:translate(1px,2px);box-shadow:none}
   .mini.danger{background:#FEE2E2;color:#991B1B;border-color:#991B1B}
 
-  .empty{background:#F8FAFC;border:2px dashed #CBD5E1;padding:18px 14px;text-align:center;
-    font-size:12px;font-weight:700;color:#64748B;line-height:1.6;margin-bottom:9px}
+  .empty{background:#F8FAFC;border:2px dashed var(--line-soft);padding:18px 14px;text-align:center;
+    font-size:12px;font-weight:700;color:var(--muted);line-height:1.6;margin-bottom:9px}
   .actions{display:grid;gap:9px;margin-top:20px}
-  .btn{min-height:48px;border:3px solid #0B192C;padding:11px 15px;font:900 13.5px 'DM Sans';cursor:pointer;
-    box-shadow:4px 5px 0 #26364A;display:flex;justify-content:center;align-items:center;gap:8px;text-decoration:none}
+  .btn{min-height:48px;border:3px solid var(--ink);padding:11px 15px;font:900 13.5px 'DM Sans';cursor:pointer;
+    box-shadow:4px 5px 0 var(--ink-soft);display:flex;justify-content:center;align-items:center;gap:8px;text-decoration:none}
   .btn:active{transform:translate(2px,3px);box-shadow:none}
-  .btn.primary{background:#1D61E7;color:#fff}
-  .btn.ghost{background:#fff;color:#0B192C}
+  .btn.primary{background:var(--blue);color:#fff}
+  .btn.ghost{background:#fff;color:var(--ink)}
   .btn svg{width:15px;height:15px;stroke:currentColor;stroke-width:2.6;fill:none}
   @media(max-width:380px){.stat{padding:9px 9px}.o-amt{font-size:12.5px}}
 `;
@@ -228,7 +229,8 @@ async function hapusListing(id, btn){
 <html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Toko Saya — Pasar Buku BERBIRRU</title>
 ${PASAR_BASE_CSS}
-<style>${PAGE_CSS}</style></head>
+<style>
+    :root{--muted:${THEME.muted};--ink-soft:${THEME.inkSoft};--line-soft:${THEME.lineSoft};}${PAGE_CSS}</style></head>
 <body>
 ${inner}
 </body></html>`;
