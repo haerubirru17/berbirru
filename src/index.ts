@@ -11,10 +11,7 @@ import { renderLandingPage } from './web/landing';
 const DUMMY_PBKDF2_HASH = 'pbkdf2$sha256$10000$ZHVtbXlzYWx0MTIzNA==$RkFLRUhBU0hGWVdXMV teaserPLACEHOLDERONLY';
 
 // vuln-0005: token sesi kini disimpan sebagai SHA-256 (token_hash); plaintext tak pernah menyentuh DB.
-async function sha256hex(s: string): Promise<string> {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
-  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
+
 import { renderLoginPage } from './web/login';
 import { renderResetPage } from './web/reset';
 import { cekResi, validasiFormatResi, ambilWilayah, cekTarifOngkir, KURIR_DIDUKUNG, KURIR_LABEL } from './kurir';
@@ -44,25 +41,10 @@ import { slugToko, slugUnik } from './lib/toko';
 import { sendOtpEmail, sendPasswordChangedEmail } from './mail';
 import { OG_IMAGE_BASE64 } from './assets';
 import { VENDOR_SWEETALERT2_JS, VENDOR_SWEETALERT2_CSS } from './vendor';
+import { Env } from './env';
+import { sha256hex, hitRate, hardenPost, withAdmin, visibilityClause, getAuthUser } from './lib/shared';
+import { mountNotifications } from './routes/notifications';
 
-export interface Env {
-  DB: D1Database;
-  MEDIA: R2Bucket;
-  APP_NAME: string;
-  APP_DOMAIN: string;
-  RESEND_API_KEY?: string;
-  RESEND_FROM?: string;
-  TURNSTILE_SITE_KEY?: string;
-  TURNSTILE_SECRET_KEY?: string;
-  KLIKQRIS_API_KEY?: string;
-  KLIKQRIS_MERCHANT_ID?: string;
-  KLIKQRIS_API_URL?: string;
-  KLIKQRIS_CALLBACK_URL?: string;
-  KLIKQRIS_MOCK?: string;
-  OWNER_EMAIL?: string;
-  BINDERBYTE_KEY?: string;
-  KURIR_MOCK?: string;
-}
 
 // Helper verifikasi Cloudflare Turnstile token
 const TURNSTILE_TEST_KEYS = new Set([
@@ -113,24 +95,6 @@ async function verifyTurnstile(token: string, secretKey: string, remoteIp?: stri
 // edge cache yang per-POP sehingga mudah dilewati.
 // ponytail: satu UPSERT per percobaan; cukup untuk skala ini. Naikkan ke Durable
 // Object kalau nanti butuh presisi/throughput jauh lebih tinggi.
-async function hitRate(db: D1Database, key: string, limit: number, windowSec: number): Promise<boolean> {
-  const row: any = await db.prepare(
-    `INSERT INTO rate_limits (key, count, expires_at) VALUES (?, 1, datetime('now', '+' || ? || ' seconds'))
-     ON CONFLICT(key) DO UPDATE SET
-       count = CASE WHEN rate_limits.expires_at < datetime('now') THEN 1 ELSE rate_limits.count + 1 END,
-       expires_at = CASE WHEN rate_limits.expires_at < datetime('now') THEN datetime('now', '+' || ? || ' seconds') ELSE rate_limits.expires_at END
-     RETURNING count`
-  ).bind(key, windowSec, windowSec).first();
-  // GC probabilistik (vuln-0007 GLM): 2% panggilan membersihkan baris expired —
-  // tanpa ini tabel tumbuh tanpa batas (786 baris/klien dalam uji Strix).
-  // try/catch (rekomendasi putaran-4): request sial tak boleh 500 gara-gara GC.
-  if (Math.random() < 0.02) {
-    try {
-      await db.prepare("DELETE FROM rate_limits WHERE expires_at < datetime('now')").run();
-    } catch { /* GC gagal → abaikan; keputusan rate-limit sudah dihitung. */ }
-  }
-  return ((row && row.count) || 0) > limit;
-}
 
 // Gate auth: Turnstile WAJIB (fail-closed). Token kosong/gagal = ditolak, sehingga
 // desain fail-open lama (vuln-0002) tertutup. Rate limit per-IP sebagai lapisan kedua.
@@ -180,31 +144,12 @@ async function requireHuman(
 // innerHTML client, tanpa perlu menyentuh database.
 // ponytail: sanitasi per-request, ~40 baris/feed. Kalau nanti feed membesar,
 // backfill sekali jalan lalu hapus baris ini.
-function hardenPost(p: any): any {
-  if (!p) return p;
-  if (p.content != null) p.content = sanitizeRich(p.content);
-  if (p.parent_content != null) p.parent_content = sanitizeRich(p.parent_content);
-  if (p.post_content != null) p.post_content = sanitizeRich(p.post_content);
-  return p;
-}
 
 // Penanda centang biru admin pada tiap warkah. Email hanya dipakai di server,
 // lalu dibuang — klien cuma menerima boolean.
-function withAdmin<T extends any>(p: T, ownerEmail: string): T {
-  if (!p) return p;
-  const { author_email, ...rest } = p as any;
-  rest.is_admin = String(author_email || '').toLowerCase() === String(ownerEmail || '').toLowerCase();
-  return rest as T;
-}
 
 // Filter visibilitas: post privat hanya terlihat oleh penulisnya sendiri.
 // Mengembalikan pasangan klausa SQL + binding. `user` boleh null (guest).
-function visibilityClause(user: any): { sql: string; binds: any[] } {
-  if (user) {
-    return { sql: '(p.visibility != \'private\' OR p.author_id = ?)', binds: [user.id] };
-  }
-  return { sql: "p.visibility = 'public'", binds: [] };
-}
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -256,35 +201,7 @@ app.use('*', async (c, next) => {
 });
 
 // ---- AUTH HELPERS ----
-async function getAuthUser(c: any): Promise<{ id: string; email: string; pen_name: string; city: string; avatar_key: string | null; cover_key: string | null; display_name: string | null; bio: string; seller_status?: string; seller_full_name?: string | null; seller_phone?: string | null; seller_note?: string | null; seller_reject_reason?: string | null; shop_name?: string | null; shop_slug?: string | null;
-  addr_receiver?: string | null; addr_phone?: string | null; addr_postal?: string | null; addr_text?: string | null;
-  addr_province_id?: string | null; addr_province_name?: string | null; addr_city_id?: string | null;
-  addr_city_name?: string | null; addr_district_id?: string | null; addr_district_name?: string | null; is_owner?: boolean; owner_pending?: number } | null> {
-  const token = getCookie(c, 'berbirru_session');
-  if (!token) return null;
-  const session: any = await c.env.DB.prepare(
-    // Baris OTP pending (`otp_<hash>`, token_hash NULL) BUKAN sesi: tanpa filter ini,
-    // cookie berisi hash OTP lolos sebagai sesi valid (temuan Strix #28).
-    // vuln-0005: lookup via SHA-256(token) — plaintext token tak tersimpan di DB.
-    'SELECT u.id, u.email, u.pen_name, u.city, u.avatar_key, u.cover_key, u.display_name, u.bio, u.seller_status, u.seller_full_name, u.seller_phone, u.seller_note, u.seller_reject_reason, u.shop_name, u.shop_slug, u.addr_receiver, u.addr_phone, u.addr_postal, u.addr_text, u.addr_province_id, u.addr_province_name, u.addr_city_id, u.addr_city_name, u.addr_district_id, u.addr_district_name FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token_hash = ? AND s.expires_at > datetime("now") LIMIT 1'
-  ).bind(await sha256hex(token)).first();
-  if (!session) return null;
-  // Penanda owner + jumlah antrean: dipakai navbar (label "Admin") dan strip di /pasar.
-  // satu query tambahan, hanya untuk akun owner.
-  if (c.env.OWNER_EMAIL && String(session.email || '').toLowerCase() === String(c.env.OWNER_EMAIL).toLowerCase()) {
-    const q: any = await c.env.DB.prepare(
-      `SELECT (SELECT COUNT(*) FROM orders WHERE status = 'disputed')
-            + (SELECT COUNT(*) FROM withdrawals WHERE status = 'requested')
-            + (SELECT COUNT(*) FROM users WHERE seller_status = 'pending')
-            + (SELECT COUNT(DISTINCT listing_id) FROM listing_reports WHERE status = 'open') AS n`
-    ).first();
-    session.is_owner = true;
-    session.owner_pending = Number(q?.n || 0);
-  }
-  return session;
-}
 
-// ---- WEB PAGES (SSR) ----
 app.get('/', async (c) => {
   const user = await getAuthUser(c);
   // HTML landing jangan di-cache: perubahan UI harus langsung terlihat.
@@ -2853,59 +2770,8 @@ app.get('/chain/:id', async (c) => {
   return c.html(renderChainPage({ user, root, rootAuthor, orphans, children: results || [] }));
 });
 
-// ---- POSTS & FEED API ----
-app.get('/api/notifications', async (c) => {
-  const user = await getAuthUser(c);
-  if (!user) return c.json({ error: 'Unauthorized' }, 401);
+mountNotifications(app);
 
-  // Dua kotak: 'sosial' (like/chain/save/follow) vs 'pasar' (order_*).
-  const scope = c.req.query('scope') === 'pasar' ? 'pasar' : 'sosial';
-  const cond = scope === 'pasar' ? "n.type LIKE 'order_%'" : "(n.type IS NULL OR n.type NOT LIKE 'order_%')";
-  const { results } = await c.env.DB.prepare(`
-    SELECT n.*, u.pen_name as actor_pen_name, p.title as post_title, p.content as post_content,
-           l.title as order_title
-    FROM notifications n
-    JOIN users u ON n.actor_id = u.id
-    LEFT JOIN posts p ON n.post_id = p.id
-    LEFT JOIN orders o ON o.id = n.order_id
-    LEFT JOIN listings l ON l.id = o.listing_id
-    WHERE n.user_id = ? AND ${cond}
-    ORDER BY n.created_at DESC
-    LIMIT 50
-  `).bind(user.id).all();
-
-  return c.json({ notifications: (results || []).map(hardenPost) });
-});
-
-app.get('/api/notifications/unread-count', async (c) => {
-  const user = await getAuthUser(c);
-  if (!user) return c.json({ count: 0 });
-
-  const scope = c.req.query('scope') === 'pasar' ? 'pasar' : 'sosial';
-  const cond = scope === 'pasar' ? "AND type LIKE 'order_%'" : "AND (type IS NULL OR type NOT LIKE 'order_%')";
-  const row = await c.env.DB.prepare(
-    `SELECT count(*) as count FROM notifications WHERE user_id = ? AND is_read = 0 ${cond}`
-  ).bind(user.id).first();
-  return c.json({ count: row ? (row as any).count : 0 });
-});
-
-app.post('/api/notifications/read-all', async (c) => {
-  const user = await getAuthUser(c);
-  if (!user) return c.json({ error: 'Unauthorized' }, 401);
-
-  const scope = c.req.query('scope') === 'pasar' ? 'pasar' : 'sosial';
-  const cond = scope === 'pasar' ? "AND type LIKE 'order_%'" : "AND (type IS NULL OR type NOT LIKE 'order_%')";
-  await c.env.DB.prepare(`UPDATE notifications SET is_read = 1 WHERE user_id = ? ${cond}`).bind(user.id).run();
-  return c.json({ ok: true });
-});
-
-app.post('/api/notifications/:id/read', async (c) => {
-  const user = await getAuthUser(c);
-  if (!user) return c.json({ error: 'Unauthorized' }, 401);
-
-  await c.env.DB.prepare('UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?').bind(c.req.param('id'), user.id).run();
-  return c.json({ ok: true });
-});
 app.get('/api/posts', async (c) => {
   const mode = c.req.query('mode') || 'viral';
   const q = (c.req.query('q') || '').trim();
