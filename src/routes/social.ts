@@ -40,9 +40,10 @@ app.patch('/api/users/me', async (c: any) => {
 app.get('/api/users/suggest', async (c: any) => {
   const q = (c.req.query('q') || '').replace(/^@+/g, '').toLowerCase().replace(/[^a-z0-9_.]/g, '');
   if (!q) return c.json({ users: [] });
+  const qesc = q.replace(/[\\%_]/g, (m: any) => '\\' + m);
   const result = await c.env.DB.prepare(
-    'SELECT pen_name, city FROM users WHERE pen_name LIKE ? ORDER BY pen_name LIMIT 8'
-  ).bind(q + '%').all();
+    "SELECT pen_name, city FROM users WHERE pen_name LIKE ? ESCAPE '\\' ORDER BY pen_name LIMIT 8"
+  ).bind(qesc + '%').all();
   return c.json({ users: result.results || [] });
 });
 
@@ -126,24 +127,24 @@ app.get('/api/users/:pen_name/posts', async (c: any) => {
 
   if (tab === 'likes') {
     query = `
-      SELECT p.*, u.pen_name, u.city, u.avatar_key, u.email AS author_email 
-      FROM likes l 
-      JOIN posts p ON l.post_id = p.id 
-      JOIN users u ON p.author_id = u.id 
-      WHERE l.user_id = ? 
+      SELECT p.*, u.pen_name, u.city, u.avatar_key, u.email AS author_email
+      FROM likes l
+      JOIN posts p ON l.post_id = p.id
+      JOIN users u ON p.author_id = u.id
+      WHERE l.user_id = ? AND (p.visibility != 'private' OR p.author_id = ?)
       ORDER BY l.created_at DESC LIMIT 30
     `;
-    binds.push(targetUser.id);
+    binds.push(targetUser.id, targetUser.id);
   } else if (tab === 'saved') {
     query = `
-      SELECT p.*, u.pen_name, u.city, u.avatar_key, u.email AS author_email 
-      FROM bookmarks b 
-      JOIN posts p ON b.post_id = p.id 
-      JOIN users u ON p.author_id = u.id 
-      WHERE b.user_id = ? 
+      SELECT p.*, u.pen_name, u.city, u.avatar_key, u.email AS author_email
+      FROM bookmarks b
+      JOIN posts p ON b.post_id = p.id
+      JOIN users u ON p.author_id = u.id
+      WHERE b.user_id = ? AND (p.visibility != 'private' OR p.author_id = ?)
       ORDER BY b.created_at DESC LIMIT 30
     `;
-    binds.push(targetUser.id);
+    binds.push(targetUser.id, targetUser.id);
   } else if (tab === 'chains') {
     const vis = visibilityClause(await getAuthUser(c));
     query = `
@@ -180,12 +181,14 @@ app.get('/api/posts', async (c: any) => {
 
   let query = `
     SELECT p.*, u.pen_name, u.city, u.avatar_key, u.email AS author_email,
-      (SELECT content FROM posts prnt WHERE prnt.id = p.parent_id) as parent_content,
+      // Audit C-04: parent privat hanya dibocorkan ke penulisnya / viewer-nya sendiri.
+      (SELECT CASE WHEN prnt.visibility != 'private' OR prnt.author_id = ? THEN prnt.content ELSE NULL END
+         FROM posts prnt WHERE prnt.id = p.parent_id) as parent_content,
       (SELECT u2.pen_name FROM posts prnt JOIN users u2 ON prnt.author_id = u2.id WHERE prnt.id = p.parent_id) as parent_author
     FROM posts p
     JOIN users u ON p.author_id = u.id
   `;
-  const binds: any[] = [];
+  const binds: any[] = [user?.id || ''];
 
   if (q) {
     // Escape wildcard LIKE (% _) — tanpa ini, q=%25 membocorkan seluruh katalog.
@@ -294,8 +297,10 @@ app.post('/api/posts', async (c: any) => {
   const rawParent = parent_id ? String(parent_id) : '';
   let parentId: string | null = null;
   if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawParent)) {
-    const parentRow: any = await c.env.DB.prepare('SELECT author_id FROM posts WHERE id = ?').bind(rawParent).first();
-    if (parentRow) {
+    const parentRow: any = await c.env.DB.prepare('SELECT author_id, visibility FROM posts WHERE id = ?').bind(rawParent).first();
+    // Audit C-04: parent privat milik orang lain tidak menerima sambungan anak publik —
+    // isinya tak boleh membayang ke feed/chain publik.
+    if (parentRow && !(parentRow.visibility === 'private' && parentRow.author_id !== user.id)) {
       parentId = rawParent;
       await c.env.DB.prepare('UPDATE posts SET chains_count = chains_count + 1 WHERE id = ?').bind(parentId).run();
     }
@@ -357,8 +362,8 @@ app.post('/api/posts/:id/like', async (c: any) => {
     return c.json({ error: 'Terlalu banyak interaksi. Tunggu sebentar.' }, 429);
   }
 
-  const post: any = await c.env.DB.prepare('SELECT author_id FROM posts WHERE id = ?').bind(postId).first();
-  if (!post) return c.json({ error: 'Warkah tidak ditemukan' }, 404);
+  const post: any = await c.env.DB.prepare("SELECT author_id, visibility FROM posts WHERE id = ?").bind(postId).first();
+  if (!post || (post.visibility === 'private' && post.author_id !== user.id)) return c.json({ error: 'Warkah tidak ditemukan' }, 404);
 
   const existing = await c.env.DB.prepare('SELECT 1 FROM likes WHERE user_id = ? AND post_id = ?').bind(user.id, postId).first();
   if (existing) {
@@ -399,8 +404,8 @@ app.post('/api/posts/:id/bookmark', async (c: any) => {
     return c.json({ error: 'Terlalu banyak interaksi. Tunggu sebentar.' }, 429);
   }
 
-  const post: any = await c.env.DB.prepare('SELECT author_id FROM posts WHERE id = ?').bind(postId).first();
-  if (!post) return c.json({ error: 'Warkah tidak ditemukan' }, 404);
+  const post: any = await c.env.DB.prepare("SELECT author_id, visibility FROM posts WHERE id = ?").bind(postId).first();
+  if (!post || (post.visibility === 'private' && post.author_id !== user.id)) return c.json({ error: 'Warkah tidak ditemukan' }, 404);
 
   const existing = await c.env.DB.prepare('SELECT 1 FROM bookmarks WHERE user_id = ? AND post_id = ?').bind(user.id, postId).first();
   if (existing) {
@@ -452,7 +457,9 @@ app.post('/api/users/:pen_name/follow', async (c: any) => {
     await c.env.DB.prepare("DELETE FROM notifications WHERE user_id = ? AND actor_id = ? AND type = 'follow'").bind(target.id, user.id).run();
     return c.json({ following: false });
   } else {
-    await c.env.DB.prepare('INSERT INTO follows (follower_id, following_id) VALUES (?, ?)').bind(user.id, target.id).run();
+    // Audit C-05: OR IGNORE (pola like/bookmark) — follow konkuren tidak 500 lagi.
+    const ins = await c.env.DB.prepare('INSERT OR IGNORE INTO follows (follower_id, following_id) VALUES (?, ?)').bind(user.id, target.id).run();
+    if (!ins.meta.changes) return c.json({ following: true });
     const dup = await c.env.DB.prepare('SELECT 1 FROM notifications WHERE user_id = ? AND actor_id = ? AND type = ? LIMIT 1').bind(target.id, user.id, 'follow').first();
     if (!dup) {
       await c.env.DB.prepare('INSERT INTO notifications (id, user_id, actor_id, type) VALUES (?, ?, ?, ?)').bind(crypto.randomUUID(), target.id, user.id, 'follow').run();

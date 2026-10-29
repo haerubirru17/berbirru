@@ -301,7 +301,11 @@ app.get('/chain/:id', async (c) => {
     const parent: any = await c.env.DB.prepare(
       'SELECT p.*, u.pen_name FROM posts p JOIN users u ON p.author_id = u.id WHERE p.id = ?'
     ).bind(target.parent_id).first();
-    if (parent) { root = parent; rootAuthor = parent.pen_name; }
+    if (parent) {
+      // Audit C-04: guard yang sama seperti target — parent privat milik orang lain jangan dipromosikan jadi root.
+      if (parent.visibility === 'private' && (!user || user.id !== parent.author_id)) return c.notFound();
+      root = parent; rootAuthor = parent.pen_name;
+    }
     else { orphans = true; }
   }
 

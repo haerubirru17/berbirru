@@ -505,7 +505,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
 
     document.addEventListener('click', (e) => {
       const pop = document.getElementById('settingsPopover');
-      const btn = document.querySelector('.nav-menu-btn');
+      const btn = document.querySelector('.nav-menu-glass');
       if (pop && btn && !btn.contains(e.target) && !pop.contains(e.target)) {
         pop.style.display = 'none';
       }

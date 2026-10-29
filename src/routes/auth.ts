@@ -138,6 +138,11 @@ app.post('/api/auth/register', async (c: any) => {
   const cleanEmail = String(email).trim().toLowerCase();
   const cleanPenName = String(pen_name).replace(/^@/, '').trim().toLowerCase();
 
+  // Audit A-5: validasi format email di gerbang — baris pending rongsok tak lagi bisa dibuat.
+  if (!/^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,16}$/.test(cleanEmail)) {
+    return c.json({ error: 'Alamat email tidak valid.' }, 400);
+  }
+
   if (!/^[a-z0-9._-]+$/.test(cleanPenName)) {
     return c.json({ error: 'Nama pena hanya boleh huruf kecil, angka, titik, underscore, dan strip.' }, 400);
   }
@@ -180,7 +185,11 @@ app.post('/api/auth/register', async (c: any) => {
       // Sudah aktif dan terbukti miliknya → tidak ada yang diubah, jawabannya tetap seragam.
       return c.json(UNIFORM);
     }
-    // Akun pending: kirim OTP ulang saja — data terdaftar pertama tetap dipakai.
+    // Akun pending: kirim OTP ulang saja. Audit A-6: nama pena/city dari registran awal
+    // (mungkin bukan pemilik inbox) kembali menjadi milik siapa pun yang punya inbox.
+    await c.env.DB.prepare(
+      'UPDATE users SET pen_name = ?, city = ? WHERE id = ?'
+    ).bind(cleanPenName, String(city || '').trim() || 'Nusantara', byEmail.id).run();
     userId = byEmail.id;
   } else {
     userId = crypto.randomUUID();
@@ -324,6 +333,9 @@ app.post('/api/auth/reset/start', async (c: any) => {
   if (humanErr) return c.json({ error: humanErr }, 403);
 
   const clean = String(email).trim().toLowerCase();
+  if (!/^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,16}$/.test(clean)) {
+    return c.json({ error: 'Alamat email tidak valid.' }, 400);
+  }
   if (await hitRate(c.env.DB, `rsto:${clean}`, 3, 900)) {
     return c.json({ error: 'Terlalu banyak permintaan. Coba lagi beberapa menit lagi.' }, 429);
   }
@@ -457,6 +469,9 @@ app.post('/api/auth/send-otp', async (c: any) => {
   if (humanErr) return c.json({ error: humanErr }, 403);
 
   const cleanEmail = String(email).trim().toLowerCase();
+  if (!/^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,16}$/.test(cleanEmail)) {
+    return c.json({ error: 'Alamat email tidak valid.' }, 400);
+  }
 
   // Batas pengiriman OTP per email (vuln-0005) — cegah flooding ke satu korban.
   if (await hitRate(c.env.DB, `otp:${cleanEmail}`, 5, 900)) {
