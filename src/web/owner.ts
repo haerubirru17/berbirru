@@ -126,7 +126,7 @@ export function renderOwnerPage(disputes: any[], withdrawals: any[], calonPenjua
     <tr>
       <td>
         <a class="fw-bold" href="/owner/akun/${escapeHtml(w.user_id)}">@${escapeHtml(w.pen_name || '?')}</a>
-        <div class="muted">${escapeHtml(w.method || 'qris')} · ${escapeHtml(w.account || '—')} · ${tgl(w.requested_at)}</div>
+        <div class="muted">${escapeHtml(w.method || 'bank')} · ${escapeHtml(w.account || '—')} · ${tgl(w.requested_at)}</div>
         ${w.kode ? `<a class="small" href="/saldo/pencairan/${escapeHtml(w.kode)}" target="_blank" rel="noopener">Bukti ${escapeHtml(w.kode)} →</a>` : ''}
       </td>
       <td><span class="badge ${w.kind === 'buyer' ? 'bg-cyan-lt' : 'bg-green-lt'}">${w.kind === 'buyer' ? 'pembeli · refund' : 'penjual'}</span></td>

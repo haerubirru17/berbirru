@@ -1139,15 +1139,19 @@ app.post('/api/saldo/withdraw', async (c: any) => {
   if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
   const body: any = await c.req.json().catch(() => null);
   const amount = Number(body?.amount);
+  // Audit R3 (keputusan owner): pencairan HANYA ke rekening bank — QRIS/ewallet dihapus.
+  const bank = String(body?.bank || '').replace(/\s+/g, ' ').trim().slice(0, 30);
+  const accountNo = String(body?.account_number || '').replace(/\D/g, '');
   const kind: 'seller' | 'buyer' = me.seller_status === 'approved' ? 'seller' : 'buyer';
   const fee = withdrawFee(kind, amount);
   const total = withdrawTotal(kind, amount);
-  const method = ['qris', 'bank', 'ewallet'].includes(body?.method) ? body.method : 'qris';
-  const account = String(body?.account || '').trim().slice(0, 120);
+  const method = 'bank';
+  const account = `${bank} ${accountNo}`;
   if (!Number.isSafeInteger(amount) || amount < WITHDRAW_MIN) {
     return c.json({ error: `Minimal tarik Rp${WITHDRAW_MIN.toLocaleString('id-ID')}` }, 400);
   }
-  if (account.length < 4) return c.json({ error: 'Tulis tujuan pencairan (no. QRIS/rekening/e-wallet)' }, 400);
+  if (bank.length < 2 || !/^[A-Za-z .]/.test(bank)) return c.json({ error: 'Isi nama bank tujuan (contoh: BCA, Mandiri)' }, 400);
+  if (accountNo.length < 8 || accountNo.length > 20) return c.json({ error: 'Nomor rekening tidak valid (8–20 angka)' }, 400);
   // Anti-banjir antrean: satu pengajuan aktif, maksimal 3 pengajuan per 24 jam.
   const akt: any = await c.env.DB.prepare(
     "SELECT COUNT(*) AS n FROM withdrawals WHERE user_id = ? AND status = 'requested'"

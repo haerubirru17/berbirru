@@ -80,15 +80,11 @@ export function renderSaldoPage(user: any, balance: number, ledger: any[], withd
 
   <div class="st-card">
     <div class="st-big">Tarik Dana</div>
-    <div class="st-sub">Tulis tujuan pencairan dengan benar — uang dikirim ke tujuan ini.</div>
+    <div class="st-sub">Uang dicairkan hanya ke rekening bank atas nama yang terverifikasi.</div>
     <form id="wdForm" onsubmit="return tarik(event)">
       <input class="fld" id="wdAmount" inputmode="numeric" placeholder="Jumlah (min ${minTarik.toLocaleString('id-ID')})" ${bisa ? '' : 'disabled'}>
-      <select class="fld" id="wdMethod" ${bisa ? '' : 'disabled'}>
-        <option value="qris">QRIS</option>
-        <option value="bank">Rekening bank</option>
-        <option value="ewallet">E-wallet (GoPay/OVO/DANA)</option>
-      </select>
-      <input class="fld" id="wdAccount" placeholder="No. QRIS / nomor rekening / nomor e-wallet" ${bisa ? '' : 'disabled'}>
+      <input class="fld" id="wdBank" placeholder="Nama bank (contoh: BCA, Mandiri)" ${bisa ? '' : 'disabled'}>
+      <input class="fld" id="wdAccount" inputmode="numeric" placeholder="Nomor rekening" ${bisa ? '' : 'disabled'}>
       <div class="st-sub" id="wdInfo" style="margin-top:10px;">${peran === 'penjual'
         ? 'Biaya tarik: Rp3.500 (Rp7.500 bila ≥ Rp200.000). Saldo harus menutup jumlah + biaya.'
         : 'Tanpa biaya tarik.'}</div>
@@ -113,14 +109,16 @@ function err(t){document.getElementById('err').textContent=t||''}
 async function tarik(ev){
   ev.preventDefault(); err('');
   const amount=Number(String(document.getElementById('wdAmount').value).replace(/\\D/g,''));
-  const method=document.getElementById('wdMethod').value;
-  const account=document.getElementById('wdAccount').value.trim();
+  const bank=document.getElementById('wdBank').value.trim();
+  const accountNumber=document.getElementById('wdAccount').value.replace(/\\D/g,'');
   if(!amount){err('Isi jumlah yang mau ditarik.');return false}
+  if(bank.length<2){err('Isi nama bank tujuan.');return false}
+  if(accountNumber.length<8){err('Isi nomor rekening (min 8 angka).');return false}
   const fee=${peran === 'pembeli' ? 0 : 0}; // dihitung server; di sini hanya cek kasar
   const minTotal=${minTarik + feeMin};
   if(amount<${minTarik}){err('Minimal tarik '+rupiah(${minTarik})+'.');return false}
   if(amount+ (${peran}==='pembeli'?0:(amount>=200000?7500:3500)) > ${Number(balance)}){err('Saldo tidak cukup untuk jumlah + biaya tarik.');return false}
-  const r=await fetch('/api/saldo/withdraw',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount,method,account})});
+  const r=await fetch('/api/saldo/withdraw',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount,bank,account_number:accountNumber})});
   const j=await r.json().catch(()=>({}));
   if(!r.ok){err(j.error||'Gagal mengajukan pencairan.');return false}
   location.reload(); return false;
