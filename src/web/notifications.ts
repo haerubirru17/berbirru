@@ -176,7 +176,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
   <script>
     let notificationsBusy = false;
     let notificationsTimer = null;
-    let notificationsFingerprint = '';
+    let notificationsFingerprint = null;
     const NOTIFICATIONS_POLL_MS = 12000;
 
     function scheduleNotificationsPoll() {
