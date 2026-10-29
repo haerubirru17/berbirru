@@ -19,7 +19,23 @@ import { validStock } from '../lib/pasar-inventory';
 import { notifyOrder, logOrderEvent, sellerBalance, KURIR_MAP } from '../lib/pasar-core';
 import { Env } from '../env';
 
-// Seluruh handler, helper, konstanta, dan middleware pasar dipindah verbatim dari index.ts.
+// Seluruh handler, helper, konstanta, dan middleware pasar dipindah verbatim dari index.ts. (reconcileQris bertingkat top-level supaya bisa di-import owner.ts — audit B-05)
+export async function reconcileQris(db: any, env: Env, o: any): Promise<{ ok: boolean; paid?: boolean; error?: string }> {
+  if (o.status !== 'created') return { ok: true, paid: o.status === 'paid' };
+  const provider = await getQrisStatus(env, o.qris_order_id);
+  if (!provider.ok) return { ok: false, error: provider.error };
+  const expected = Number(o.qris_final_amount || Number(o.price) + Number(o.shipping));
+  if (!providerAmountMatches(provider.finalAmount, expected)) return { ok: false, error: 'Nominal status KlikQRIS tidak cocok atau hilang' };
+  if (provider.signature && o.qris_signature && provider.signature !== o.qris_signature) return { ok: false, error: 'Signature status KlikQRIS tidak cocok' };
+  if (!provider.paid) return { ok: true, paid: false };
+  const res = await db.prepare("UPDATE orders SET status = 'paid', updated_at = datetime('now') WHERE id = ? AND status = 'created'").bind(o.id).run();
+  if ((res.meta?.changes || 0) > 0) {
+    await logOrderEvent(db, o.id, 'system', 'created', 'paid', 'Status KlikQRIS terverifikasi');
+    await notifyOrder(db, { userId: o.seller_id, actorId: o.buyer_id, type: 'order_paid', orderId: o.id });
+  }
+  return { ok: true, paid: true };
+}
+
 export function mountPasar(app: any) {
 // ================= PASAR BUKU (rekber marketplace) =================
 // Fee rekber 5.000/order ditanggung penjual; pembeli bayar harga+ongkir persis.
@@ -66,6 +82,8 @@ async function putFoto(
 app.post('/api/pasar/upload', async (c: any) => {
   const me = await getAuthUser(c);
   if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
+  // Audit D-07: R2 berbayar dan tanpa lifecycle → batasi per-akun.
+  if (await hitRate(c.env.DB, `up:${me.id}`, 20, 3600)) return c.json({ error: 'Terlalu banyak unggahan. Coba lagi nanti.' }, 429);
   const r = await putFoto(c, (ext) => `${PHOTO_DIR}/${me.id}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`);
   if ('error' in r) return c.json({ error: r.error }, r.status);
   return c.json({ ok: true, key: r.key, url: `/media/${r.key}?v=${Date.now()}` });
@@ -164,6 +182,7 @@ app.get('/berkas/dokumen/:userId/:kind', async (c: any) => {
   return serveBerkas(c, row.r2_key);
 });
 
+const MAX_PRICE = 10_000_000; // Audit B-08: satu plafon konsisten untuk create & PATCH (keputusan konservatif).
 app.post('/api/pasar/listings', async (c: any) => {
   const me = await getAuthUser(c);
   if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
@@ -186,7 +205,7 @@ app.post('/api/pasar/listings', async (c: any) => {
   let photos: string[] = Array.isArray(body.photos) ? body.photos.map(String) : [];
   photos = photos.filter((k) => new RegExp(`^${PHOTO_DIR}/${me.id}_[0-9]+_[a-z0-9]+\\.(jpg|png|webp)$`).test(k)).slice(0, MAX_LISTING_PHOTOS);
   if (!title || title.length > 140) return c.json({ error: 'Judul wajib diisi (maks 140 karakter)' }, 400);
-  if (!Number.isInteger(price) || price < 1000 || price > 10_000_000) return c.json({ error: 'Harga harus Rp1.000–10.000.000' }, 400);
+  if (!Number.isInteger(price) || price < 1000 || price > MAX_PRICE) return c.json({ error: 'Harga harus Rp1.000–10.000.000' }, 400);
   if (stock === null) return c.json({ error: 'Stok harus bilangan bulat 1–999' }, 400);
   if (!couriers.length) return c.json({ error: 'Pilih minimal satu layanan pengiriman' }, 400);
   if (!Number.isInteger(weightG) || weightG < 100 || weightG > 30_000) return c.json({ error: 'Berat buku harus 100–30.000 gram' }, 400);
@@ -563,6 +582,16 @@ app.get('/pasar/:id/beli', async (c: any) => {
 app.post('/api/pasar/orders', async (c: any) => {
   const me = await getAuthUser(c);
   if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
+  // Audit D-06: sebuah akun tak boleh mengunci inventori (freeze stok katalog).
+  if (await hitRate(c.env.DB, `order:${me.id}`, 5, 600)) {
+    return c.json({ error: 'Terlalu banyak belanja sekaligus. Selesaikan dulu pesananmu.' }, 429);
+  }
+  const aktifPembeli: any = await c.env.DB.prepare(
+    "SELECT COUNT(*) AS n FROM orders WHERE buyer_id = ? AND status = 'created'"
+  ).bind(me.id).first();
+  if ((aktifPembeli?.n || 0) >= 3) {
+    return c.json({ error: 'Kamu punya ≥3 pesanan menunggu bayar. Selesaikan atau batalkan dulu.' }, 409);
+  }
   const body: any = await c.req.json().catch(() => null);
   if (!body) return c.json({ error: 'Body tidak valid' }, 400);
   // Kwitansi Rekber: kesepakatan wajib — ini satu-satunya "form", pengiriman bukan urusan platform.
@@ -678,9 +707,11 @@ app.post('/api/pasar/orders', async (c: any) => {
     orderId: qrisOrderId, amount: total, description: `Pasar Buku: ${p.title.slice(0, 60)}`,
   });
   if (!qris.ok) {
+    // Audit B-03: restore stok hanya bila flip status benar-benar untuk order masih-created
+    // (mimik guard EXISTS di cancel created — menutup race cancel-vs-fail-QRIS).
     await c.env.DB.batch([
       c.env.DB.prepare("UPDATE orders SET status = 'cancelled', updated_at = datetime('now') WHERE id = ? AND status = 'created'").bind(id),
-      c.env.DB.prepare("UPDATE listings SET stock = MIN(stock + 1, 999) WHERE id = ? AND status != 'deleted'").bind(p.id),
+      c.env.DB.prepare("UPDATE listings SET stock = MIN(stock + 1, 999) WHERE id = ? AND status != 'deleted' AND EXISTS (SELECT 1 FROM orders WHERE id = ? AND status = 'created')").bind(p.id, id),
     ]);
     return c.json({ error: qris.error || 'Gagal menyiapkan pembayaran' }, 502);
   }
@@ -769,21 +800,6 @@ app.get('/pasar/order/:id', async (c: any) => {
   return c.html(renderOrderPage(o, p, photos, user, adminView));
 });
 
-async function reconcileQris(db: any, env: Env, o: any): Promise<{ ok: boolean; paid?: boolean; error?: string }> {
-  if (o.status !== 'created') return { ok: true, paid: o.status === 'paid' };
-  const provider = await getQrisStatus(env, o.qris_order_id);
-  if (!provider.ok) return { ok: false, error: provider.error };
-  const expected = Number(o.qris_final_amount || Number(o.price) + Number(o.shipping));
-  if (!providerAmountMatches(provider.finalAmount, expected)) return { ok: false, error: 'Nominal status KlikQRIS tidak cocok atau hilang' };
-  if (provider.signature && o.qris_signature && provider.signature !== o.qris_signature) return { ok: false, error: 'Signature status KlikQRIS tidak cocok' };
-  if (!provider.paid) return { ok: true, paid: false };
-  const res = await db.prepare("UPDATE orders SET status = 'paid', updated_at = datetime('now') WHERE id = ? AND status = 'created'").bind(o.id).run();
-  if ((res.meta?.changes || 0) > 0) {
-    await logOrderEvent(db, o.id, 'system', 'created', 'paid', 'Status KlikQRIS terverifikasi');
-    await notifyOrder(db, { userId: o.seller_id, actorId: o.buyer_id, type: 'order_paid', orderId: o.id });
-  }
-  return { ok: true, paid: true };
-}
 
 app.get('/api/pasar/orders/:id/status', async (c: any) => {
   const me = await getAuthUser(c);
@@ -800,6 +816,8 @@ app.get('/api/pasar/orders/:id/status', async (c: any) => {
 
 // Webhook hanya trigger; status API provider tetap sumber kebenaran.
 app.post('/api/klikqris/webhook', async (c: any) => {
+  // Audit B-04: webhook tanpa nonce/replay-table — pelindung defensif rate limit.
+  if (await hitRate(c.env.DB, 'klikqris:webhook', 30, 60)) return c.json({ ok: false }, 429);
   const body: any = await c.req.json().catch(() => null);
   if (!body) return c.json({ ok: false }, 400);
   const o: any = await c.env.DB.prepare('SELECT * FROM orders WHERE qris_order_id = ?').bind(String(body.order_id || '')).first();
@@ -1110,7 +1128,7 @@ app.patch('/api/pasar/listings/:id', async (c: any) => {
   const stock = validStock(body?.stock, true);
   const cond = ['baru', 'bekas_bagus', 'bekas_layak'].includes(String(body?.cond)) ? String(body.cond) : '';
   if (title.length < 3) return c.json({ error: 'Judul minimal 3 karakter' }, 400);
-  if (!(price >= 1000 && price <= 50_000_000)) return c.json({ error: 'Harga harus Rp1.000–Rp50.000.000' }, 400);
+  if (!(price >= 1000 && price <= MAX_PRICE)) return c.json({ error: 'Harga harus Rp1.000–Rp10.000.000' }, 400);
   if (stock === null) return c.json({ error: 'Stok harus bilangan bulat 0–999' }, 400);
   if (!cond) return c.json({ error: 'Kondisi buku tidak dikenal' }, 400);
 
@@ -1162,7 +1180,8 @@ app.post('/api/pasar/listings/:id/status', async (c: any) => {
   if (l.status === 'sold') return c.json({ error: 'Buku sudah terjual — tidak bisa diubah' }, 409);
 
   const live: any = await c.env.DB.prepare(
-    "SELECT id FROM orders WHERE listing_id = ? AND status IN ('created','paid','handed') LIMIT 1"
+    // Audit B-07: 'disputed' juga status hidup (sama dgn PATCH/DELETE guard).
+    "SELECT id FROM orders WHERE listing_id = ? AND status IN ('created','paid','handed','disputed') LIMIT 1"
   ).bind(l.id).first();
   if (live) return c.json({ error: 'Ada pesanan berjalan untuk buku ini' }, 409);
 
@@ -1173,7 +1192,7 @@ app.post('/api/pasar/listings/:id/status', async (c: any) => {
 app.delete('/api/pasar/listings/:id', async (c: any) => {
   const me = await getAuthUser(c);
   if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
-  const l: any = await c.env.DB.prepare('SELECT id, seller_id, status FROM listings WHERE id = ?')
+  const l: any = await c.env.DB.prepare('SELECT id, seller_id, status, photos FROM listings WHERE id = ?')
     .bind(c.req.param('id')).first();
   if (!l || l.seller_id !== me.id) return c.json({ error: 'Tidak ditemukan' }, 404);
   if (l.status === 'deleted') return c.json({ ok: true });
@@ -1183,6 +1202,12 @@ app.delete('/api/pasar/listings/:id', async (c: any) => {
   if (live) return c.json({ error: 'Ada pesanan berjalan — listing belum bisa dihapus' }, 409);
   await c.env.DB.prepare("UPDATE listings SET status = 'deleted', stock = 0 WHERE id = ? AND seller_id = ?")
     .bind(l.id, me.id).run();
+  // Audit D-07/B-06: objek foto tetap tidak layak tayang — bersihkan dari R2 (best-effort,
+  // sama dengan pola seller_docs di pasar.ts replace & sweep).
+  try {
+    const photos = JSON.parse(l.photos || '[]');
+    if (c.env.MEDIA) for (const k of photos) await c.env.MEDIA.delete(String(k)).catch(() => {});
+  } catch (_) { /* JSON foto rusak — diabaikan, status sudah 'deleted'. */ }
   return c.json({ ok: true });
 });
 

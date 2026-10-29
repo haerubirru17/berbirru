@@ -1,9 +1,12 @@
-import { getAuthUser } from '../lib/shared';
+import { getAuthUser, hitRate } from '../lib/shared';
 import { ambilWilayah, cekTarifOngkir, KURIR_DIDUKUNG, KURIR_LABEL } from '../kurir';
 
 // Handlers kurir dipindah verbatim dari index.ts.
 export function mountKurir(app: any) {
 app.get('/api/kurir/wilayah', async (c: any) => {
+  // Audit D-05: tamu boleh membaca, tapi upstream berbayar — batasi per-IP.
+  const ip = c.req.header('cf-connecting-ip') || 'unknown';
+  if (await hitRate(c.env.DB, `kurir:wil:${ip}`, 30, 60)) return c.json({ ok: false, error: 'Terlalu banyak. Coba sebentar lagi.' }, 429);
   const parent = (c.req.query('parent') || '').trim();
   const r = await ambilWilayah(c.env, parent || undefined);
   if (!r.ok) return c.json({ ok: false, error: r.error }, 503);
@@ -12,6 +15,9 @@ app.get('/api/kurir/wilayah', async (c: any) => {
 
 // Tarif ongkir live untuk satu listing (pembeli pilih kecamatan tujuan).
 app.post('/api/pasar/ongkir', async (c: any) => {
+  // Audit D-05: hit provider berbayar per request — batasi per-IP.
+  const ip = c.req.header('cf-connecting-ip') || 'unknown';
+  if (await hitRate(c.env.DB, `kurir:ongkir:${ip}`, 12, 60)) return c.json({ error: 'Terlalu banyak. Coba sebentar lagi.' }, 429);
   const body: any = await c.req.json().catch(() => null);
   const destId = String(body?.dest_id || '').trim();
   const destName = String(body?.dest_name || '').trim().slice(0, 120);

@@ -5,6 +5,7 @@ import { settlementAmounts, PASAR_FEE } from '../lib/pasar-settlement';
 import { slugUnik } from '../lib/toko';
 import { cekResi } from '../kurir';
 import { logOrderEvent, notifyOrder, KURIR_MAP } from '../lib/pasar-core';
+import { reconcileQris } from './pasar';
 
 // Handlers owner dipindah verbatim dari index.ts (termasuk /api/owner/*).
 export function mountOwner(app: any) {
@@ -343,10 +344,22 @@ async function logOwnerAction(db: any, email: string | undefined | null, action:
 
 async function sweepOrders(db: any, env: any): Promise<string> {
   const expiring = await db.prepare(
-    "SELECT id, listing_id FROM orders WHERE status = 'created' AND created_at < datetime('now', '-48 hours')"
+    "SELECT id, listing_id, qris_order_id FROM orders WHERE status = 'created' AND created_at < datetime('now', '-48 hours')"
   ).all();
   let expired = 0;
   for (const o of (expiring.results || []) as any[]) {
+    // Audit B-05: sebelum dinyatakan expired, cek provider KlikQRIS — bayaran yang sudah settle
+    // tidak boleh 'kedaluwarsa' (uang hang itu belum bisa dikreditkan lagi otomatis).
+    if (env.KLIKQRIS_API_KEY && o.qris_order_id) {
+      const utuh = await db.prepare('SELECT * FROM orders WHERE id = ?').bind(o.id).first();
+      try {
+        const rr = await reconcileQris(db, env, utuh);
+        if (rr.paid) continue; // tercatat paid oleh reconcile — tidak jadi expired.
+      } catch (e) {
+        console.error('reconcile sebelum expire gagal', o.id, String(e));
+        continue; // belum diketahui — coba lagi jam berikutnya, jangan keliru-keliruan.
+      }
+    }
     const moved = await db.prepare(
       "UPDATE orders SET status = 'expired', updated_at = datetime('now') WHERE id = ? AND status = 'created'"
     ).bind(o.id).run();
@@ -423,10 +436,22 @@ async function logOwnerAction(db: any, email: string | undefined | null, action:
 
 export async function sweepOrders(db: any, env: any): Promise<string> {
   const expiring = await db.prepare(
-    "SELECT id, listing_id FROM orders WHERE status = 'created' AND created_at < datetime('now', '-48 hours')"
+    "SELECT id, listing_id, qris_order_id FROM orders WHERE status = 'created' AND created_at < datetime('now', '-48 hours')"
   ).all();
   let expired = 0;
   for (const o of (expiring.results || []) as any[]) {
+    // Audit B-05: sebelum dinyatakan expired, cek provider KlikQRIS — bayaran yang sudah settle
+    // tidak boleh 'kedaluwarsa' (uang hang itu belum bisa dikreditkan lagi otomatis).
+    if (env.KLIKQRIS_API_KEY && o.qris_order_id) {
+      const utuh = await db.prepare('SELECT * FROM orders WHERE id = ?').bind(o.id).first();
+      try {
+        const rr = await reconcileQris(db, env, utuh);
+        if (rr.paid) continue; // tercatat paid oleh reconcile — tidak jadi expired.
+      } catch (e) {
+        console.error('reconcile sebelum expire gagal', o.id, String(e));
+        continue; // belum diketahui — coba lagi jam berikutnya, jangan keliru-keliruan.
+      }
+    }
     const moved = await db.prepare(
       "UPDATE orders SET status = 'expired', updated_at = datetime('now') WHERE id = ? AND status = 'created'"
     ).bind(o.id).run();
