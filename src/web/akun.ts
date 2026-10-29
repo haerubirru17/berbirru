@@ -58,7 +58,7 @@ ${PASAR_BASE_CSS}
       <span class="ak-t"><b>@${escapeHtml(user.pen_name)}</b><span>${escapeHtml(user.email || '')} · ${penjual ? 'Penjual terverifikasi' : menunggu ? 'Pengajuan toko diproses' : 'Pembeli'}</span></span>
     </div>
     ${baris('/pasar/saya?tab=pesanan', icoTas, 'Pesanan Saya', 'Belum bayar, dikirim, selesai')}
-    ${baris(penjual ? '/pasar/saya?tab=toko' : '/pasar/jual', icoToko, penjual ? 'Toko Saya' : menunggu ? 'Pengajuan toko' : 'Buka Toko', penjual ? 'Buku, toko publik, kelola listing' : menunggu ? 'Menunggu review owner' : 'Ajukan verifikasi penjual')}
+    ${owner ? '' : baris(penjual ? '/pasar/saya?tab=toko' : '/pasar/jual', icoToko, penjual ? 'Toko Saya' : menunggu ? 'Pengajuan toko' : 'Buka Toko', penjual ? 'Buku, toko publik, kelola listing' : menunggu ? 'Menunggu review owner' : 'Ajukan verifikasi penjual')}
     ${penjual ? baris('/pasar/saya?tab=saldo', icoDuit, 'Saldo & Tarik Dana', 'Sisa saldo dan riwayat pencairan') : ''}
     ${baris('/akun/alamat', icoPin, 'Alamat Pengiriman', 'Nama, nomor HP, kode pos, alamat')}
     ${baris('/u/' + encodeURIComponent(user.pen_name), icoLuaran, 'Profil Publik', 'Warkah, pengikut, dan bio')}
