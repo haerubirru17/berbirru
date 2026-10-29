@@ -7,26 +7,26 @@ import { PASAR_BASE_CSS, rupiah } from './pasar';
 
 const PAGE_CSS = `
   .wrap{width:min(680px,calc(100% - 28px));margin:auto;padding:18px 0 130px}.page-head{margin:8px 0 22px}.page-head h1{margin:0 0 8px;font:700 clamp(40px,7vw,64px)/.95 'Newsreader';letter-spacing:-.04em}.page-head p{margin:0;color:#52627A;line-height:1.6}
-  .kw-card{background:#fff;border:3px solid #0B192C;box-shadow:6px 7px 0 #26364A;padding:18px;margin-bottom:18px}
+  .kw-card{background:#fff;border:3px solid var(--ink);box-shadow:6px 7px 0 var(--ink-soft);padding:18px;margin-bottom:18px}
   .sec-t{font:700 23px 'Newsreader';margin-bottom:12px}
   .prod-line{display:flex;justify-content:space-between;gap:10px;font-size:13px;font-weight:700;padding:5px 0;color:#334155}
-  .prod-line.tot{border-top:2px dashed #0B192C;margin-top:8px;padding-top:12px;font:400 17px 'Archivo Black';color:#0F3E99}
+  .prod-line.tot{border-top:2px dashed var(--ink);margin-top:8px;padding-top:12px;font:400 17px 'Archivo Black';color:var(--deep)}
   .lbl{display:block;font:700 11px 'Roboto Mono';letter-spacing:.04em;margin:0 0 6px}
-  .inp{width:100%;min-height:46px;font:700 13.5px 'DM Sans';padding:10px 12px;border:2.5px solid #0B192C;background:#fff;color:#0B192C;outline:none}
-  .inp:focus{box-shadow:3px 3px 0 #1D61E7}textarea.inp{min-height:90px;resize:vertical;line-height:1.5}
+  .inp{width:100%;min-height:46px;font:700 13.5px 'DM Sans';padding:10px 12px;border:2.5px solid var(--ink);background:#fff;color:var(--ink);outline:none}
+  .inp:focus{box-shadow:3px 3px 0 var(--blue)}textarea.inp{min-height:90px;resize:vertical;line-height:1.5}
   .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-  .hint{font-size:11px;font-weight:600;color:#64748B;margin-top:6px;line-height:1.5}
-  .note{margin-top:14px;background:#E0EEFD;border:2px solid #0B192C;padding:11px 13px;font-size:11px;font-weight:700;color:#0F3E99;line-height:1.55}
+  .hint{font-size:11px;font-weight:600;color:var(--muted);margin-top:6px;line-height:1.5}
+  .note{margin-top:14px;background:#E0EEFD;border:2px solid var(--ink);padding:11px 13px;font-size:11px;font-weight:700;color:var(--deep);line-height:1.55}
   .err{display:none;background:#FEE2E2;border:2px solid #991B1B;color:#991B1B;padding:10px 12px;font-size:12px;font-weight:700;margin-bottom:14px}
-  .btn-ongkir{width:100%;min-height:46px;background:#fff;border:2.5px solid #0B192C;font:900 13px 'DM Sans';cursor:pointer;box-shadow:3px 3px 0 #26364A;margin-top:10px}
+  .btn-ongkir{width:100%;min-height:46px;background:#fff;border:2.5px solid var(--ink);font:900 13px 'DM Sans';cursor:pointer;box-shadow:3px 3px 0 var(--ink-soft);margin-top:10px}
   .btn-ongkir:active{transform:translate(2px,2px);box-shadow:none}
-  .opt{display:flex;justify-content:space-between;align-items:center;gap:10px;border:2.5px solid #CBD5E1;padding:10px 12px;margin-top:8px;cursor:pointer;font-size:12.5px;font-weight:700;background:#fff}
-  .opt input{accent-color:#1D61E7;width:18px;height:18px;flex:none}
-  .opt.sel{border-color:#0B192C;box-shadow:3px 3px 0 #26364A;background:#FFFDF2}
-  .opt .eta{font:600 10.5px 'Roboto Mono';color:#64748B}
-  .paybar{position:fixed;bottom:0;left:0;right:0;width:100%;background:#fff;border-top:3px solid #0B192C;box-shadow:0 -5px 0 rgba(11,25,44,.08);padding:10px max(14px,calc((100% - 680px)/2));display:flex;justify-content:space-between;align-items:center;gap:12px;z-index:80}
-  .paybar .l{font:700 10px 'Roboto Mono';color:#64748B;letter-spacing:.04em}.paybar .t{font:400 18px 'Archivo Black';color:#0F3E99}
-  .paybar button{min-height:48px;background:#FDE047;color:#0B192C;border:3px solid #0B192C;padding:10px 18px;font-size:13px;font-weight:900;cursor:pointer;box-shadow:3px 4px 0 #26364A;white-space:nowrap}
+  .opt{display:flex;justify-content:space-between;align-items:center;gap:10px;border:2.5px solid var(--line-soft);padding:10px 12px;margin-top:8px;cursor:pointer;font-size:12.5px;font-weight:700;background:#fff}
+  .opt input{accent-color:var(--blue);width:18px;height:18px;flex:none}
+  .opt.sel{border-color:var(--ink);box-shadow:3px 3px 0 var(--ink-soft);background:#FFFDF2}
+  .opt .eta{font:600 10.5px 'Roboto Mono';color:var(--muted)}
+  .paybar{position:fixed;bottom:0;left:0;right:0;width:100%;background:#fff;border-top:3px solid var(--ink);box-shadow:0 -5px 0 rgba(11,25,44,.08);padding:10px max(14px,calc((100% - 680px)/2));display:flex;justify-content:space-between;align-items:center;gap:12px;z-index:80}
+  .paybar .l{font:700 10px 'Roboto Mono';color:var(--muted);letter-spacing:.04em}.paybar .t{font:400 18px 'Archivo Black';color:var(--deep)}
+  .paybar button{min-height:48px;background:var(--yellow);color:var(--ink);border:3px solid var(--ink);padding:10px 18px;font-size:13px;font-weight:900;cursor:pointer;box-shadow:3px 4px 0 var(--ink-soft);white-space:nowrap}
   .paybar button:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
   @media(max-width:420px){.paybar{padding:9px 14px}.paybar button{padding:9px 12px}.wrap{padding-top:8px}.grid3{grid-template-columns:1fr}}
 `;
@@ -56,7 +56,7 @@ ${PASAR_BASE_CSS}
       <option value="__baru__">+ Alamat baru (isi manual)</option>
     </select>
     <div class="hint">Alamat utama dipakai otomatis. Pilih “Alamat baru” untuk mengisi sendiri.</div>
-    <div class="hint"><a href="/akun/alamat" style="color:#1D61E7;font-weight:800;">Kelola alamat</a></div>
+    <div class="hint"><a href="/akun/alamat" style="color:var(--blue);font-weight:800;">Kelola alamat</a></div>
     <script>var ALAMAT = ${jsonScript(addresses.map((a: any) => ({ id: a.id, receiver: a.receiver, phone: a.phone, postal: a.postal, text: a.text, p: a.province_id, k: a.city_id, c: a.district_id })))};</script>
   </div>` : ''}
 
@@ -98,13 +98,13 @@ ${PASAR_BASE_CSS}
     <div class="sec-t">Rincian</div>
     <div class="prod-line"><span>${escapeHtml(p.title)}</span><span>${rupiah(harga)}</span></div>
     <div class="prod-line"><span>Ongkir (<span id="lblKurir">belum dipilih</span>)</span><span id="lblOngkir">—</span></div>
-    <div style="font:600 10.5px/1.5 'DM Sans';color:#64748B;margin:8px 0 0">Tarif kurir dihitung per kg, dibulatkan ke atas (minimum 1 kg), sudah termasuk estimasi hari tiba.</div>
+    <div style="font:600 10.5px/1.5 'DM Sans';color:var(--muted);margin:8px 0 0">Tarif kurir dihitung per kg, dibulatkan ke atas (minimum 1 kg), sudah termasuk estimasi hari tiba.</div>
     <div class="prod-line tot"><span>Total (belum termasuk biaya layanan)</span><span id="lblTotal">${rupiah(harga)}</span></div>
   </div>
 </div>
 
-<div style="font:600 10.5px/1.5 'DM Sans';color:#64748B;margin:0 0 90px">*Biaya layanan QRIS dihitung otomatis oleh penyedia pembayaran (bukan oleh BERBIRRU) dan tampil di halaman pesanan.</div>
-<div id="saldoBox" style="display:none;background:#FEF3C7;border:2.5px solid #0B192C;box-shadow:4px 5px 0 #26364A;padding:12px;margin:0 0 90px;">
+<div style="font:600 10.5px/1.5 'DM Sans';color:var(--muted);margin:0 0 90px">*Biaya layanan QRIS dihitung otomatis oleh penyedia pembayaran (bukan oleh BERBIRRU) dan tampil di halaman pesanan.</div>
+<div id="saldoBox" style="display:none;background:#FEF3C7;border:2.5px solid var(--ink);box-shadow:4px 5px 0 var(--ink-soft);padding:12px;margin:0 0 90px;">
   <label style="display:flex;gap:9px;align-items:flex-start;font:800 13px 'DM Sans';">
     <input type="checkbox" id="fSaldo" onchange="pakaiSaldo()" style="width:20px;height:20px;margin-top:1px;">
     <span>Pakai saldo <b id="lblSaldo">${rupiah(saldo)}</b></span>
