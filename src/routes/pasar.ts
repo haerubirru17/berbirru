@@ -852,22 +852,27 @@ app.post('/api/pasar/order/:id/cancel', async (c: any) => {
       return c.json({ error: 'Pembayaran QRIS harus lewat sengketa supaya dana bisa dikembalikan owner' }, 409);
     }
     const nominal = Number(o.qris_final_amount || (Number(o.price) + Number(o.shipping || 0)));
-    const moved = await c.env.DB.prepare(
-      "UPDATE orders SET status = 'cancelled', resolution_note = ?, updated_at = datetime('now') WHERE id = ? AND status = 'paid' AND paid_with = 'saldo'"
-    ).bind('Dibatalkan pembeli sebelum dikirim — saldo dikembalikan', o.id).run();
-    if ((moved.meta?.changes || 0) === 0) return c.json({ error: 'Pesanan sudah berubah status' }, 409);
-    await c.env.DB.batch([
-      // Kembalikan saldo, sekali saja (NOT EXISTS = idempoten).
+    // Atomik (audit B-01): flip + refund + restore + event dalam SATU batch — crash di tengah
+    // tidak lagi menjadikan order cancelled tanpa ledger. Cond guard disusul di tiap stmt
+    // agar race cancel ganda tetap tepat-sekali (pola batch cancel 'created' di atas).
+    const res = await c.env.DB.batch([
+      c.env.DB.prepare(
+        "UPDATE listings SET stock = MIN(stock + 1, 999) WHERE id = ? AND status != 'deleted' AND EXISTS (SELECT 1 FROM orders WHERE id = ? AND status = 'paid' AND paid_with = 'saldo')"
+      ).bind(o.listing_id, o.id),
+      c.env.DB.prepare(
+        "UPDATE orders SET status = 'cancelled', resolution_note = ?, updated_at = datetime('now') WHERE id = ? AND status = 'paid' AND paid_with = 'saldo'"
+      ).bind('Dibatalkan pembeli sebelum dikirim — saldo dikembalikan', o.id),
       c.env.DB.prepare(
         `INSERT INTO ledger (user_id, order_id, delta, kind)
          SELECT buyer_id, id, qris_final_amount, 'refund' FROM orders
           WHERE id = ? AND status = 'cancelled'
             AND NOT EXISTS (SELECT 1 FROM ledger WHERE order_id = ? AND kind = 'refund')`
       ).bind(o.id, o.id),
-      c.env.DB.prepare("UPDATE listings SET stock = MIN(stock + 1, 999) WHERE id = ? AND status != 'deleted'").bind(o.listing_id),
-      c.env.DB.prepare("INSERT INTO order_events (order_id, actor, from_st, to_st, note) VALUES (?,?,?,?,?)")
-        .bind(o.id, 'buyer', 'paid', 'cancelled', 'Dibatalkan pembeli sebelum dikirim — saldo dikembalikan'),
+      c.env.DB.prepare(
+        "INSERT INTO order_events (order_id, actor, from_st, to_st, note) SELECT ?,?,?,?,? WHERE EXISTS (SELECT 1 FROM orders WHERE id = ? AND status = 'cancelled')"
+      ).bind(o.id, 'buyer', 'paid', 'cancelled', 'Dibatalkan pembeli sebelum dikirim — saldo dikembalikan', o.id),
     ]);
+    if ((res[1].meta?.changes || 0) === 0) return c.json({ error: 'Pesanan sudah berubah status' }, 409);
     await notifyOrder(c.env.DB, { userId: o.seller_id, actorId: me.id, type: 'order_cancel', orderId: o.id });
     return c.json({ ok: true, refunded: nominal });
   }

@@ -289,23 +289,32 @@ app.post('/api/owner/withdrawals/:id/settle', async (c: any) => {
   if (!w) return c.json({ error: 'Permintaan tidak ditemukan' }, 404);
 
   const status = decision === 'reject' ? 'rejected' : 'paid';
-  const res = await c.env.DB.prepare(
-    `UPDATE withdrawals SET status = ?, review_note = ?, transfer_ref = ?, reviewed_at = datetime('now'),
-       paid_at = ${decision === 'reject' ? 'NULL' : "datetime('now')"} WHERE id = ? AND status = 'requested'`
-  ).bind(status, note, ref || null, id).run();
-  if ((res.meta?.changes || 0) === 0) return c.json({ error: 'Permintaan sudah diproses' }, 409);
-
+  // Atomik (audit B-02): flip + ledger debit dalam SATU batch. order_id='wd:'+id supaya
+  // partial unique index idx_ledger_order_kind menegakkan at-most-once (NULL lepas dari index).
+  const rows: any[] = [
+    c.env.DB.prepare(
+      `UPDATE withdrawals SET status = ?, review_note = ?, transfer_ref = ?, reviewed_at = datetime('now'),
+         paid_at = ${decision === 'reject' ? 'NULL' : "datetime('now')"} WHERE id = ? AND status = 'requested'`
+    ).bind(status, note, ref || null, id),
+  ];
   if (decision === 'pay') {
-    const rows: any[] = [
-      c.env.DB.prepare("INSERT INTO ledger (user_id, order_id, delta, kind) VALUES (?, NULL, ?, 'withdraw')")
-        .bind(w.user_id, -Number(w.amount)),
-    ];
+    rows.push(
+      c.env.DB.prepare("INSERT INTO ledger (user_id, order_id, delta, kind) VALUES (?, ?, ?, 'withdraw')")
+        .bind(w.user_id, 'wd:' + w.id, -Number(w.amount)),
+    );
     if (Number(w.fee) > 0) {
-      rows.push(c.env.DB.prepare("INSERT INTO ledger (user_id, order_id, delta, kind) VALUES (?, NULL, ?, 'withdraw_fee')")
-        .bind(w.user_id, -Number(w.fee)));
+      rows.push(c.env.DB.prepare("INSERT INTO ledger (user_id, order_id, delta, kind) VALUES (?, ?, ?, 'withdraw_fee')")
+        .bind(w.user_id, 'wd:' + w.id, -Number(w.fee)));
     }
-    await c.env.DB.batch(rows);
   }
+  let res: any[];
+  try {
+    res = await c.env.DB.batch(rows);
+  } catch (e: any) {
+    if (String(e?.message || e).includes('UNIQUE')) return c.json({ error: 'Permintaan sudah diproses' }, 409);
+    throw e;
+  }
+  if ((res[0].meta?.changes || 0) === 0) return c.json({ error: 'Permintaan sudah diproses' }, 409);
   await notifyOrder(c.env.DB, {
     userId: w.user_id, actorId: me!.id,
     type: decision === 'pay' ? 'order_withdraw_paid' : 'order_withdraw_reject', orderId: null,
