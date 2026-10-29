@@ -193,6 +193,12 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
         const data = await res.json();
         const list = data.notifications || [];
         const fingerprint = list.map(n => [n.id, n.is_read, n.created_at].join(':')).join('|');
+        // Dot unread di bottom nav (elemen dirender oleh layout; feed memakai fungsi sendiri).
+        const dot = document.getElementById('notifDot');
+        if (dot) {
+          const unread = list.filter(n => !n.is_read).length;
+          dot.style.display = unread > 0 ? 'block' : 'none';
+        }
         const container = document.getElementById('notifListContainer');
         if (fingerprint !== notificationsFingerprint) {
           notificationsFingerprint = fingerprint;

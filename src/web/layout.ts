@@ -15,10 +15,11 @@ export function renderBottomNav(
   const on = (k: string) => (activeTab === k ? ' is-on' : '');
   const mon = (k: MarketTab) => (mode === 'pasar' && mt === k ? ' is-on' : '');
 
-  const item = (href: string, label: string, svg: string, aktif: string) => `
+  const item = (href: string, label: string, svg: string, aktif: string, dot = false) => `
       <a href="${href}" class="bnav-item${aktif}">
         <svg viewBox="0 0 24 24">${svg}</svg>
         <span class="bnav-lbl">${label}</span>
+        ${dot ? '<span class="bnav-dot" id="notifDot" style="display:none"></span>' : ''}
       </a>`;
 
   const icoHome = '<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>';
@@ -69,7 +70,7 @@ export function renderBottomNav(
         <span class="p"><svg viewBox="0 0 24 24">${icoTulis}</svg></span>
         <span>Tulis</span>
       </a>`
-      + item('/notifications', 'Notifikasi', icoBell, on('notifications'))
+      + item('/notifications', 'Notifikasi', icoBell, on('notifications'), true)
       + item(akun, 'Profil', icoUser, activeTab === 'profile' && isMe ? ' is-on' : '');
 
   return `

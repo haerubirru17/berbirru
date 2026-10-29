@@ -2923,8 +2923,10 @@ app.get('/api/posts', async (c) => {
   const binds: any[] = [];
 
   if (q) {
-    query += ` WHERE (p.content LIKE ? OR u.pen_name LIKE ?) AND ${vis.sql} ORDER BY p.created_at DESC LIMIT 40`;
-    binds.push(`%${q}%`, `%${q}%`, ...vis.binds);
+    // Escape wildcard LIKE (% _) — tanpa ini, q=%25 membocorkan seluruh katalog.
+    const qesc = q.replace(/[\\%_]/g, (m) => '\\' + m);
+    query += ` WHERE (p.content LIKE ? ESCAPE '\\' OR u.pen_name LIKE ? ESCAPE '\\') AND ${vis.sql} ORDER BY p.created_at DESC LIMIT 40`;
+    binds.push(`%${qesc}%`, `%${qesc}%`, ...vis.binds);
   } else if (mode === 'following') {
     if (!user) return c.json({ mode, posts: [], message: 'Silakan masuk untuk melihat warkah penulis yang Anda ikuti.' });
     query += ` JOIN follows f ON p.author_id = f.following_id WHERE f.follower_id = ? AND ${vis.sql} ORDER BY p.created_at DESC LIMIT 40`;
