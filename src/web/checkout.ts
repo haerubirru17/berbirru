@@ -2,7 +2,7 @@
 // (BinderByte), lalu bayar sekali via QRIS. Harga ongkir TIDAK dipercaya dari klien:
 // server mengutip ulang saat order dibuat (lihat POST /api/pasar/orders).
 
-import { escapeHtml } from '../lib/sanitize';
+import { escapeHtml, jsonScript } from '../lib/sanitize';
 import { PASAR_BASE_CSS, rupiah } from './pasar';
 
 const PAGE_CSS = `
@@ -57,7 +57,7 @@ ${PASAR_BASE_CSS}
     </select>
     <div class="hint">Alamat utama dipakai otomatis. Pilih “Alamat baru” untuk mengisi sendiri.</div>
     <div class="hint"><a href="/akun/alamat" style="color:#1D61E7;font-weight:800;">Kelola alamat</a></div>
-    <script>var ALAMAT = ${JSON.stringify(addresses.map((a: any) => ({ id: a.id, receiver: a.receiver, phone: a.phone, postal: a.postal, text: a.text, p: a.province_id, k: a.city_id, c: a.district_id })))};</script>
+    <script>var ALAMAT = ${jsonScript(addresses.map((a: any) => ({ id: a.id, receiver: a.receiver, phone: a.phone, postal: a.postal, text: a.text, p: a.province_id, k: a.city_id, c: a.district_id })))};</script>
   </div>` : ''}
 
   <div class="kw-card">
@@ -124,6 +124,7 @@ var LISTING = '${p.id}';
 var pilihan = null;
 var labelKec = '';
 
+function escf(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]})}
 function el(id){return document.getElementById(id)}
 function rp(n){return 'Rp'+Number(n||0).toLocaleString('id-ID')}
 function err(t,focusId){
@@ -205,7 +206,7 @@ el('btnOngkir').onclick=async function(){
     var box=el('opsiBox');
     box.innerHTML='<label class="lbl" style="margin-top:14px;">Pilih layanan</label>'+
       j.options.map(function(o,i){
-        return '<label class="opt" data-i="'+i+'"><span><b>'+o.courierName+' '+o.service+'</b><div class="eta">'+o.eta+'</div></span>'+
+        return '<label class="opt" data-i="'+i+'"><span><b>'+escf(o.courierName)+' '+escf(o.service)+'</b><div class="eta">'+escf(o.eta)+'</div></span>'+
                '<span style="text-align:right;"><b>'+rp(o.price)+'</b><input type="radio" name="ship" value="'+i+'"></span></label>';
       }).join('');
     Array.prototype.forEach.call(box.querySelectorAll('.opt'),function(node){

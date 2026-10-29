@@ -73,3 +73,9 @@ export function sanitizeRich(input: unknown): string {
 
   return s;
 }
+
+// Embed aman di dalam blok <script> (audit C-02): JSON.stringify tidak menetralkan
+// '</script>' → HTML parser memutus blok. Ganti semua '<' dengan \u003c (semantics identik).
+export function jsonScript(value: unknown): string {
+  return JSON.stringify(value).replace(/</g, '\\u003c');
+}

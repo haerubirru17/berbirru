@@ -2,7 +2,7 @@
 // Pembeli: bayar (QRIS), konfirmasi terima, sengketa. Penjual: tandai serah, lihat kesepakatan.
 
 import { posisiDana } from '../lib/dana';
-import { escapeHtml } from '../lib/sanitize';
+import { escapeHtml, jsonScript } from '../lib/sanitize';
 import { PASAR_BASE_CSS, rupiah, trackUrl } from './pasar';
 
 const PAGE_CSS = `
@@ -132,7 +132,7 @@ ${PASAR_BASE_CSS}
     <div class="st-sub" style="margin-top:4px;">${escapeHtml(o.dest_district_name || o.dest_district_id || '-')}${o.postal_code ? ' · ' + escapeHtml(o.postal_code) : ''}</div>
     <div style="margin-top:6px;font-size:12.5px;font-weight:600;line-height:1.6;color:#334155;">${escapeHtml(o.dest_address)}</div>
     ${o.receiver_name ? `<button type="button" id="btnSalin" class="btn b-ghost" style="width:100%;margin-top:10px;" onclick="salinAlamat(this)">Salin alamat penerima</button>
-    <script>function salinAlamat(btn){var t=${JSON.stringify(`${o.receiver_name}\n${o.receiver_phone || ''}\n${o.dest_address || ''}\n${o.dest_district_name || ''} ${o.postal_code || ''}`.trim())};if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){if(btn)btn.textContent='Tersalin ✓'},function(){prompt('Salin manual:',t)})}else{prompt('Salin manual:',t)}}</script>` : ''}
+    <script>function salinAlamat(btn){var t=${jsonScript(`${o.receiver_name}\n${o.receiver_phone || ''}\n${o.dest_address || ''}\n${o.dest_district_name || ''} ${o.postal_code || ''}`.trim())};if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){if(btn)btn.textContent='Tersalin ✓'},function(){prompt('Salin manual:',t)})}else{prompt('Salin manual:',t)}}</script>` : ''}
   </div>` : ''}
 
   ${o.kurir && o.resi ? `<div class="st-card"><div class="st-big" style="font-size:14px;">Pengiriman</div>
@@ -205,6 +205,7 @@ ${PASAR_BASE_CSS}
 ${actions ? `<div class="actionbar" id="actionbar">${st === 'created' && isBuyer ? `<div style="min-width:112px"><div style="font:700 10px 'Roboto Mono';color:#64748B">TOTAL QRIS</div><div style="font:400 17px 'Archivo Black';color:#0F3E99">${rupiah(total)}</div></div>` : ''}${actions}</div>` : ''}
 
 <script>
+function escf(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]})}
 function showDispute(){document.getElementById('dispute-box').style.display='block';document.getElementById('dispute-box').scrollIntoView({behavior:'smooth'});}
 async function post(url,body){const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});const j=await r.json();if(!r.ok)throw new Error(j.error||'Gagal');return j;}
 function showHandover(){document.getElementById('handover-box').style.display='block';}
@@ -215,7 +216,7 @@ async function sendDispute(){try{await post(location.pathname+'/dispute',{note:d
 let rvN=5;function pilihBintang(n){rvN=n;document.querySelectorAll('#rvStars .chip').forEach(function(b){b.classList.toggle('on',Number(b.dataset.n)===n)})}
 async function batalkan(){if(!confirm('Batalkan pesanan ini? Buku akan dilepas lagi.'))return;try{await post('/api/pasar/order/'+${JSON.stringify(o.id)}+'/cancel');location.reload();}catch(e){alerterr(e)}}
 async function kirimUlasan(){try{await post('/api/pasar/order/'+${JSON.stringify(o.id)}+'/review',{stars:rvN,body:(document.getElementById('rvBody')||{}).value||''});location.reload();}catch(e){alerterr(e)}}
-async function cekStatus(){const b=document.getElementById('track-box');b.innerHTML='<div class="st-sub">Menghubungi kurir…</div>';try{const j=await post(location.pathname+'/track');if(j.ok){b.innerHTML='<div style="margin-top:10px;border:2.5px solid #0B192C;border-radius:10px;padding:10px;background:#fff;"><div style="font-weight:800;">'+(j.status||'-')+'</div>'+(j.desc?'<div class="st-sub">'+j.desc+'</div>':'')+(j.history||[]).slice(0,3).map(h=>'<div class="st-sub" style="border-top:1px dashed #CBD5E1;margin-top:6px;padding-top:6px;">'+h.date+' — '+h.desc+'</div>').join('')+'</div>';}else{b.innerHTML='<div class="st-sub">'+j.error+' — coba "Buka Web Kurir".</div>';}}catch(e){alerterr(e);b.innerHTML='';}}
+async function cekStatus(){const b=document.getElementById('track-box');b.innerHTML='<div class="st-sub">Menghubungi kurir…</div>';try{const j=await post(location.pathname+'/track');if(j.ok){b.innerHTML='<div style="margin-top:10px;border:2.5px solid #0B192C;border-radius:10px;padding:10px;background:#fff;"><div style="font-weight:800;">'+escf(j.status||'-')+'</div>'+(j.desc?'<div class="st-sub">'+escf(j.desc)+'</div>':'')+(j.history||[]).slice(0,3).map(h=>'<div class="st-sub" style="border-top:1px dashed #CBD5E1;margin-top:6px;padding-top:6px;">'+escf(h.date)+' — '+escf(h.desc)+'</div>').join('')+'</div>';}else{b.innerHTML='<div class="st-sub">'+escf(j.error)+' — coba "Buka Web Kurir".</div>';}}catch(e){alerterr(e);b.innerHTML='';}}
 async function unggahBukti(){
   const f=document.getElementById('buktiFoto'); const note=(document.getElementById('buktiNote')||{}).value||'';
   if(!f||!f.files||!f.files[0]){alerterr({message:'Pilih foto dulu.'});return}

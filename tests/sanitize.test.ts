@@ -1,5 +1,5 @@
 // Cek runnable: npm test
-import { sanitizeRich, escapeHtml, stripTags } from '../src/lib/sanitize.ts';
+import { sanitizeRich, escapeHtml, stripTags, jsonScript } from '../src/lib/sanitize.ts';
 
 const assert = (cond: unknown, msg: string) => { if (!cond) throw new Error('GAGAL: ' + msg); };
 
@@ -45,5 +45,11 @@ assert(sanitizeRich(legacy) === legacy, 'data lama rusak: ' + sanitizeRich(legac
 assert(escapeHtml('<script>a</script>') === '&lt;script&gt;a&lt;/script&gt;', 'escapeHtml salah');
 assert(!/</.test(escapeHtml('<b>x</b>')), 'escapeHtml bocor <');
 assert(stripTags('<b>Halo</b> dunia') === 'Halo dunia', 'stripTags salah');
+
+// jsonScript (audit C-02): '<' tak pernah lolos apa adanya → blok <script> tak tertutup.
+const js = jsonScript('x</script><script>alert(1)</script>' + '&lt;&amp;\n"\\');
+assert(!/</.test(js), 'jsonScript bocor literal <');
+assert(js.includes('\\u003c/script>'), 'jsonScript mengganti dengan \\u003c');
+assert(js.startsWith('"') && js.endsWith('"'), 'jsonScript harus tetap JSON string valid');
 
 console.log('OK — sanitize: semua cek lolos');
