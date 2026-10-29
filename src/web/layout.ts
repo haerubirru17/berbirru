@@ -1,3 +1,5 @@
+import { THEME } from './theme';
+
 type Mode = 'sosial' | 'pasar';
 type MarketTab = 'pasar' | 'pesanan' | 'toko' | 'akun';
 
@@ -77,29 +79,29 @@ export function renderBottomNav(
   <style>
     .bnav-count{position:absolute;top:1px;right:13px;min-width:16px;height:16px;padding:0 4px;border-radius:9px;background:#B42318;color:#fff;font:900 9px 'DM Sans';display:grid;place-items:center;line-height:1}
     body:has(> nav.bnav){padding-bottom:92px}
-    .bnav{position:fixed;left:0;right:0;bottom:0;z-index:75;background:#fff;border-top:2.5px solid #0B192C;
+    .bnav{position:fixed;left:0;right:0;bottom:0;z-index:75;background:#fff;border-top:2.5px solid ${THEME.ink};
       padding:7px 10px calc(7px + env(safe-area-inset-bottom));box-shadow:0 -4px 0 rgba(11,25,44,.06)}
-    .bnav[data-mode="sosial"]{border-top-color:#0B192C}
+    .bnav[data-mode="sosial"]{border-top-color:${THEME.ink}}
     .bnav[data-mode="pasar"]{border-top-color:#B45309;background:#FFFDF5}
     .bnav-in{width:100%;max-width:560px;margin:auto;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:center;gap:2px}
     .bnav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:46px;
-      text-decoration:none;color:#64748B;font:800 9.5px 'DM Sans';letter-spacing:.01em;cursor:pointer;-webkit-tap-highlight-color:transparent}
+      text-decoration:none;color:${THEME.muted};font:800 9.5px 'DM Sans';letter-spacing:.01em;cursor:pointer;-webkit-tap-highlight-color:transparent}
     .bnav-item svg{width:21px;height:21px;stroke:currentColor;stroke-width:2.1;fill:none;stroke-linecap:round;stroke-linejoin:round}
     .bnav-lbl{padding:1px 6px;border:1.5px solid transparent}
-    .bnav[data-mode="sosial"] .bnav-item.is-on{color:#1D61E7}
+    .bnav[data-mode="sosial"] .bnav-item.is-on{color:${THEME.blue}}
     .bnav[data-mode="pasar"] .bnav-item.is-on{color:#B45309}
     .bnav-item.is-on svg{stroke-width:2.5}
-    .bnav[data-mode="sosial"] .bnav-item.is-on .bnav-lbl{background:#DBEAFE;border-color:#0B192C;box-shadow:1px 1px 0 #26364A}
-    .bnav[data-mode="pasar"] .bnav-item.is-on .bnav-lbl{background:#FDE047;border-color:#0B192C;box-shadow:1px 1px 0 #26364A}
-    .bnav-plus{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:60px;text-decoration:none;color:#0B192C;
+    .bnav[data-mode="sosial"] .bnav-item.is-on .bnav-lbl{background:#DBEAFE;border-color:${THEME.ink};box-shadow:1px 1px 0 ${THEME.inkSoft}}
+    .bnav[data-mode="pasar"] .bnav-item.is-on .bnav-lbl{background:${THEME.accent};border-color:${THEME.ink};box-shadow:1px 1px 0 ${THEME.inkSoft}}
+    .bnav-plus{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:60px;text-decoration:none;color:${THEME.ink};
       font:900 9.5px 'DM Sans';transform:translateY(-11px)}
-    .bnav-plus .p{width:46px;height:46px;display:grid;place-items:center;background:#FDE047;border:2.5px solid #0B192C;box-shadow:3px 3px 0 #26364A}
+    .bnav-plus .p{width:46px;height:46px;display:grid;place-items:center;background:${THEME.accent};border:2.5px solid ${THEME.ink};box-shadow:3px 3px 0 ${THEME.inkSoft}}
     .bnav-plus[data-mode="sosial"] .p{background:#DBEAFE}
-    .bnav-plus .p svg{width:22px;height:22px;stroke:#0B192C;stroke-width:2.8;fill:none;stroke-linecap:round}
-    .bnav-plus:active .p{transform:translate(2px,2px);box-shadow:1px 1px 0 #26364A}
+    .bnav-plus .p svg{width:22px;height:22px;stroke:${THEME.ink};stroke-width:2.8;fill:none;stroke-linecap:round}
+    .bnav-plus:active .p{transform:translate(2px,2px);box-shadow:1px 1px 0 ${THEME.inkSoft}}
     .bnav-ico{position:relative;display:inline-flex;line-height:0}
     .bnav-plusmark{position:absolute;top:-4px;right:-7px;display:grid;place-items:center;width:13px;height:13px;
-      background:#FDE047;border:1.5px solid #0B192C;border-radius:50%;font:900 10px/1 'DM Sans';color:#0B192C}
+      background:${THEME.accent};border:1.5px solid ${THEME.ink};border-radius:50%;font:900 10px/1 'DM Sans';color:${THEME.ink}}
     .bnav-item.is-baru .bnav-lbl{font-size:8.5px;letter-spacing:0}
     .bnav-bell{position:relative;display:inline-flex}
     .bnav-dot{position:absolute;top:-2px;right:-3px;width:8px;height:8px;border-radius:50%;background:#B42318;border:1.5px solid #fff}

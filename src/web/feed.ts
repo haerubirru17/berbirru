@@ -1,3 +1,4 @@
+import { THEME } from './theme';
 import { renderBottomNav } from './layout';
 import { NOTIFY_HTML } from './notify';
 
@@ -17,7 +18,7 @@ export function renderFeedPage(user: any = null): string {
   <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,700;1,6..72,500&family=Roboto+Mono:wght@600;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root{--blue:#1D61E7;--deep:#0F3E99;--ink:#0B192C;--paper:#FFF9E9;--white:#FFFEF8;--yellow:#FDE047;--coral:#FF735F;--mint:#88E6BD;--soft:#E0EEFD;--red:#EF4444;--green:#059669;--line:3px solid var(--ink);--thin:2px solid var(--ink);--shadow:6px 7px 0 #26364A;--small-shadow:3px 4px 0 #26364A;--bg-main:var(--paper);--bg-card:#fff;--bg-blue-subtle:var(--soft);--shadow-ink:#26364A;--blue-primary:var(--blue);--blue-deep:var(--deep);--blue-light:#60A5FA;--accent-yellow:var(--yellow);--border-thick:var(--line);--border-med:3px solid var(--ink);--border-thin:var(--thin);--shadow-hard:var(--small-shadow);--shadow-hard-lg:var(--shadow);--shadow-hard-sm:2px 3px 0 #26364A;--radius:0;--radius-sm:0}
+    :root{--blue:${THEME.blue};--deep:${THEME.blueDeep};--ink:${THEME.ink};--paper:#FFF9E9;--white:#FFFEF8;--yellow:${THEME.accent};--coral:#FF735F;--mint:#88E6BD;--soft:#E0EEFD;--red:#EF4444;--green:#059669;--muted:${THEME.muted};--ink-soft:${THEME.inkSoft};--line-soft:${THEME.lineSoft};--line:${THEME.borderW} solid var(--ink);--thin:2px solid var(--ink);--shadow:6px 7px 0 ${THEME.inkSoft};--small-shadow:3px 4px 0 ${THEME.inkSoft};--bg-main:var(--paper);--bg-card:#fff;--bg-blue-subtle:var(--soft);--shadow-ink:${THEME.inkSoft};--blue-primary:var(--blue);--blue-deep:var(--deep);--blue-light:#60A5FA;--accent-yellow:var(--yellow);--border-thick:var(--line);--border-med:3px solid var(--ink);--border-thin:var(--thin);--shadow-hard:var(--small-shadow);--shadow-hard-lg:var(--shadow);--shadow-hard-sm:2px 3px 0 ${THEME.inkSoft};--radius:0;--radius-sm:0
     body {
       font-family: 'DM Sans', -apple-system, sans-serif;
       background:var(--paper); color: var(--ink); min-height: 100vh;
@@ -83,7 +84,7 @@ export function renderFeedPage(user: any = null): string {
       font-weight: 900; font-size: 23px; box-shadow: none;
       transform: rotate(-2deg); z-index: 5;
     }
-    .trigger-placeholder { flex: 1; font-size: 13px; font-weight: 700; color: #64748B; }
+    .trigger-placeholder { flex: 1; font-size: 13px; font-weight: 700; color: var(--muted); }
     .trigger-pen-btn { background: var(--accent-yellow); border: var(--border-thin); border-radius: 8px; padding: 6px 10px; font-size: 11px; font-weight: 900; display: inline-flex; align-items: center; gap: 4px; box-shadow: 1.5px 1.5px 0 var(--shadow-ink); }
 
     /* Card Feed Threads-Style dengan Overlap Avatar & Paperclip Efek */
@@ -115,22 +116,22 @@ export function renderFeedPage(user: any = null): string {
 
     .thread-author-info { display: flex; flex-direction: column; line-height: 1.25; }
     .thread-pen-name { font-size: 13px; font-weight: 800; color: var(--ink); text-decoration: none; }
-    .vis-private { display: inline-flex; align-items: center; gap: 3px; margin-top: 2px; padding: 1px 6px; border: 1.5px solid #CBD5E1; border-radius: 999px; font: 800 9px 'Roboto Mono', monospace; color: #64748B; letter-spacing: .3px; }
+    .vis-private { display: inline-flex; align-items: center; gap: 3px; margin-top: 2px; padding: 1px 6px; border: 1.5px solid var(--line-soft); border-radius: 999px; font: 800 9px 'Roboto Mono', monospace; color: var(--muted); letter-spacing: .3px; }
     .vis-private svg { width: 9px; height: 9px; }
     .thread-name-row { display: flex; align-items: center; gap: 3px; }
     .vcheck { width: 13px; height: 13px; flex: none; }
-    .thread-city { font-size: 10px; font-weight: 700; color: #64748B; }
+    .thread-city { font-size: 10px; font-weight: 700; color: var(--muted); }
     
     /* Timestamp 2 Baris Sejajar: Jam di atas, Tanggal di bawah */
     .thread-timestamp-stack {
       display: flex; flex-direction: column; align-items: flex-end; line-height: 1.25;
     }
     .time-main { font-size: 11px; font-weight: 800; color: var(--ink); }
-    .date-sub { font-size: 9.5px; font-weight: 700; color: #64748B; }
+    .date-sub { font-size: 9.5px; font-weight: 700; color: var(--muted); }
 
     /* Sambung Bait Connector Line */
     .thread-parent-connector {
-      background: #F8FAFC; border-left: 4px solid var(--blue-primary); border-bottom: 1.5px dashed #CBD5E1;
+      background: #F8FAFC; border-left: 4px solid var(--blue-primary); border-bottom: 1.5px dashed var(--line-soft);
       padding: 8px 12px; margin: 0; font-size: 12px; font-weight: 600; color: #475569; cursor: pointer;
       display: flex; align-items: center; gap: 6px;
     }
@@ -220,7 +221,7 @@ export function renderFeedPage(user: any = null): string {
       border-bottom: var(--border-thick); background: #FFFFFF; position: sticky; top: 0; z-index: 20;
     }
     .btn-cancel {
-      font-size: 13px; font-weight: 800; color: #64748B; background: none; border: none; cursor: pointer; padding: 6px 4px;
+      font-size: 13px; font-weight: 800; color: var(--muted); background: none; border: none; cursor: pointer; padding: 6px 4px;
     }
     .header-title-clean {
       font-family: 'Archivo Black', sans-serif; font-size: 15.5px; font-weight: 800; color: var(--ink); letter-spacing: -0.3px;
@@ -269,7 +270,7 @@ export function renderFeedPage(user: any = null): string {
     .rich-editor-canvas:empty:before { content: attr(placeholder); color: #94A3B8; font-weight: 500; }
     .rich-editor-canvas blockquote {
       background: var(--bg-blue-subtle); border-left: 3.5px solid var(--blue-primary);
-      padding: 8px 14px; margin: 12px 0; font-style: italic; border-radius: 8px; color: #0B192C;
+      padding: 8px 14px; margin: 12px 0; font-style: italic; border-radius: 8px; color: var(--ink);
     }
 
     /* Floating Docked Bottom Toolbar — dua baris, konsisten */
@@ -321,7 +322,7 @@ gap:2px;text-decoration:none;color:#6A788D;font-size:10px;font-weight:800;cursor
     .btn-create-floating {
 width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);color:var(--ink);border:2.5px solid var(--ink);box-shadow:3px 3px 0 var(--ink);transform:rotate(-2deg)
     }
-    .btn-create-floating svg { width: 20px; height: 20px; stroke: #0B192C; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .btn-create-floating svg { width: 20px; height: 20px; stroke: var(--ink); stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .btn-create-floating:active { transform: translate(1.5px, 1.5px); box-shadow: none; }
 
     /* Feed Tabs: kartu yang ikut mengalir/tenggelam saat scroll (tanpa sticky) */
