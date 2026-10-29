@@ -1,3 +1,4 @@
+import { THEME } from './theme';
 import { escapeHtml } from '../lib/sanitize';
 import { PASAR_BASE_CSS } from './pasar';
 import { renderBottomNav } from './layout';
@@ -5,18 +6,18 @@ import { renderBottomNav } from './layout';
 const rupiah = (n: number) => 'Rp' + Number(n || 0).toLocaleString('id-ID');
 
 const CSS = `
-  .ak-card{background:#fff;border:3px solid #0B192C;box-shadow:5px 6px 0 #26364A;border-radius:12px;overflow:hidden;margin-bottom:16px}
-  .ak-row{display:flex;align-items:center;gap:12px;padding:14px;border-bottom:2px solid #E2E8F0;text-decoration:none;color:#0B192C}
+  .ak-card{background:#fff;border:3px solid var(--ink);box-shadow:5px 6px 0 var(--ink-soft);border-radius:12px;overflow:hidden;margin-bottom:16px}
+  .ak-row{display:flex;align-items:center;gap:12px;padding:14px;border-bottom:2px solid #E2E8F0;text-decoration:none;color:var(--ink)}
   .ak-row:last-child{border-bottom:0}
   .ak-row:active{background:#FEF9C3}
-  .ak-ic{width:34px;height:34px;flex:none;display:grid;place-items:center;background:#F1F5F9;border:2px solid #0B192C;border-radius:8px}
-  .ak-ic svg{width:17px;height:17px;stroke:#0B192C;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .ak-ic{width:34px;height:34px;flex:none;display:grid;place-items:center;background:#F1F5F9;border:2px solid var(--ink);border-radius:8px}
+  .ak-ic svg{width:17px;height:17px;stroke:var(--ink);stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
   .ak-t{flex:1;min-width:0}
   .ak-t b{display:block;font:800 14px 'DM Sans'}
-  .ak-t span{display:block;font:600 11.5px 'DM Sans';color:#64748B;margin-top:2px}
+  .ak-t span{display:block;font:600 11.5px 'DM Sans';color:var(--muted);margin-top:2px}
   .ak-arw{font:900 15px 'DM Sans';color:#94A3B8}
   .ak-row.danger .ak-ic{background:#FEE2E2}.ak-row.danger b{color:#B42318}
-  .ak-btn{width:100%;min-height:46px;background:#fff;border:3px solid #0B192C;box-shadow:3px 4px 0 #26364A;font:900 13px 'DM Sans';cursor:pointer;border-radius:8px}
+  .ak-btn{width:100%;min-height:46px;background:#fff;border:3px solid var(--ink);box-shadow:3px 4px 0 var(--ink-soft);font:900 13px 'DM Sans';cursor:pointer;border-radius:8px}
 `;
 
 const KEPALA = (judul: string, sub: string) =>

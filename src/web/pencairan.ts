@@ -1,6 +1,7 @@
 // Bukti pencairan saldo: dokumen internal bernomor. Bisa dicetak/disimpan PDF.
 // Catatan internal owner TIDAK ditampilkan; yang tampil hanya fakta + referensi transfer
 // dan alasan penolakan (karena itu pesan untuk pemilik saldo).
+import { THEME } from './theme';
 import { escapeHtml } from '../lib/sanitize';
 import { rupiah } from './pasar';
 
@@ -23,12 +24,12 @@ export function renderBuktiPencairan(w: any, opts: { owner: boolean; penName: st
 <html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Bukti Pencairan ${escapeHtml(w.kode || '')} — BERBIRRU</title>
 <style>
-  :root{--ink:#0B192C;--dim:#52627A;--line:#CBD5E1;--blue:#1D61E7}
+  :root{--ink:${THEME.ink};--dim:#52627A;--muted:${THEME.muted};--ink-soft:${THEME.inkSoft};--line-soft:${THEME.lineSoft};--line:#CBD5E1;--blue:${THEME.blue}}
   *{box-sizing:border-box}
   body{margin:0;background:#EEF1F6;color:var(--ink);font:14px/1.5 'DM Sans',system-ui,-apple-system,sans-serif}
   .bar{max-width:720px;margin:0 auto;padding:14px 16px 0;display:flex;gap:8px;align-items:center}
   .bar a,.bar button{border:2px solid var(--ink);background:#fff;color:var(--ink);font:800 12px 'DM Sans';padding:8px 12px;cursor:pointer;text-decoration:none;box-shadow:2px 2px 0 var(--ink)}
-  .paper{max-width:720px;margin:14px auto 40px;background:#fff;border:3px solid var(--ink);box-shadow:8px 8px 0 #26364A;padding:26px 26px 30px}
+  .paper{max-width:720px;margin:14px auto 40px;background:#fff;border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink-soft);padding:26px 26px 30px}
   .head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;border-bottom:3px solid var(--ink);padding-bottom:12px}
   .brand{font:400 20px 'Archivo Black',system-ui,sans-serif;letter-spacing:-.02em}
   .brand span{font:700 10px 'Roboto Mono',monospace;letter-spacing:.16em;color:var(--dim);display:block;margin-top:2px}

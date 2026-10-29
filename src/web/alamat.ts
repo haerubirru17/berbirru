@@ -1,34 +1,35 @@
+import { THEME } from './theme';
 import { escapeHtml } from '../lib/sanitize';
 import { PASAR_BASE_CSS } from './pasar';
 import { renderBottomNav } from './layout';
 
 const CSS = `
-  .al-card{background:#fff;border:3px solid #0B192C;box-shadow:5px 6px 0 #26364A;padding:13px;margin-bottom:14px}
-  .al-card.utama{border-color:#1D61E7;box-shadow:5px 6px 0 #0F3E99}
+  .al-card{background:#fff;border:3px solid var(--ink);box-shadow:5px 6px 0 var(--ink-soft);padding:13px;margin-bottom:14px}
+  .al-card.utama{border-color:var(--blue);box-shadow:5px 6px 0 var(--deep)}
   .al-lbl{font:800 9.5px 'Roboto Mono';letter-spacing:.07em;text-transform:uppercase;color:#7A8798;margin-bottom:6px}
   .al-nm{font:800 14px 'DM Sans';display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:4px}
-  .al-tag{font:800 8.5px 'Roboto Mono';background:#E0EEFD;color:#0F3E99;border:1.5px solid #0F3E99;padding:2px 5px;letter-spacing:.05em}
-  .al-tag.utama{background:#FDE047;color:#0B192C;border-color:#0B192C}
+  .al-tag{font:800 8.5px 'Roboto Mono';background:#E0EEFD;color:var(--deep);border:1.5px solid var(--deep);padding:2px 5px;letter-spacing:.05em}
+  .al-tag.utama{background:var(--yellow);color:var(--ink);border-color:var(--ink)}
   .al-addr{font:600 12px/1.55 'DM Sans';color:#2C3A4D}
   .al-meta{font:600 11px 'DM Sans';color:#5B6B80;margin-top:3px}
   .al-row{display:flex;gap:8px;margin-top:11px;padding-top:11px;border-top:2px dashed #D8D2C0}
   .al-row form{flex:1;margin:0}
-  .al-mini{width:100%;font:800 11px 'DM Sans';border:2px solid #0B192C;background:#fff;color:#0B192C;padding:7px 6px;cursor:pointer;box-shadow:2px 2px 0 #0B192C}
-  .al-mini.blue{background:#1D61E7;color:#fff}
+  .al-mini{width:100%;font:800 11px 'DM Sans';border:2px solid var(--ink);background:#fff;color:var(--ink);padding:7px 6px;cursor:pointer;box-shadow:2px 2px 0 var(--ink)}
+  .al-mini.blue{background:var(--blue);color:#fff}
   .al-mini.red{color:#B42318}
-  .al-tambah{width:100%;min-height:46px;background:#FDE047;color:#0B192C;border:3px solid #0B192C;box-shadow:3px 4px 0 #26364A;font:900 13px 'DM Sans';cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;margin-bottom:8px}
+  .al-tambah{width:100%;min-height:46px;background:var(--yellow);color:var(--ink);border:3px solid var(--ink);box-shadow:3px 4px 0 var(--ink-soft);font:900 13px 'DM Sans';cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;margin-bottom:8px}
   .al-note{font:600 11px/1.5 'DM Sans';color:#5B6B80;margin:0 0 18px}
   .al-f{margin-bottom:12px}
   .al-f label{display:block;font:800 9.5px 'Roboto Mono';letter-spacing:.06em;text-transform:uppercase;color:#5B6B80;margin-bottom:5px}
-  .al-f input,.al-f textarea,.al-f select{width:100%;border:2.5px solid #0B192C;padding:10px 11px;font:700 12.5px 'DM Sans';background:#fff;outline:none;border-radius:0}
+  .al-f input,.al-f textarea,.al-f select{width:100%;border:2.5px solid var(--ink);padding:10px 11px;font:700 12.5px 'DM Sans';background:#fff;outline:none;border-radius:0}
   .al-f textarea{min-height:74px;resize:vertical}
   .al-f .hint{font:600 10.5px 'DM Sans';color:#8792A2;margin-top:4px}
   .al-f2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
   .al-chips{display:flex;gap:7px;flex-wrap:wrap}
-  .al-chip{font:800 11px 'DM Sans';border:2px solid #0B192C;background:#fff;padding:7px 11px;cursor:pointer;box-shadow:2px 2px 0 #26364A}
-  .al-chip:active{transform:translate(1px,1px);box-shadow:1px 1px 0 #26364A}
-  .al-simpan{width:100%;min-height:48px;background:#1D61E7;color:#fff;border:3px solid #0B192C;box-shadow:3px 4px 0 #26364A;font:900 13px 'DM Sans';cursor:pointer;margin-bottom:10px}
-  .al-batal{display:block;text-align:center;font:800 12px 'DM Sans';color:#0B192C;text-decoration:underline;padding:8px}
+  .al-chip{font:800 11px 'DM Sans';border:2px solid var(--ink);background:#fff;padding:7px 11px;cursor:pointer;box-shadow:2px 2px 0 var(--ink-soft)}
+  .al-chip:active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--ink-soft)}
+  .al-simpan{width:100%;min-height:48px;background:var(--blue);color:#fff;border:3px solid var(--ink);box-shadow:3px 4px 0 var(--ink-soft);font:900 13px 'DM Sans';cursor:pointer;margin-bottom:10px}
+  .al-batal{display:block;text-align:center;font:800 12px 'DM Sans';color:var(--ink);text-decoration:underline;padding:8px}
   .al-err{background:#FEE2E2;border:2.5px solid #B42318;color:#7F1D1D;font:700 12px 'DM Sans';padding:10px 12px;margin-bottom:14px}
   .al-ok{background:#DCFCE7;border:2.5px solid #059669;color:#065F46;font:700 12px 'DM Sans';padding:10px 12px;margin-bottom:14px}
   .al-cek{display:flex;gap:9px;align-items:flex-start;font:700 12px 'DM Sans';margin:2px 0 16px}

@@ -1,3 +1,4 @@
+import { THEME } from './theme';
 import { renderBottomNav } from './layout';
 
 export function renderNotificationsPage(user: any = null): string {
@@ -12,7 +13,7 @@ export function renderNotificationsPage(user: any = null): string {
   <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,700;1,6..72,500&family=Roboto+Mono:wght@600;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root{--blue:#1D61E7;--deep:#0F3E99;--ink:#0B192C;--paper:#FFF9E9;--white:#FFFEF8;--yellow:#FDE047;--coral:#FF735F;--mint:#88E6BD;--soft:#E0EEFD;--red:#EF4444;--green:#059669;--line:3px solid var(--ink);--thin:2px solid var(--ink);--shadow:6px 7px 0 #26364A;--small-shadow:3px 4px 0 #26364A;--bg-main:var(--paper);--bg-card:#fff;--bg-blue-subtle:var(--soft);--shadow-ink:#26364A;--blue-primary:var(--blue);--blue-deep:var(--deep);--blue-light:#60A5FA;--accent-yellow:var(--yellow);--border-thick:var(--line);--border-med:3px solid var(--ink);--border-thin:var(--thin);--shadow-hard:var(--small-shadow);--shadow-hard-lg:var(--shadow);--shadow-hard-sm:2px 3px 0 #26364A;--radius:0;--radius-sm:0}
+    :root{--blue:${THEME.blue};--deep:${THEME.blueDeep};--ink:${THEME.ink};--paper:#FFF9E9;--white:#FFFEF8;--yellow:${THEME.accent};--coral:#FF735F;--mint:#88E6BD;--soft:#E0EEFD;--red:#EF4444;--green:#059669;--muted:${THEME.muted};--ink-soft:${THEME.inkSoft};--line-soft:${THEME.lineSoft};--line:3px solid var(--ink);--thin:2px solid var(--ink);--shadow:6px 7px 0 ${THEME.inkSoft};--small-shadow:3px 4px 0 ${THEME.inkSoft};--bg-main:var(--paper);--bg-card:#fff;--bg-blue-subtle:var(--soft);--shadow-ink:#26364A;--blue-primary:var(--blue);--blue-deep:var(--deep);--blue-light:#60A5FA;--accent-yellow:var(--yellow);--border-thick:var(--line);--border-med:3px solid var(--ink);--border-thin:var(--thin);--shadow-hard:var(--small-shadow);--shadow-hard-lg:var(--shadow);--shadow-hard-sm:2px 3px 0 ${THEME.inkSoft};--radius:0;--radius-sm:0}
     body {
       font-family: 'DM Sans', -apple-system, sans-serif;
       background:var(--paper); color: var(--ink); min-height: 100vh;
@@ -48,7 +49,7 @@ export function renderNotificationsPage(user: any = null): string {
       margin-bottom: 10px;
     }
     .notif-section-label {
-      font-size: 11px; font-weight: 800; color: #64748B; text-transform: uppercase;
+      font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase;
       letter-spacing: 0.5px; margin: 0; display: block;
     }
     .btn-mark-read-small {
@@ -89,19 +90,19 @@ export function renderNotificationsPage(user: any = null): string {
     .badge-chain { background: var(--accent-yellow); color: var(--ink); }
     .badge-save { background: var(--blue-primary); color: #FFF; }
     .badge-follow { background: #10B981; color: #FFF; }
-  .hub-link { display:inline-block;font:800 10.5px 'DM Sans';color:#0F3E99;text-decoration:none;background:#E0EEFD;
-    border:2px solid #0B192C;padding:6px 10px;margin-bottom:12px;box-shadow:2px 2px 0 #26364A }
+  .hub-link { display:inline-block;font:800 10.5px 'DM Sans';color:var(--deep);text-decoration:none;background:#E0EEFD;
+    border:2px solid var(--ink);padding:6px 10px;margin-bottom:12px;box-shadow:2px 2px 0 var(--ink-soft) }
     
 
     .notif-content { flex: 1; display: flex; flex-direction: column; gap: 3px; }
     .notif-text { font-size: 13.5px; font-weight: 600; line-height: 1.4; color: #1E293B; }
     .notif-text b { font-weight: 800; color: var(--ink); }
     .notif-quote-preview {
-      font-size: 12px; font-style: italic; color: #64748B; background: var(--bg-blue-subtle);
+      font-size: 12px; font-style: italic; color: var(--muted); background: var(--bg-blue-subtle);
       padding: 4px 8px; border-radius: 4px; margin-top: 3px; display: inline-block;
     }
     .notif-time {
-      font-family: 'Roboto Mono', monospace; font-size: 10px; font-weight: 700; color: #64748B; margin-top: 2px;
+      font-family: 'Roboto Mono', monospace; font-size: 10px; font-weight: 700; color: var(--muted); margin-top: 2px;
     }
 
     /* 5-TAB DOCKED BOTTOM NAVBAR — Lucide Style */
@@ -128,7 +129,7 @@ gap:2px;text-decoration:none;color:#6A788D;font-size:10px;font-weight:800;cursor
     .btn-create-floating {
 width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);color:var(--ink);border:2.5px solid var(--ink);box-shadow:3px 3px 0 var(--ink);transform:rotate(-2deg)
     }
-    .btn-create-floating svg { width: 20px; height: 20px; stroke: #0B192C; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .btn-create-floating svg { width: 20px; height: 20px; stroke: var(--ink); stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .btn-create-floating:active { transform: translate(1.5px, 1.5px); box-shadow: none; }
 
     .bell-wrap { position: relative; }
@@ -163,7 +164,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
       </button>
     </div>
     <div class="notif-list" id="notifListContainer">
-      <div style="background:#FFF;padding:24px;border:3px solid #0B192C;border-radius:16px;text-align:center;font-weight:700;box-shadow:4px 4px 0 #1E293B;">
+      <div style="background:#FFF;padding:24px;border:3px solid var(--ink);border-radius:16px;text-align:center;font-weight:700;box-shadow:4px 4px 0 #1E293B;">
         Memuat aktivitas...
       </div>
     </div>
@@ -203,7 +204,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
         if (fingerprint !== notificationsFingerprint) {
           notificationsFingerprint = fingerprint;
           if (!list.length) {
-            container.innerHTML = '<div style="background:#FFF;padding:24px;border:3px solid #0B192C;border-radius:16px;text-align:center;font-weight:700;box-shadow:4px 4px 0 #1E293B;">Belum ada aktivitas baru. Bagikan warkahmu untuk mengundang tanggapan!</div>';
+            container.innerHTML = '<div style="background:#FFF;padding:24px;border:3px solid var(--ink);border-radius:16px;text-align:center;font-weight:700;box-shadow:4px 4px 0 #1E293B;">Belum ada aktivitas baru. Bagikan warkahmu untuk mengundang tanggapan!</div>';
           } else {
             container.innerHTML = groupNotifs(list).map(renderNotifCard).join('');
           }
