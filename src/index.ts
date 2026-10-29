@@ -44,6 +44,7 @@ import { VENDOR_SWEETALERT2_JS, VENDOR_SWEETALERT2_CSS } from './vendor';
 import { Env } from './env';
 import { sha256hex, hitRate, hardenPost, withAdmin, visibilityClause, getAuthUser } from './lib/shared';
 import { mountNotifications } from './routes/notifications';
+import { mountKurir } from './routes/kurir';
 
 
 // Helper verifikasi Cloudflare Turnstile token
@@ -1251,33 +1252,7 @@ app.post('/api/pasar/listings', async (c) => {
 });
 
 // Wilayah bertingkat: parent kosong = provinsi, 2 digit = kabupaten, 6 digit = kecamatan.
-app.get('/api/kurir/wilayah', async (c) => {
-  const parent = (c.req.query('parent') || '').trim();
-  const r = await ambilWilayah(c.env, parent || undefined);
-  if (!r.ok) return c.json({ ok: false, error: r.error }, 503);
-  return c.json({ ok: true, items: r.items });
-});
-
-// Tarif ongkir live untuk satu listing (pembeli pilih kecamatan tujuan).
-app.post('/api/pasar/ongkir', async (c) => {
-  const body: any = await c.req.json().catch(() => null);
-  const destId = String(body?.dest_id || '').trim();
-  const destName = String(body?.dest_name || '').trim().slice(0, 120);
-  const p: any = await c.env.DB.prepare("SELECT id, seller_id, weight_g, couriers FROM listings WHERE id = ? AND status = 'active' AND stock > 0")
-    .bind(String(body?.listing_id || '')).first();
-  if (!p) return c.json({ error: 'Listing tidak tersedia' }, 404);
-  if (!destId) return c.json({ error: 'Pilih kecamatan tujuan dulu' }, 400);
-  const seller: any = await c.env.DB.prepare('SELECT district_id FROM users WHERE id = ?').bind(p.seller_id).first();
-  if (!seller?.district_id) return c.json({ error: 'Penjual belum menetapkan kota asal' }, 409);
-
-  let couriers: string[] = [];
-  try { couriers = JSON.parse(p.couriers || '[]'); } catch { couriers = []; }
-  const r = await cekTarifOngkir(c.env, {
-    couriers, origin: seller.district_id, destination: destId, weightG: Number(p.weight_g || 1000),
-  });
-  if (!r.ok) return c.json({ error: r.error || 'Tarif tidak tersedia' }, 503);
-  return c.json({ ok: true, options: r.options, dest: { id: destId, name: destName } });
-});
+mountKurir(app);
 
 app.get('/pasar', async (c) => {
   const user = await getAuthUser(c);
