@@ -155,7 +155,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     }
     .stats-button { border: 0; background: transparent; cursor: pointer; font: inherit; padding: 0; }
     .follow-sheet-backdrop { display:none; position:fixed; inset:0; z-index:900; background:rgba(11,25,44,.42); }
-    .follow-sheet { display:none; position:fixed; z-index:901; left:50%; bottom:0; transform:translateX(-50%); width:min(480px,100%); max-height:min(620px,86vh); overflow:auto; background:var(--paper); border:var(--border-thick); border-bottom:0; box-shadow:0 -6px 0 var(--ink-soft); padding:16px 16px 88px; }
+    .follow-sheet { display:none; position:fixed; z-index:901; left:50%; bottom:0; transform:translateX(-50%); width:min(480px,100%); max-height:min(620px,86vh); overflow:auto; background:#FFFFFF; border:var(--border-thick); border-bottom:0; box-shadow:0 -6px 0 var(--ink-soft); padding:16px 16px 88px; }
     .follow-sheet-head { display:flex; align-items:center; justify-content:space-between; padding-bottom:11px; border-bottom:2px solid #E2E8F0; }
     .follow-sheet-title { font-family:'Newsreader',serif; font-size:24px; font-weight:700; }
     .follow-sheet-hint { color:var(--muted); font-size:11px; font-weight:700; margin-top:3px; }
