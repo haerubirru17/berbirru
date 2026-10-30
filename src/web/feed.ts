@@ -381,13 +381,16 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
     .thread-card{background:#F6F3EB !important;border:0 !important;border-bottom:1px solid #0E0E0E !important;border-radius:0 !important;box-shadow:none !important;margin:0 -16px !important;padding-left:16px !important;padding-right:16px !important}
     .thread-header-soft{background:transparent !important;border-top:1px solid #0E0E0E !important;border-bottom:1px solid #0E0E0E !important;border-radius:0 !important;margin:0 -16px !important;padding:7px 12px !important}
     .paperclip-svg{display:none !important}
-    .thread-avatar-clip{position:static !important;flex:none !important;width:40px !important;height:40px !important;margin-right:8px !important;background:#F6F3EB !important;color:#0E0E0E !important;border:1px solid #0E0E0E !important;border-radius:0 !important;box-shadow:none !important;transform:none !important}
+    .thread-avatar-clip{position:static !important;flex:none !important;width:40px !important;height:40px !important;margin-right:8px !important;background-color:#F6F3EB !important;color:#0E0E0E !important;border:1px solid #0E0E0E !important;border-radius:0 !important;box-shadow:none !important;transform:none !important}
+    .thread-avatar-clip[style*="background-image"]{color:transparent !important}
     .thread-card:last-child{border-bottom:0 !important}
     .thread-title{font-family:'Fraunces',Georgia,serif !important;color:#0E0E0E !important;font-size:30px !important;line-height:1 !important;letter-spacing:-.04em !important}
     .thread-text{font-family:'Roboto Flex',Arial,sans-serif !important;color:#0E0E0E !important;font-weight:420 !important}
     .thread-footer{background:transparent !important;border-top:1px solid #0E0E0E !important;border-radius:0 !important}
     .act-btn,.chain-btn{background:transparent !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;color:#0E0E0E !important;font-family:'Recursive',monospace !important;text-transform:uppercase !important}
     .act-btn.active,.act-btn.saved,.chain-btn{color:#FF3B1A !important}
+    .act-btn.active svg,.act-btn.saved svg{fill:#FF3B1A !important;stroke:#FF3B1A !important}
+    .act-btn.active,.act-btn.saved{background:transparent !important;border-color:transparent !important}
     .chain-split{background:transparent !important;border:0 !important;border-radius:0 !important;box-shadow:none !important}
     .thread-parent-connector{background:transparent !important;border-left:2px solid #FF3B1A !important;color:#3A3733 !important}
     .chain-inline,.mini-bait{background:transparent !important;border-color:#0E0E0E !important;border-radius:0 !important;box-shadow:none !important}
