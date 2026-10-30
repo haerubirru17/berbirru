@@ -3,6 +3,16 @@ import { renderBottomNav } from './layout';
 import { NOTIFY_HTML } from './notify';
 
 export function renderProfilePage(penName: string, isMe = false, currentUser: any = null): string {
+  const SKIN_MENU_ITEMS = `
+              <div class="settings-divider"></div>
+              <div class="settings-item" data-skin="neo" onclick="setSkin('neo')" title="Ganti gaya halaman">
+                <svg style="width:14px;height:14px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20M2 12h20"/></svg>
+                <span>Klasik · Neobrutalism</span>
+              </div>
+              <div class="settings-item" data-skin="kern" onclick="setSkin('kern')" title="Ganti gaya halaman">
+                <svg style="width:14px;height:14px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><path d="M2 3h20v18H2z"/><path d="M2 8h20M8 3v5"/></svg>
+                <span>Kern · Kertas Krem</span>
+              </div>`;
   return `<!DOCTYPE html>
 <html lang="id">
 <head>
@@ -362,6 +372,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
                 <span>Laporkan Akun</span>
               </div>
             `}
+            ${SKIN_MENU_ITEMS}
           </div>
         </div>
       </div>
@@ -512,6 +523,18 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
         }
       }
     }
+    function setSkin(v) {
+      document.cookie = 'bb_skin=' + v + ';path=/;max-age=31536000;SameSite=Lax';
+      location.reload();
+    }
+    window.setSkin = setSkin;
+    (function markActiveSkin() {
+      const m = /(?:^|;\\s*)bb_skin=(kern|neo)(?:;|$)/.exec(document.cookie || '');
+      const cur = m ? m[1] : 'neo';
+      document.querySelectorAll('#settingsPopover .settings-item[data-skin]').forEach(el => {
+        if (el.dataset.skin === cur) el.querySelector('span')?.before('✓ ');
+      });
+    })();
 
     document.addEventListener('click', (e) => {
       const pop = document.getElementById('settingsPopover');
