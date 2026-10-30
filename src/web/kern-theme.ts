@@ -28,6 +28,21 @@ body .bnav .bnav-item.is-on,body .bnav .bnav-item.is-on svg{color:var(--kern-ink
 body .bnav .bnav-item.is-on .bnav-lbl{background:transparent!important;color:var(--kern-ink)!important;border-color:transparent!important;box-shadow:none!important}
 body :is(.btn-primary,.pf-go,.btn-buy){background:var(--kern-ink)!important;color:var(--kern-paper)!important;border-color:var(--kern-ink)!important}
 body :is(.brand-badge,.pasar-top,.market-header){box-shadow:none!important}
+body .brand-badge{background:transparent!important;border:0!important;border-radius:0!important;transform:none!important;padding:0!important;color:var(--kern-ink)!important}
+body .brand-badge h1{font:800 19px 'Roboto Flex',Arial,sans-serif!important;color:var(--kern-ink)!important}
+body .brand-badge svg{stroke:var(--kern-ink)!important}
+body .brand-com-tag{background:transparent!important;color:var(--kern-accent)!important;transform:none!important}
+body .brand-com-tag::after{display:none!important}
+body .act-btn.active svg,.act-btn.saved svg{fill:var(--kern-accent)!important;stroke:var(--kern-accent)!important}
+body .act-btn.active,body .act-btn.saved{background:transparent!important;border-color:transparent!important}
+/* Feed page: kontrol khas beranda diasah mengikuti skin aktif. */
+body:has(#feedContainer) :is(.feed-search input,.feed-search button,.mode-tab,.trigger-create-card,.trigger-pen-btn){border:1px solid var(--kern-ink)!important;border-radius:0!important;box-shadow:none!important;transform:none!important}
+body:has(#feedContainer) .feed-search input{background:var(--kern-card)!important;color:var(--kern-ink)!important}
+body:has(#feedContainer) :is(.feed-search button,.mode-tab.active){background:var(--kern-ink)!important;color:var(--kern-paper)!important}
+body:has(#feedContainer) .mode-tabs{border-bottom:1px solid var(--kern-ink)!important}
+body:has(#feedContainer) .trigger-create-card{background:var(--kern-card)!important;padding:12px 14px 12px 70px!important;margin-bottom:12px!important}
+body:has(#feedContainer) .trigger-avatar-clip{background:var(--kern-card)!important;color:var(--kern-ink)!important;border:1px solid var(--kern-ink)!important;border-radius:0!important;box-shadow:none!important;transform:none!important}
+body:has(#feedContainer) .trigger-pen-btn{background:var(--kern-accent)!important;color:var(--kern-ink)!important}
 body :is(hr,.divider){border-color:var(--kern-ink)!important}
 /* Sisa komponen neobrutal lain: dipipihkan mengikuti skin aktif (layout tetap). */
 body :is(.mcard.lift,.quote,.step.lift,.tava,DETAILS,.st-card,.verif.gate,.state,.al-tambah,.ak-ic){border-width:1px!important;border-color:var(--kern-ink)!important;box-shadow:none!important}
