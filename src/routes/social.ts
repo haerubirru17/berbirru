@@ -169,8 +169,10 @@ app.get('/api/users/:pen_name/posts', async (c: any) => {
     binds.push(targetUser.id, ...vis.binds);
   }
 
+  const countQuery = query.replace(/ORDER BY [\w.]+ DESC LIMIT 30\s*$/, '');
+  const total = await c.env.DB.prepare(`SELECT COUNT(*) AS n FROM (${countQuery})`).bind(...binds).first('n') || 0;
   const posts = await c.env.DB.prepare(query).bind(...binds).all().then((r: any) => r.results);
-  return c.json({ tab, posts: posts.map((p: any) => withAdmin(hardenPost(p), c.env.OWNER_EMAIL as string)) });
+  return c.json({ tab, total, posts: posts.map((p: any) => withAdmin(hardenPost(p), c.env.OWNER_EMAIL as string)) });
 });
 
 app.get('/api/posts', async (c: any) => {

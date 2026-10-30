@@ -20,6 +20,7 @@ bucket_name = "berbirru-media"
 OWNER_EMAIL = "haeru@berbirru.com"
 APP_NAME = "BERBIRRU"
 APP_DOMAIN = "berbirru-uji.haerubirru17.workers.dev"
+KERN_THEME_PRESET = "kern"
 # Kunci TEST resmi Cloudflare (auto-pass, khusus staging) — bukan widget prod.
 TURNSTILE_SITE_KEY = "1x00000000000000000000AA"
 TURNSTILE_SECRET_KEY = "1x0000000000000000000000000000000AA"

@@ -31,6 +31,7 @@ import { renderTokoPublikPage } from './web/tokoPublik';
 import { renderOwnerPage } from './web/owner';
 import { renderAkunAdminPage } from './web/akunAdmin';
 import { renderBuktiPencairan } from './web/pencairan';
+import { applyKernTheme, wantsKern } from './web/kern-theme';
 import { bolehLihatPesanan, bolehUnggahBukti, jenisDokumen, kunciBukti, kunciDokumen, MAKS_BUKTI_PER_PIHAK } from './lib/berkas';
 import { createQrisTransaction, getQrisStatus, verifyWebhook, KlikQrisEnv } from './klikqris';
 import { providerAmountMatches, settlementAmounts, PASAR_FEE, WITHDRAW_MIN, withdrawFee, withdrawTotal, kodePencairan } from './lib/pasar-settlement';
@@ -104,6 +105,18 @@ app.use('*', async (c, next) => {
 });
 
 // ---- AUTH HELPERS ----
+
+// Pemilih skin: cookie user menang atas preset env (showroom sandbox). Produksi default = neo.
+app.use('*', async (c, next) => {
+  await next();
+  if (!c.res.headers.get('content-type')?.includes('text/html')) return;
+  if (!wantsKern(c.req.header('cookie'), c.env.KERN_THEME_PRESET)) return;
+  const response = c.res;
+  const html = await response.text();
+  const headers = new Headers(response.headers);
+  headers.delete('content-length');
+  c.res = new Response(applyKernTheme(html), { status: response.status, statusText: response.statusText, headers });
+});
 
 app.get('/', async (c) => {
   const user = await getAuthUser(c);

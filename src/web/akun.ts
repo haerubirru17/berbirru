@@ -67,6 +67,17 @@ ${PASAR_BASE_CSS}
     ${owner ? baris('/owner', icoKeluar, 'Dashboard Owner', 'Sengketa, pencairan, verifikasi penjual') : ''}
   </div>
 
+  <div class="ak-card">
+    <div class="ak-row" style="cursor:default;">
+      <span class="ak-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20M2 12h20"/></svg></span>
+      <span class="ak-t"><b>Tampilan</b><span>Ganti gaya halaman — langsung berlaku untuk akun ini</span></span>
+    </div>
+    <div style="display:flex;gap:10px;padding:2px 16px 14px 62px;flex-wrap:wrap;">
+      <button class="skin-btn" data-v="neo" style="flex:1;min-width:120px;">Klasik · Neobrutalism</button>
+      <button class="skin-btn" data-v="kern" style="flex:1;min-width:120px;">Kern · Kertas Krem</button>
+    </div>
+  </div>
+
   ${refunds.length ? `
   <div class="ak-card">
     <div class="ak-row" style="cursor:default;">
@@ -92,6 +103,22 @@ async function keluar(){
   try{ await fetch('/api/auth/logout',{method:'POST'}); location.href='/login'; }
   catch(e){ b.disabled=false; alert('Gagal keluar, coba lagi.'); }
 }
+(function(){
+  var m=/(?:^|;\\s*)bb_skin=(kern|neo)(?:;|$)/.exec(document.cookie||'');
+  var cur=m?m[1]:'neo';
+  document.querySelectorAll('.skin-btn').forEach(function(b){
+    var on=b.dataset.v===cur;
+    b.style.cursor='pointer';
+    b.style.borderColor=on?'var(--blue)':'var(--line-soft)';
+    b.style.background=on?'var(--blue)':'#fff';
+    b.style.color=on?'#fff':'var(--ink)';
+    b.style.fontWeight=on?'900':'700';
+    b.onclick=function(){
+      document.cookie='bb_skin='+b.dataset.v+';path=/;max-age=31536000;SameSite=Lax';
+      location.reload();
+    };
+  });
+})();
 </script>
 ${renderBottomNav('akun' as any, user, false, { mode: 'pasar', marketTab: 'akun' as any })}
 </body></html>`;

@@ -15,4 +15,5 @@ export interface Env {
   OWNER_EMAIL?: string;
   BINDERBYTE_KEY?: string;
   KURIR_MOCK?: string;
+  KERN_THEME_PRESET?: string;
 }

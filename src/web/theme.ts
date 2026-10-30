@@ -1,17 +1,16 @@
-// Utas tema global (rencana 2026-10-29): satu sumber identitas visual.
-// Nilai = persis nilai neobrutalism saat ini — mengubah di sini mengubah semua halaman
-// yang sudah dikonversi. Halaman belum dikonversi masih memakai hex literal.
+// Tema Neobrutalism adalah default produksi. Kern sandbox diterapkan melalui preset CSS
+// terpisah (lihat kern-theme.ts), sehingga nilai default ini tidak mengubah produksi.
 export const THEME = {
-  ink: '#0B192C',        // teks utama & outline tebal
-  inkSoft: '#26364A',    // teks sekunder + warna hard shadow
-  muted: '#64748B',      // teks redup
-  lineSoft: '#CBD5E1',   // garis pemisah halus
-  blue: '#1D61E7',       // aksi utama (cobalt)
-  blueDeep: '#0F3E99',   // teks di atas kuning / aksi gelap
-  accent: '#FDE047',     // kuning marker (mode pasar)
-  shadowOffset: '6px 7px 0', // offset hard shadow khas neobrutalism
-  radius: '10px',        // penyudut kartu
-  borderW: '3px',        // tebal outline
+  ink: '#0B192C',
+  inkSoft: '#26364A',
+  muted: '#64748B',
+  lineSoft: '#CBD5E1',
+  blue: '#1D61E7',
+  blueDeep: '#0F3E99',
+  accent: '#FDE047',
+  shadowOffset: '6px 7px 0',
+  radius: '10px',
+  borderW: '3px',
   font: "'Space Grotesk', ui-sans-serif, system-ui, sans-serif",
 } as const;
 

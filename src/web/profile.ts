@@ -179,6 +179,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       background: var(--blue-primary); border-radius: 3px 3px 0 0;
     }
     .feed-list { display: flex; flex-direction: column; gap: 16px; }
+    .profile-empty{background:#FFF;padding:24px;border:3px solid var(--ink);border-radius:16px;text-align:center;font-weight:700;box-shadow:4px 4px 0 #1E293B}
 
     /* Unified Threads Card Style in Profile with Paperclip Badge */
     .feed-list { display: flex; flex-direction: column; gap: 20px; }
@@ -309,6 +310,8 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
     }
 
     .ico { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+    .kern-profile-brand,.profile-eyebrow,.profile-since,.profile-liked-count{display:none}
   </style>
 </head>
 <body>
@@ -317,6 +320,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
     <!-- Profile Card with Cover/Banner Header -->
     <div class="profile-card">
       <div class="cover-banner" ${isMe ? `onclick="if(!event.target.closest('.banner-floating-nav'))document.getElementById('coverInput').click()" style="cursor:pointer" title="Ganti foto sampul"` : ''}>
+        <a href="/" class="kern-profile-brand" aria-label="BERBIRRU Beranda" onclick="event.stopPropagation()"><span class="kern-brand-mark">B</span><span>BERBIRRU</span></a>
       ${isMe ? '<input type="file" id="coverInput" data-kind="cover" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="pickMedia(this)">' : ''}
         ${isMe ? `
         <div class="cover-edit-badge media-edit-badge" onclick="event.stopPropagation(); document.getElementById('coverInput').click();" title="Ganti foto sampul">
@@ -363,6 +367,9 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
       </div>
 
       <div class="profile-meta-wrap">
+        <div class="profile-eyebrow">Profil publik / Penulis</div>
+        <div class="profile-cover-photo" id="profileCoverPhoto" ${isMe ? 'onclick="document.getElementById(\'coverInput\').click()" role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();document.getElementById(\'coverInput\').click()}" aria-label="Ganti foto sampul"' : 'aria-hidden="true"'}></div>
+        <div class="profile-since" id="profileSince"></div>
         <div class="avatar-action-row">
           <div class="avatar-wrapper">
             <div class="avatar-box" id="avatarLetter" ${isMe ? 'onclick="document.getElementById(\'avatarInput\').click()" style="cursor:pointer" title="Ganti foto profil"' : ''}>
@@ -409,6 +416,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
             <b id="countFollowing">0</b>
           </button>
         </div>
+        <div class="profile-liked-count" id="profileLikedCount"></div>
       </div>
     </div>
 
@@ -468,6 +476,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
       <div class="tab-reddit-item" onclick="switchProfileTab('saved', this)">Tersimpan</div>
       ` : ''}
       <div class="tab-reddit-item" onclick="switchProfileTab('chains', this)">Estafet</div>
+      <span class="profile-tab-total" id="profileTabTotal" aria-live="polite"></span>
     </div>
 
     <div class="feed-list" id="profileFeed"></div>
@@ -621,6 +630,9 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
           document.getElementById('countPosts').textContent = data.user.posts_count || 0;
           document.getElementById('countFollowers').textContent = data.user.followers_count || 0;
           document.getElementById('countFollowing').textContent = data.user.following_count || 0;
+          const joined = data.user.created_at && new Date(data.user.created_at).getFullYear();
+          document.getElementById('profileSince').textContent = Number.isFinite(joined) ? 'Sejak ' + joined : '';
+          document.getElementById('profileLikedCount').textContent = (data.user.likes_count || 0) + ' disukai';
           setFollowBtn(!!data.user.is_following);
         }
       } catch (err) { console.error(err); }
@@ -661,7 +673,12 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
     }
     function applyCover(key) {
       const el = document.querySelector('.cover-banner');
+      const kernCover = document.getElementById('profileCoverPhoto');
       if (!el) return;
+      if (kernCover) {
+        kernCover.classList.toggle('has-cover', avatarKeyValid(key));
+        kernCover.style.backgroundImage = avatarKeyValid(key) ? 'url(/media/' + freshKey(key) + ')' : '';
+      }
       if (avatarKeyValid(key)) {
         // foto + ramp gradient: gelap tipis di atas (kontras nav), fade warna kartu di bawah (nyatu kartu)
         el.style.background = 'linear-gradient(180deg, rgba(11,25,44,0.30) 0%, rgba(11,25,44,0.05) 30%, rgba(255,255,255,0) 55%, #FFFFFF 100%), url(/media/' + freshKey(key) + ')';
@@ -928,13 +945,19 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
     document.getElementById('followSheet')?.addEventListener('touchstart', e => { followTouchX = e.touches[0].clientX; }, { passive: true });
     document.getElementById('followSheet')?.addEventListener('touchend', e => { const dx = e.changedTouches[0].clientX - followTouchX; if (Math.abs(dx) > 45) openFollowSheet(dx < 0 ? 'following' : 'followers'); });
 
+    let activeProfileTab = 'original';
     async function loadProfilePosts(tab = 'original') {
       try {
         const res = await fetch('/api/users/' + encodeURIComponent(currentPenName) + '/posts?tab=' + tab);
+        if (!res.ok) return;
         const data = await res.json();
+        if (tab !== activeProfileTab) return;
+        const total = document.getElementById('profileTabTotal');
+        const labels = { original:'karya', likes:'disukai', saved:'tersimpan', chains:'estafet' };
+        total.textContent = (data.total ?? data.posts?.length ?? 0) + ' ' + labels[tab];
         const container = document.getElementById('profileFeed');
         if (!data.posts || !data.posts.length) {
-          container.innerHTML = '<div style="background:#FFF;padding:24px;border:3px solid var(--ink);border-radius:16px;text-align:center;font-weight:700;box-shadow:4px 4px 0 #1E293B;">Belum ada warkah di kategori ini.</div>';
+          container.innerHTML = '<div class="profile-empty">Belum ada warkah di kategori ini.</div>';
           return;
         }
         container.innerHTML = data.posts.map(p => \`
@@ -974,8 +997,10 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
     }
 
     function switchProfileTab(tab, el) {
+      activeProfileTab = tab;
       document.querySelectorAll('.tab-reddit-item').forEach(b => b.classList.remove('active'));
       el.classList.add('active');
+      document.getElementById('profileTabTotal').textContent = '…';
       loadProfilePosts(tab);
     }
 

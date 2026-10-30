@@ -16,6 +16,7 @@ export function renderFeedPage(user: any = null): string {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,700;1,6..72,500&family=Roboto+Mono:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,100..900,0..100,0..1&family=Recursive:slnt,wght,CASL,CRSV,MONO@-15..0,300..1000,0..1,0..1,0..1&family=Roboto+Flex:opsz,slnt,wdth,wght,GRAD@8..144,-10..0,25..151,100..1000,-200..150&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root{--blue:${THEME.blue};--deep:${THEME.blueDeep};--ink:${THEME.ink};--paper:#FFF9E9;--white:#FFFEF8;--yellow:${THEME.accent};--coral:#FF735F;--mint:#88E6BD;--soft:#E0EEFD;--red:#EF4444;--green:#059669;--muted:${THEME.muted};--ink-soft:${THEME.inkSoft};--line-soft:${THEME.lineSoft};--line:${THEME.borderW} solid var(--ink);--thin:2px solid var(--ink);--shadow:6px 7px 0 ${THEME.inkSoft};--small-shadow:3px 4px 0 ${THEME.inkSoft};--bg-main:var(--paper);--bg-card:#fff;--bg-blue-subtle:var(--soft);--shadow-ink:${THEME.inkSoft};--blue-primary:var(--blue);--blue-deep:var(--deep);--blue-light:#60A5FA;--accent-yellow:var(--yellow);--border-thick:var(--line);--border-med:3px solid var(--ink);--border-thin:var(--thin);--shadow-hard:var(--small-shadow);--shadow-hard-lg:var(--shadow);--shadow-hard-sm:2px 3px 0 ${THEME.inkSoft};--radius:0;--radius-sm:0}
@@ -98,7 +99,7 @@ export function renderFeedPage(user: any = null): string {
       align-items: center; border-bottom: var(--border-thin); border-radius: 0px;
       position: relative; min-height: 44px;
     }
-    .thread-author-wrap { display: flex; align-items: center; gap: 8px; }
+    .thread-author-wrap { display: flex; align-items: center; gap: 8px; margin-right: auto; }
     
     /* Avatar Menonjol Melewati Frame (Logika Dijepit Tanpa Bayangan) */
     .thread-avatar-clip {
@@ -331,25 +332,26 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
       box-shadow: var(--shadow-hard-sm); }
     .feed-sticky .feed-mode-tabs { margin-bottom: 0; }
 
-    /* Skeleton Loading */
-    .skeleton-card { background: var(--bg-card); border: var(--border-thick); box-shadow: var(--shadow-hard-lg);
-      position: relative; margin-top: 14px; overflow: hidden; }
-    .sk-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bg-blue-subtle);
-      border-bottom: var(--border-thin); }
-    .sk-avatar { width: 40px; height: 40px; background: #C7DDF7; flex-shrink: 0; }
+    /* Editorial skeleton loading */
+    .skeleton-card { background: transparent; border: 0; border-bottom: 1px solid #0E0E0E; box-shadow: none;
+      position: relative; margin: 0; overflow: hidden; }
+    .sk-row { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: transparent;
+      border-top: 1px solid #0E0E0E; border-bottom: 1px solid #0E0E0E; }
+    .sk-avatar { width: 40px; height: 40px; background: #D8D2C7; flex-shrink: 0; border-radius: 0; }
     .sk-lines { flex: 1; }
-    .sk-line { height: 10px; background: #C7DDF7; margin: 6px 0; border-radius: 3px; }
+    .sk-line { height: 8px; background: #D8D2C7; margin: 6px 0; border-radius: 0; }
     .sk-line.w60 { width: 60%; } .sk-line.w40 { width: 40%; }
-    .sk-body { padding: 16px 14px; }
-    .sk-line.tall { height: 14px; width: 45%; margin-bottom: 10px; }
+    .sk-body { padding: 12px; }
+    .sk-line.tall { height: 12px; width: 45%; margin-bottom: 10px; }
     .sk-line.full { width: 100%; } .sk-line.w90 { width: 90%; } .sk-line.w75 { width: 75%; }
-    .sk-footer { display: flex; justify-content: space-between; padding: 10px 14px; border-top: var(--border-thin); }
-    .sk-pill { width: 72px; height: 24px; background: #EEF2F7; border: var(--border-thin); border-radius: 10px; }
-    .sk-pill.yellow { background: #FEF3C0; width: 96px; }
-    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
-    .sk-line, .sk-avatar, .sk-pill { animation: pulse 1.3s ease-in-out infinite; }
+    .sk-footer { display: flex; justify-content: space-between; padding: 10px 12px; border-top: 1px solid #0E0E0E; }
+    .sk-pill { width: 52px; height: 8px; background: #D8D2C7; border: 0; border-radius: 0; }
+    .sk-pill.yellow { background: #D8D2C7; width: 72px; }
+    @keyframes editorial-shimmer { 0% { opacity: .45; } 50% { opacity: 1; } 100% { opacity: .45; } }
+    .sk-line, .sk-avatar, .sk-pill { animation: editorial-shimmer 1.6s ease-in-out infinite; }
     .skeleton-card:nth-of-type(even) .sk-line, .skeleton-card:nth-of-type(even) .sk-avatar,
-    .skeleton-card:nth-of-type(even) .sk-pill { animation-delay: .35s; }
+    .skeleton-card:nth-of-type(even) .sk-pill { animation-delay: .3s; }
+    @media (prefers-reduced-motion: reduce) { .sk-line, .sk-avatar, .sk-pill { animation: none; } }
     .fade-in { animation: fadein .35s ease; }
     @keyframes fadein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
@@ -360,8 +362,44 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
     }
 
     .ico { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* Kern feed skin: same existing markup/actions; remove old poster/neobrutal surface */
+    body{background:#EFEBE3 !important;color:#0E0E0E !important;font-family:'Roboto Flex',Arial,sans-serif !important}
+    .top-nav{background:#EFEBE3 !important;border-bottom:1px solid #0E0E0E !important;box-shadow:none !important}
+    .brand-badge{background:transparent !important;color:#0E0E0E !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;transform:none !important;padding:0 !important}
+    .brand-badge h1{font-family:'Roboto Flex',Arial,sans-serif !important;color:#0E0E0E !important;font-weight:800 !important}
+    .brand-badge svg{stroke:#0E0E0E !important}
+    .brand-com-tag{background:transparent !important;color:#FF3B1A !important;transform:none !important}
+    .brand-com-tag::after{display:none !important}
+    .feed-search input,.feed-search button,.mode-tab,.trigger-create-card,.trigger-pen-btn{border:1px solid #0E0E0E !important;border-radius:0 !important;box-shadow:none !important;transform:none !important}
+    .feed-search input{background:#F6F3EB !important;color:#0E0E0E !important}
+    .feed-search button,.mode-tab.active{background:#0E0E0E !important;color:#EFEBE3 !important}
+    .mode-tabs{border-bottom:1px solid #0E0E0E !important}
+    .trigger-create-card{background:#F6F3EB !important;padding:12px 14px 12px 70px !important;margin-bottom:12px !important}
+    .trigger-avatar-clip{background:#F6F3EB !important;color:#0E0E0E !important;border:1px solid #0E0E0E !important;border-radius:0 !important;box-shadow:none !important;transform:none !important}
+    .trigger-pen-btn{background:#FF3B1A !important;color:#0E0E0E !important}
+    .thread-card{background:#F6F3EB !important;border:0 !important;border-bottom:1px solid #0E0E0E !important;border-radius:0 !important;box-shadow:none !important;margin:0 -16px !important;padding-left:16px !important;padding-right:16px !important}
+    .thread-header-soft{background:transparent !important;border-top:1px solid #0E0E0E !important;border-bottom:1px solid #0E0E0E !important;border-radius:0 !important;margin:0 -16px !important;padding:7px 12px !important}
+    .paperclip-svg{display:none !important}
+    .thread-avatar-clip{position:static !important;flex:none !important;width:40px !important;height:40px !important;margin-right:8px !important;background:#F6F3EB !important;color:#0E0E0E !important;border:1px solid #0E0E0E !important;border-radius:0 !important;box-shadow:none !important;transform:none !important}
+    .thread-card:last-child{border-bottom:0 !important}
+    .thread-title{font-family:'Fraunces',Georgia,serif !important;color:#0E0E0E !important;font-size:30px !important;line-height:1 !important;letter-spacing:-.04em !important}
+    .thread-text{font-family:'Roboto Flex',Arial,sans-serif !important;color:#0E0E0E !important;font-weight:420 !important}
+    .thread-footer{background:transparent !important;border-top:1px solid #0E0E0E !important;border-radius:0 !important}
+    .act-btn,.chain-btn{background:transparent !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;color:#0E0E0E !important;font-family:'Recursive',monospace !important;text-transform:uppercase !important}
+    .act-btn.active,.act-btn.saved,.chain-btn{color:#FF3B1A !important}
+    .chain-split{background:transparent !important;border:0 !important;border-radius:0 !important;box-shadow:none !important}
+    .thread-parent-connector{background:transparent !important;border-left:2px solid #FF3B1A !important;color:#3A3733 !important}
+    .chain-inline,.mini-bait{background:transparent !important;border-color:#0E0E0E !important;border-radius:0 !important;box-shadow:none !important}
+    .vis-private{border-radius:0 !important}
+    .bnav{background:#EFEBE3 !important;border-top:1px solid #0E0E0E !important;box-shadow:none !important}
+    .bnav-plus .p{background:#FF3B1A !important;border:1px solid #0E0E0E !important;box-shadow:none !important;transform:none !important}
+    .bnav-item.is-on,.bnav[data-mode="sosial"] .bnav-item.is-on{color:#0E0E0E !important}
+    .bnav-item.is-on svg{stroke:#0E0E0E !important}
+    .bnav-item.is-on .bnav-lbl{background:transparent !important;color:#0E0E0E !important;border-color:transparent !important;box-shadow:none !important}
+    .skeleton-card{background:transparent !important;border:0 !important;border-bottom:1px solid #0E0E0E !important;box-shadow:none !important;border-radius:0 !important}
   </style>
-</head>
+  </head>
 <body>
   <div class="container">
     <div class="top-nav">
@@ -500,12 +538,12 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
         const data = await res.json();
 
         if (data.message && currentMode === 'following') {
-          container.innerHTML = '<div style="background:#FFF;padding:24px;border:3px solid #0B192C;border-radius:16px;text-align:center;font-weight:700;box-shadow:4px 4px 0 #1E293B;">' + data.message + ' <br><br><a href="/login" style="display:inline-block;padding:8px 16px;background:#1D61E7;color:#FFF;border-radius:8px;text-decoration:none;font-weight:900;">Masuk Sekarang</a></div>';
+          container.innerHTML = '<div style="background:#F6F3EB;padding:24px;border:1px solid #0E0E0E;border-radius:0;text-align:center;font-weight:600;box-shadow:none;color:#0E0E0E;font-family:Recursive,monospace;">' + data.message + ' <br><br><a href="/login" style="display:inline-block;padding:8px 16px;background:#0E0E0E;color:#EFEBE3;border-radius:0;text-decoration:none;font-weight:700;">Masuk Sekarang</a></div>';
           return;
         }
 
         if (!data.posts || !data.posts.length) {
-          container.innerHTML = '<div style="background:#FFF;padding:24px;border:3px solid #0B192C;border-radius:16px;text-align:center;font-weight:700;box-shadow:4px 4px 0 #1E293B;">Belum ada warkah di feed ini. Jadilah yang pertama menggoreskan bait!</div>';
+          container.innerHTML = '<div style="background:#F6F3EB;padding:24px;border:1px solid #0E0E0E;border-radius:0;text-align:center;font-weight:600;box-shadow:none;color:#0E0E0E;font-family:Recursive,monospace;">Belum ada warkah di feed ini. Jadilah yang pertama menggoreskan bait!</div>';
           return;
         }
         container.innerHTML = data.posts.map(p => renderPostCard(p)
@@ -576,11 +614,11 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
             <div class="actions-left">
               <button class="act-btn \${isLikedClass}" onclick="likePost('\${p.id}', this)">
                 <svg class="ico" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                <span>\${p.likes_count || 0} Terpaut</span>
+                <span>\${p.likes_count || 0}</span>
               </button>
               <button class="act-btn \${isSavedClass}" onclick="bookmarkPost('\${p.id}', this)">
                 <svg class="ico" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-                <span>\${p.saves_count || 0} Simpan</span>
+                <span>\${p.saves_count || 0}</span>
               </button>
             </div>
             <span class="chain-split">
@@ -805,7 +843,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
         const res = await fetch('/api/posts/' + id + '/like', { method: 'POST' });
         const data = await res.json();
         btn.classList.toggle('active', data.liked);
-        btn.querySelector('span').textContent = (data.likes_count || 0) + ' Terpaut';
+        btn.querySelector('span').textContent = data.likes_count || 0;
       } catch (err) {
         console.error(err);
       }
@@ -817,7 +855,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
         const res = await fetch('/api/posts/' + id + '/bookmark', { method: 'POST' });
         const data = await res.json();
         btn.classList.toggle('saved', data.bookmarked);
-        btn.querySelector('span').textContent = (data.saves_count || 0) + ' Simpan';
+        btn.querySelector('span').textContent = data.saves_count || 0;
       } catch (err) {
         console.error(err);
       }
