@@ -29,6 +29,20 @@ body .bnav .bnav-item.is-on .bnav-lbl{background:transparent!important;color:var
 body :is(.btn-primary,.pf-go,.btn-buy){background:var(--kern-ink)!important;color:var(--kern-paper)!important;border-color:var(--kern-ink)!important}
 body :is(.brand-badge,.pasar-top,.market-header){box-shadow:none!important}
 body :is(hr,.divider){border-color:var(--kern-ink)!important}
+/* Sisa komponen neobrutal lain: dipipihkan mengikuti skin aktif (layout tetap). */
+body :is(.mcard.lift,.quote,.step.lift,.tava,DETAILS,.st-card,.verif.gate,.state,.al-tambah,.ak-ic){border-width:1px!important;border-color:var(--kern-ink)!important;box-shadow:none!important}
+body :is(.mcard,.st-card){background:var(--kern-card)!important}
+body .quote{background:transparent!important}
+body :is(.verif.gate,.state,.al-tambah){background:var(--kern-ink)!important;color:var(--kern-paper)!important}
+body :is(.verif.gate *,.state *){color:inherit!important}
+body :is(.inp,.fld){border-width:1px!important;border-color:var(--kern-ink)!important;background:var(--kern-card)!important;color:var(--kern-ink)!important;box-shadow:none!important}
+body .empty{background:transparent!important;border:0!important;border-top:1px solid var(--kern-ink)!important;box-shadow:none!important}
+body .fld input,.fld select,.fld textarea{border-width:1px!important;background:var(--kern-paper)!important}
+/* Landing: elemen marketing diasah ke editorial; bezel .phone tetap sebagai ilustrasi perangkat. */
+body :is(.pill,.marquee,.lembar-wrap,.tcard,.step .foot>div){border-width:1px!important;border-color:var(--kern-ink)!important}
+body .marquee{background:var(--kern-card)!important;color:var(--kern-ink)!important}
+body .pill{background:var(--kern-card)!important;color:var(--kern-ink)!important}
+body :is(.lembar-wrap,.tcard,.step .foot>div){background:var(--kern-card)!important;color:var(--kern-ink)!important}
 /* Notifications: editorial rules, not framed neobrutal cards (including the JS empty state). */
 body:has(#notifListContainer) .top-header{margin:0 -14px 16px;padding:0 14px 12px;border-bottom:1px solid var(--kern-ink)}
 body:has(#notifListContainer) .brand-badge{background:transparent!important;border:0!important;padding:0!important;color:var(--kern-ink)!important;transform:none!important}
