@@ -380,16 +380,21 @@ app.post('/akun/alamat', async (c: any) => {
 
   const id = crypto.randomUUID();
   const utama = a.utama || Number(n?.n || 0) === 0;
-  await c.env.DB.batch([
-    ...(utama ? [c.env.DB.prepare('UPDATE addresses SET is_default = 0 WHERE user_id = ?').bind(user.id)] : []),
-    c.env.DB.prepare(
-      `INSERT INTO addresses (id, user_id, label, receiver, phone, postal, text,
-        province_id, province_name, city_id, city_name, district_id, district_name, is_default)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
-    ).bind(id, user.id, a.label, a.receiver, a.phone, a.postal, a.text, a.province_id,
-      a.province_name, a.city_id, a.city_name, a.district_id, a.district_name, utama ? 1 : 0),
-    ...(utama ? [cerminUtama(c.env.DB, user.id, a)] : []),
-  ]);
+  try {
+    await c.env.DB.batch([
+      ...(utama ? [c.env.DB.prepare('UPDATE addresses SET is_default = 0 WHERE user_id = ?').bind(user.id)] : []),
+      c.env.DB.prepare(
+        `INSERT INTO addresses (id, user_id, label, receiver, phone, postal, text,
+          province_id, province_name, city_id, city_name, district_id, district_name, is_default)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+      ).bind(id, user.id, a.label, a.receiver, a.phone, a.postal, a.text, a.province_id,
+        a.province_name, a.city_id, a.city_name, a.district_id, a.district_name, utama ? 1 : 0),
+      ...(utama ? [cerminUtama(c.env.DB, user.id, a)] : []),
+    ]);
+  } catch (err) {
+    if (String(err).includes('address_cap_exceeded')) return c.redirect('/akun/alamat');
+    throw err;
+  }
   return c.redirect('/akun/alamat?ok=baru');
 });
 

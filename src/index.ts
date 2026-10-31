@@ -100,7 +100,8 @@ app.use('*', async (c, next) => {
   // Anti-clickjacking (vuln-0004 putaran-4): SECURITY.md mengklaim ini sejak lama
   // tapi tak pernah dikirim. ponytail: full nonce-CSP ditunda — risiko merusak
   // inline script lama; dicatat docs sebagai roadmap.
-  c.header('Content-Security-Policy', "frame-ancestors 'none'");
+  c.header('Content-Security-Policy', "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; connect-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:");
+  c.header('Strict-Transport-Security', 'max-age=300');
   c.header('X-Frame-Options', 'DENY');
 });
 

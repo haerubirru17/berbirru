@@ -132,7 +132,7 @@ app.post('/api/auth/register', async (c: any) => {
   // disalahgunakan bot (buat akun massal) dan tidak punya lockout per-akun.
   // Fallback ketat: widget Turnstile bisa gagal render di sebagian peramban.
   // Tanpa ini pendaftaran mentok permanen. Tetap fail-closed bila secret kosong.
-  const humanErr = await requireHuman(c, turnstile_token || '', 'register', 10, 600, { limit: 3, windowSec: 900 });
+  const humanErr = await requireHuman(c, turnstile_token || '', 'register', 10, 600);
   if (humanErr) return c.json({ error: humanErr }, 403);
 
   const cleanEmail = String(email).trim().toLowerCase();
@@ -227,7 +227,7 @@ app.post('/api/auth/login', async (c: any) => {
   // Turnstile wajib (fail-closed). Rate limit per-IP di dalam requireHuman.
   // Login: jalur cadangan berkuota ketat kalau widget Turnstile diblokir adblocker.
   // Aman karena lockout per-akun (pw:) di bawah tetap berlaku.
-  const humanErr = await requireHuman(c, turnstile_token || '', 'login', 10, 300, { limit: 5, windowSec: 900 });
+  const humanErr = await requireHuman(c, turnstile_token || '', 'login', 10, 300);
   if (humanErr) return c.json({ error: humanErr }, 403);
 
   const cleanEmail = String(email).trim().toLowerCase();
@@ -346,7 +346,7 @@ app.post('/api/auth/reset/start', async (c: any) => {
   const { email, turnstile_token } = await c.req.json().catch(() => ({}));
   if (!email) return c.json({ error: 'Email wajib diisi' }, 400);
 
-  const humanErr = await requireHuman(c, turnstile_token || '', 'rstart', 5, 600, { limit: 3, windowSec: 900 });
+  const humanErr = await requireHuman(c, turnstile_token || '', 'rstart', 5, 600);
   if (humanErr) return c.json({ error: humanErr }, 403);
 
   const clean = String(email).trim().toLowerCase();
@@ -482,7 +482,7 @@ app.post('/api/auth/send-otp', async (c: any) => {
   // Turnstile wajib (fail-closed) + rate limit per-IP.
   // Widget Turnstile bisa gagal render (peramban/adblock). Kode OTP sendiri sudah
   // bukti kepemilikan email — fallback ketat menjaga alur tetap jalan.
-  const humanErr = await requireHuman(c, turnstile_token || '', 'otp', 5, 600, { limit: 5, windowSec: 900 });
+  const humanErr = await requireHuman(c, turnstile_token || '', 'otp', 5, 600);
   if (humanErr) return c.json({ error: humanErr }, 403);
 
   const cleanEmail = String(email).trim().toLowerCase();

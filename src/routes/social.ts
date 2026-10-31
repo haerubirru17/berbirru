@@ -39,7 +39,9 @@ app.patch('/api/users/me', async (c: any) => {
 });
 
 app.get('/api/users/suggest', async (c: any) => {
-  const q = (c.req.query('q') || '').replace(/^@+/g, '').toLowerCase().replace(/[^a-z0-9_.]/g, '');
+  const rawQ = c.req.query('q') || '';
+  if (rawQ.trim().length > 48) return c.json({ error: 'Parameter pencarian terlalu panjang.' }, 400);
+  const q = rawQ.replace(/^@+/g, '').toLowerCase().replace(/[^a-z0-9_.]/g, '');
   if (!q) return c.json({ users: [] });
   const qesc = q.replace(/[\\%_]/g, (m: any) => '\\' + m);
   const result = await c.env.DB.prepare(
@@ -178,6 +180,7 @@ app.get('/api/users/:pen_name/posts', async (c: any) => {
 app.get('/api/posts', async (c: any) => {
   const mode = c.req.query('mode') || 'viral';
   const q = (c.req.query('q') || '').trim();
+  if (q.length > 48) return c.json({ error: 'Parameter pencarian terlalu panjang.' }, 400);
   const user = await getAuthUser(c);
   // Beranda = ruang publik. Warkah privat cuma muncul di tab Karya profil pemiliknya.
   const vis = { sql: "p.visibility = 'public'", binds: [] as any[] };
@@ -188,11 +191,12 @@ app.get('/api/posts', async (c: any) => {
     SELECT p.*, u.pen_name, u.city, u.avatar_key, u.email AS author_email,
       (SELECT CASE WHEN prnt.visibility != 'private' OR prnt.author_id = ? THEN prnt.content ELSE NULL END
          FROM posts prnt WHERE prnt.id = p.parent_id) as parent_content,
-      (SELECT u2.pen_name FROM posts prnt JOIN users u2 ON prnt.author_id = u2.id WHERE prnt.id = p.parent_id) as parent_author
+      (SELECT CASE WHEN prnt.visibility != 'private' OR prnt.author_id = ? THEN u2.pen_name ELSE NULL END FROM posts prnt JOIN users u2 ON prnt.author_id = u2.id WHERE prnt.id = p.parent_id) as parent_author,
+      (SELECT prnt.visibility FROM posts prnt WHERE prnt.id = p.parent_id) as parent_visibility
     FROM posts p
     JOIN users u ON p.author_id = u.id
   `;
-  const binds: any[] = [user?.id || ''];
+  const binds: any[] = [user?.id || '', user?.id || ''];
 
   if (q) {
     if (q.length < 2) {
@@ -256,11 +260,19 @@ app.get('/api/posts', async (c: any) => {
     });
   }
 
-  return c.json({ mode, posts: posts.map((p) => withAdmin(hardenPost(p), c.env.OWNER_EMAIL as string)) });
+  return c.json({ mode, posts: posts.map((p) => {
+    const safe = { ...p };
+    if (safe.parent_visibility === 'private' && (!user || String(safe.parent_author || '') !== String(user.pen_name || ''))) safe.parent_id = null;
+    delete safe.parent_visibility;
+    return withAdmin(hardenPost(safe), c.env.OWNER_EMAIL as string);
+  }) });
 });
 
 app.get('/api/posts/:id/chains', async (c: any) => {
-  const vis = visibilityClause(await getAuthUser(c));
+  const viewer = await getAuthUser(c);
+  const parent: any = await c.env.DB.prepare('SELECT id, author_id, visibility FROM posts WHERE id = ?').bind(c.req.param('id')).first();
+  if (!parent || (parent.visibility === 'private' && (!viewer || viewer.id !== parent.author_id))) return c.notFound();
+  const vis = visibilityClause(viewer);
   const { results } = await c.env.DB.prepare(
     `SELECT p.id, p.title, p.content, p.created_at, p.likes_count, p.chains_count, u.pen_name, u.email AS author_email
      FROM posts p JOIN users u ON p.author_id = u.id
