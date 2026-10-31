@@ -332,21 +332,21 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
       box-shadow: var(--shadow-hard-sm); }
     .feed-sticky .feed-mode-tabs { margin-bottom: 0; }
 
-    /* Editorial skeleton loading */
-    .skeleton-card { background: transparent; border: 0; border-bottom: 1px solid #0E0E0E; box-shadow: none;
-      position: relative; margin: 0; overflow: hidden; }
+    /* Skeleton loading: base neobrutal; versi editorial ada di preset Kern */
+    .skeleton-card { background: var(--bg-card); border: var(--border-med); box-shadow: var(--shadow-hard-sm);
+      position: relative; margin: 0 0 14px; overflow: hidden; }
     .sk-row { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: transparent;
-      border-top: 1px solid #0E0E0E; border-bottom: 1px solid #0E0E0E; }
-    .sk-avatar { width: 40px; height: 40px; background: #D8D2C7; flex-shrink: 0; border-radius: 0; }
+      border-top: 0; border-bottom: 2px solid #E2E8F0; }
+    .sk-avatar { width: 40px; height: 40px; background: var(--blue); flex-shrink: 0; border-radius: 0; }
     .sk-lines { flex: 1; }
-    .sk-line { height: 8px; background: #D8D2C7; margin: 6px 0; border-radius: 0; }
+    .sk-line { height: 8px; background: #E2E8F0; margin: 6px 0; border-radius: 0; }
     .sk-line.w60 { width: 60%; } .sk-line.w40 { width: 40%; }
     .sk-body { padding: 12px; }
     .sk-line.tall { height: 12px; width: 45%; margin-bottom: 10px; }
     .sk-line.full { width: 100%; } .sk-line.w90 { width: 90%; } .sk-line.w75 { width: 75%; }
-    .sk-footer { display: flex; justify-content: space-between; padding: 10px 12px; border-top: 1px solid #0E0E0E; }
-    .sk-pill { width: 52px; height: 8px; background: #D8D2C7; border: 0; border-radius: 0; }
-    .sk-pill.yellow { background: #D8D2C7; width: 72px; }
+    .sk-footer { display: flex; justify-content: space-between; padding: 10px 12px; border-top: 2px solid #E2E8F0; }
+    .sk-pill { width: 52px; height: 8px; background: #E2E8F0; border: 0; border-radius: 0; }
+    .sk-pill.yellow { background: #E2E8F0; width: 72px; }
     @keyframes editorial-shimmer { 0% { opacity: .45; } 50% { opacity: 1; } 100% { opacity: .45; } }
     .sk-line, .sk-avatar, .sk-pill { animation: editorial-shimmer 1.6s ease-in-out infinite; }
     .skeleton-card:nth-of-type(even) .sk-line, .skeleton-card:nth-of-type(even) .sk-avatar,
@@ -576,17 +576,17 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
 
           <div class="thread-footer">
             <div class="actions-left">
-              <button class="act-btn \${isLikedClass}" onclick="likePost('\${p.id}', this)">
+              <button class="act-btn \${isLikedClass}" aria-label="Suka warkah ini" onclick="likePost('\${p.id}', this)">
                 <svg class="ico" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                 <span>\${p.likes_count || 0}</span>
               </button>
-              <button class="act-btn \${isSavedClass}" onclick="bookmarkPost('\${p.id}', this)">
+              <button class="act-btn \${isSavedClass}" aria-label="Simpan warkah ini" onclick="bookmarkPost('\${p.id}', this)">
                 <svg class="ico" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
                 <span>\${p.saves_count || 0}</span>
               </button>
             </div>
             <span class="chain-split">
-              <button class="chain-btn" data-title="\${escapeHtml(p.title || p.pen_name)}" onclick="openStudioModal('\${p.id}', this.dataset.title)">
+              <button class="chain-btn" aria-label="Sambungkan bait" data-title="\${escapeHtml(p.title || p.pen_name)}" onclick="openStudioModal('\${p.id}', this.dataset.title)">
                 <svg class="ico" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                 <span>\${p.chains_count ? p.chains_count + ' Sambungan' : 'Sambung Bait'}</span>
               </button>\${p.chains_count > 0 ? \`

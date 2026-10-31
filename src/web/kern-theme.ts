@@ -43,6 +43,11 @@ body:has(#feedContainer) .mode-tabs{border-bottom:1px solid var(--kern-ink)!impo
 body:has(#feedContainer) .trigger-create-card{background:var(--kern-card)!important;padding:12px 14px 12px 70px!important;margin-bottom:12px!important}
 body:has(#feedContainer) .trigger-avatar-clip{background:var(--kern-card)!important;color:var(--kern-ink)!important;border:1px solid var(--kern-ink)!important;border-radius:0!important;box-shadow:none!important;transform:none!important}
 body:has(#feedContainer) .trigger-pen-btn{background:var(--kern-accent)!important;color:var(--kern-ink)!important}
+/* Skeleton editorial hanya saat skin Kern aktif. */
+body .skeleton-card{background:transparent!important;border:0!important;border-bottom:1px solid var(--kern-ink)!important;box-shadow:none!important;margin:0!important}
+body .sk-row{border-top:1px solid var(--kern-ink)!important;border-bottom:1px solid var(--kern-ink)!important}
+body :is(.sk-avatar,.sk-line,.sk-pill){background:#D8D2C7!important;border-radius:0!important}
+body .sk-footer{border-top:1px solid var(--kern-ink)!important}
 body :is(hr,.divider){border-color:var(--kern-ink)!important}
 /* Sisa komponen neobrutal lain: dipipihkan mengikuti skin aktif (layout tetap). */
 body :is(.mcard.lift,.quote,.step.lift,.tava,DETAILS,.st-card,.verif.gate,.state,.al-tambah,.ak-ic){border-width:1px!important;border-color:var(--kern-ink)!important;box-shadow:none!important}
