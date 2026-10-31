@@ -35,6 +35,16 @@ body .brand-com-tag{background:transparent!important;color:var(--kern-accent)!im
 body .brand-com-tag::after{display:none!important}
 body .act-btn.active svg,.act-btn.saved svg{fill:var(--kern-accent)!important;stroke:var(--kern-accent)!important}
 body .act-btn.active,body .act-btn.saved{background:transparent!important;border-color:transparent!important}
+/* Dialog global: popup ikut skin aktif, bukan hanya halaman pemanggilnya. */
+body .swal2-popup{background:var(--kern-card)!important;color:var(--kern-ink)!important;border:1px solid var(--kern-ink)!important;border-radius:0!important;box-shadow:none!important;font-family:var(--kui)!important}
+body .swal2-title{color:var(--kern-ink)!important;font-family:var(--kserif)!important;font-weight:700!important}
+body .swal2-html-container{color:var(--kern-muted)!important;font-family:var(--kui)!important;font-weight:400!important}
+body .swal2-styled.swal2-confirm,body .swal2-styled.swal2-deny,body .swal2-styled.swal2-cancel{border:1px solid var(--kern-ink)!important;border-radius:0!important;box-shadow:none!important;font-family:var(--kmono)!important}
+body .swal2-styled.swal2-confirm.swal-btn-danger{background:var(--kern-accent)!important;color:var(--kern-ink)!important}
+body .swal2-styled.swal2-cancel,body .swal2-styled.swal2-deny{background:transparent!important;color:var(--kern-ink)!important}
+body .swal2-toast{background:var(--kern-card)!important;border:1px solid var(--kern-ink)!important;border-radius:0!important;box-shadow:none!important}
+body .swal2-backdrop-show{background:rgba(14,14,14,.38)!important}
+/* Feed page: kontrol khas beranda diasah mengikuti skin aktif. */
 /* Feed page: kontrol khas beranda diasah mengikuti skin aktif. */
 body:has(#feedContainer) :is(.feed-search input,.feed-search button,.mode-tab,.trigger-create-card,.trigger-pen-btn){border:1px solid var(--kern-ink)!important;border-radius:0!important;box-shadow:none!important;transform:none!important}
 body:has(#feedContainer) .feed-search input{background:var(--kern-card)!important;color:var(--kern-ink)!important}
