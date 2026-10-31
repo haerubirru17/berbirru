@@ -66,7 +66,6 @@ async function requireHuman(
   bucket: string,
   limit: number,
   windowSec: number,
-  fallback?: { limit: number; windowSec: number },
 ): Promise<string | null> {
   const secret = c.env.TURNSTILE_SECRET_KEY || '';
   const ip = c.req.header('cf-connecting-ip') || 'unknown';
@@ -74,7 +73,7 @@ async function requireHuman(
   // Jangan panggil siteverify kalau secret belum diset (percuma + spam log).
   const tokenValid = secret && hasToken ? await verifyTurnstile(token, secret, ip, c.env.APP_DOMAIN) : false;
 
-  const decision = turnstileGate({ hasSecret: !!secret, hasToken, tokenValid, allowFallback: !!fallback });
+  const decision = turnstileGate({ hasSecret: !!secret, hasToken, tokenValid, allowFallback: false });
 
   if (decision === 'reject') {
     if (!secret) {
@@ -84,15 +83,6 @@ async function requireHuman(
     return hasToken
       ? 'Verifikasi keamanan Turnstile gagal atau kedaluwarsa. Silakan muat ulang halaman.'
       : 'Verifikasi keamanan tidak dapat dimuat di peramban ini. Coba peramban lain atau muat ulang halaman.';
-  }
-
-  // Jalur cadangan (widget diblokir adblocker): kuota JAUH lebih ketat dan terpisah,
-  // supaya tidak bisa dipakai mengeruk endpoint auth tanpa menyelesaikan Turnstile.
-  if (decision === 'fallback') {
-    if (await hitRate(c.env.DB, `rl:${bucket}:nt:${ip}`, fallback!.limit, fallback!.windowSec)) {
-      return 'Terlalu banyak percobaan tanpa verifikasi dari jaringan ini. Coba lagi nanti.';
-    }
-    return null;
   }
 
   if (await hitRate(c.env.DB, `rl:${bucket}:${ip}`, limit, windowSec)) {

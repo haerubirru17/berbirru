@@ -795,15 +795,20 @@ app.post('/api/pasar/orders', async (c: any) => {
     if (!sama) {
       const jml: any = await c.env.DB.prepare('SELECT COUNT(*) AS n FROM addresses WHERE user_id = ?').bind(me.id).first();
       if (Number(jml?.n || 0) < 5) {
-        await c.env.DB.batch([
-          c.env.DB.prepare('UPDATE addresses SET is_default = 0 WHERE user_id = ?').bind(me.id),
-          c.env.DB.prepare(
-            `INSERT INTO addresses (id, user_id, label, receiver, phone, postal, text,
-               province_id, province_name, city_id, city_name, district_id, district_name, is_default)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,1)`
-          ).bind(crypto.randomUUID(), me.id, 'Alamat baru', receiverName, receiverPhone, postalCode,
-            destAddress, pId, pNm, cId, cNm, destId, destName || null),
-        ]);
+        try {
+          await c.env.DB.batch([
+            c.env.DB.prepare('UPDATE addresses SET is_default = 0 WHERE user_id = ?').bind(me.id),
+            c.env.DB.prepare(
+              `INSERT INTO addresses (id, user_id, label, receiver, phone, postal, text,
+                 province_id, province_name, city_id, city_name, district_id, district_name, is_default)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,1)`
+            ).bind(crypto.randomUUID(), me.id, 'Alamat baru', receiverName, receiverPhone, postalCode,
+              destAddress, pId, pNm, cId, cNm, destId, destName || null),
+          ]);
+        } catch (err) {
+          // Race ke batas lima alamat tidak boleh membatalkan order/QRIS yang sudah dibuat.
+          if (!String(err).includes('address_cap_exceeded')) throw err;
+        }
       }
     }
   }
