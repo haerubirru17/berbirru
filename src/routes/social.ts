@@ -180,7 +180,9 @@ app.get('/api/users/:pen_name/posts', async (c: any) => {
 app.get('/api/posts', async (c: any) => {
   const mode = c.req.query('mode') || 'viral';
   const q = (c.req.query('q') || '').trim();
-  if (q.length > 48) return c.json({ error: 'Parameter pencarian terlalu panjang.' }, 400);
+  // Sink LIKE (pattern %q%) di D1 error "pattern too complex" di atas ~48 byte —
+  // guard diukur dalam BYTE UTF-8, bukan codepoint (regresi vuln-0001 re-scan b5e1).
+  if (new TextEncoder().encode(q).byteLength > 48) return c.json({ error: 'Parameter pencarian terlalu panjang.' }, 400);
   const user = await getAuthUser(c);
   // Beranda = ruang publik. Warkah privat cuma muncul di tab Karya profil pemiliknya.
   const vis = { sql: "p.visibility = 'public'", binds: [] as any[] };
