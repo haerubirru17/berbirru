@@ -40,13 +40,19 @@ app.patch('/api/users/me', async (c: any) => {
 
 app.get('/api/users/suggest', async (c: any) => {
   const rawQ = c.req.query('q') || '';
-  if (rawQ.trim().length > 48) return c.json({ error: 'Parameter pencarian terlalu panjang.' }, 400);
+  // Paritas unit dengan /api/posts: guard dalam BYTE UTF-8, bukan codepoint (vuln-0001 R3).
+  if (new TextEncoder().encode(rawQ.trim()).byteLength > 48) return c.json({ error: 'Parameter pencarian terlalu panjang.' }, 400);
   const q = rawQ.replace(/^@+/g, '').toLowerCase().replace(/[^a-z0-9_.]/g, '');
   if (!q) return c.json({ users: [] });
   const qesc = q.replace(/[\\%_]/g, (m: any) => '\\' + m);
   const result = await c.env.DB.prepare(
     "SELECT pen_name, city FROM users WHERE pen_name LIKE ? ESCAPE '\\' ORDER BY pen_name LIMIT 8"
-  ).bind(qesc + '%').all();
+  ).bind(qesc + '%').all().catch((e: any) => {
+    // vuln-0001 R3: hanya error kompleksitas LIKE di-demote → hasil kosong; error D1 lain tetap 500.
+    if (!/too complex|SQLITE_ERROR/i.test(String(e?.message || e))) throw e;
+    console.error('suggest-d1:', String(e?.message || e).slice(0, 200));
+    return { results: [] };
+  });
   return c.json({ users: result.results || [] });
 });
 
@@ -179,8 +185,12 @@ app.get('/api/users/:pen_name/posts', async (c: any) => {
 
 app.get('/api/posts', async (c: any) => {
   const mode = c.req.query('mode') || 'viral';
-  const q = (c.req.query('q') || '').trim();
-  // Sink LIKE (pattern %q%) di D1 error "pattern too complex" di atas ~48 byte —
+  // vuln-0001 R3: `%` literal (hasil double percent-encoding) melewati guard lama,
+  // lalu di-escape `\%` untuk LIKE pen_name — pola dengan banyak `\%` melampaui batas
+  // kompleksitas LIKE SQLite → D1_ERROR: LIKE or GLOB pattern too complex → 500.
+  // `%` bukan wildcard bagi pencarian teks; buang sebelum guard & sink apa pun.
+  const q = (c.req.query('q') || '').trim().replace(/%/g, '');
+  // Sink LIKE di D1 error "pattern too complex" di atas ~48 byte —
   // guard diukur dalam BYTE UTF-8, bukan codepoint (regresi vuln-0001 re-scan b5e1).
   if (new TextEncoder().encode(q).byteLength > 48) return c.json({ error: 'Parameter pencarian terlalu panjang.' }, 400);
   const user = await getAuthUser(c);
@@ -242,7 +252,17 @@ app.get('/api/posts', async (c: any) => {
     binds.push(...vis.binds);
   }
 
-  const posts: any[] = await c.env.DB.prepare(query).bind(...binds).all().then((r: any) => r.results);
+  const posts: any[] = await (async () => {
+    try {
+      return await c.env.DB.prepare(query).bind(...binds).all().then((r: any) => r.results);
+    } catch (e: any) {
+      // vuln-0001 R3: hanya demote error kompleksitas LIKE → 400; error D1 lain (outage/CPU) tetap 500 agar monitoring jujur.
+      if (!/too complex|SQLITE_ERROR/i.test(String(e?.message || e))) throw e;
+      console.error('search-d1:', String(e?.message || e).slice(0, 200));
+      return c.json({ error: 'Parameter pencarian tidak valid.' }, 400);
+    }
+  })();
+  if (!Array.isArray(posts)) return posts as any;
 
   // Check if current user has liked/bookmarked each post
   if (user && posts.length > 0) {

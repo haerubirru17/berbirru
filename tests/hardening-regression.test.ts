@@ -27,7 +27,7 @@ const d1 = {
           rateCounts.set(key, (rateCounts.get(key) || 0) + 1);
           return col ? rateCounts.get(key) : { count: rateCounts.get(key) };
         }
-        if (s.startsWith('DELETE FROM rate_limits')) { rateCounts.clear(); return { meta: { changes: 1 } }; }
+        if (s.startsWith('DELETE FROM rate_limits')) { /* GC prod hanya hapus expired — mock tak punya expiry, jadi no-op (flake 2% GC dulu menghapus semua counter) */ return { meta: { changes: 0 } }; }
         if (s.startsWith("UPDATE orders SET resi_verified")) return { meta: { changes: 0 } };
         return col ? 0 : null;
       },
