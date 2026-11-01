@@ -189,7 +189,8 @@ app.get('/api/posts', async (c: any) => {
   // lalu di-escape `\%` untuk LIKE pen_name — pola dengan banyak `\%` melampaui batas
   // kompleksitas LIKE SQLite → D1_ERROR: LIKE or GLOB pattern too complex → 500.
   // `%` bukan wildcard bagi pencarian teks; buang sebelum guard & sink apa pun.
-  const q = (c.req.query('q') || '').trim().replace(/%/g, '');
+  const qPre = (c.req.query('q') || '').trim();
+  const q = qPre.replace(/%/g, '');
   // Sink LIKE di D1 error "pattern too complex" di atas ~48 byte —
   // guard diukur dalam BYTE UTF-8, bukan codepoint (regresi vuln-0001 re-scan b5e1).
   if (new TextEncoder().encode(q).byteLength > 48) return c.json({ error: 'Parameter pencarian terlalu panjang.' }, 400);
@@ -210,7 +211,7 @@ app.get('/api/posts', async (c: any) => {
   `;
   const binds: any[] = [user?.id || '', user?.id || ''];
 
-  if (q) {
+  if (qPre) {
     if (q.length < 2) {
       return c.json({ mode, posts: [] });
     }
