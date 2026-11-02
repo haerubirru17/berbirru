@@ -108,10 +108,11 @@ app.use('*', async (c, next) => {
 // ---- AUTH HELPERS ----
 
 // Pemilih skin: cookie user menang atas preset env (showroom sandbox). Produksi default = neo.
-// Landing (/) DIKUNCI neobrutalism — jendela branding, tidak mengikuti skin user (keputusan owner 1 Nov).
+// Landing (/) dan /login DIKUNCI neobrutalism — jendela branding, tidak mengikuti skin user (keputusan owner 1 Nov).
+const SKIN_LOCK = new Set(['/', '/login']);
 app.use('*', async (c, next) => {
   await next();
-  if (c.req.path === '/') return;
+  if (SKIN_LOCK.has(c.req.path)) return;
   if (!c.res.headers.get('content-type')?.includes('text/html')) return;
   if (!wantsKern(c.req.header('cookie'), c.env.KERN_THEME_PRESET)) return;
   const response = c.res;
