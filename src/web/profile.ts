@@ -240,7 +240,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     
     .font-serif { font-family: 'Newsreader', serif !important; }
     .font-sans { font-family: 'DM Sans', sans-serif !important; }
-    .font-mono { font-family: 'Roboto Mono', monospace !important; background: #E0EEFD; padding: 1px 4px; border-radius: 4px; }
+    .font-mono { font-family: 'Roboto Mono', monospace !important; }
 
     .thread-footer {
       padding: 8px 12px; background: #FFFFFF; border-top: var(--border-thin);

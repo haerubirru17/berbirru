@@ -172,7 +172,7 @@ export function renderFeedPage(user: any = null): string {
     
     .font-serif { font-family: 'Newsreader', serif !important; font-size: 16px; }
     .font-sans { font-family: 'DM Sans', sans-serif !important; }
-    .font-mono { font-family: 'Roboto Mono', monospace !important; background: #E0EEFD; padding: 1px 5px; border-radius: 4px; font-size: 13.5px; }
+    .font-mono { font-family: 'Roboto Mono', monospace !important; font-size: 13.5px; }
 
     .thread-footer {
       padding: 8px 10px; background: #FFFFFF; display: flex; justify-content: space-between; align-items: center;
