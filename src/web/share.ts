@@ -1,25 +1,22 @@
 // Script share warkah — dikirim verbatim ke browser (pola feed.ts).
-// Kanvas client-side: kartu PNG 1080x1350 krem-kern (kertas, tinta, aksen oranye).
+// Kanvas client-side: kartu PNG krem-kern (kertas, tinta, aksen oranye).
+// Tinggi kartu OTOMATIS mengikuti panjang konten; bait digambar rata kiri-kanan (justify).
 // ponytail: tanpa dependensi; fallback desktop = salin hook + unduh PNG.
 
 export const SHARE_CARD_JS = `<script id="bb-share">
-function bbWrapText(ctx, text, x, y, maxW, lineH, maxRows) {
-  var words = String(text).replace(/\\s+/g, ' ').trim().split(' ');
-  var line = '', rows = 0, cy = y;
+var bbNL = String.fromCharCode(10); // newline — aman dari perbedaan escape antar lapisan
+
+function bbWrapPara(ctx, para, maxW) {
+  var words = para.split(' ').filter(function (w) { return w; });
+  var lines = [], line = [];
   for (var i = 0; i < words.length; i++) {
-    var t = line + words[i] + ' ';
-    if (ctx.measureText(t).width > maxW && line !== '') {
-      ctx.fillText(line.trim(), x, cy);
-      cy += lineH; rows++; line = words[i] + ' ';
-      if (rows >= maxRows) {
-        var rest = words.slice(i).join(' ');
-        ctx.fillText(line.trim().replace(/[,;:.\\s]+$/, '') + ' \\u2026', x, cy);
-        return cy;
-      }
-    } else { line = t; }
+    var t = line.concat(words[i]).join(' ');
+    if (ctx.measureText(t).width > maxW && line.length) {
+      lines.push(line); line = [words[i]];
+    } else { line.push(words[i]); }
   }
-  if (line.trim()) ctx.fillText(line.trim(), x, cy);
-  return cy;
+  if (line.length) lines.push(line);
+  return lines;
 }
 
 // Batas karakter bait di kartu. Panjang + berjudul -> cukup judul saja.
@@ -27,48 +24,112 @@ function bbCardText(title, excerpt) {
   var MAXC = 260, MAXT = 140;
   var e = String(excerpt || '');
   var t = String(title || '');
-  if (t && (t.length + e.length) > MAXC) return t.slice(0, MAXT) + (t.length > MAXT ? '\u2026' : '');
-  if (e.length > MAXC) return e.slice(0, MAXC).replace(/\s+\S*$/, '') + ' \u2026';
-  return t ? t + '\\n\\n' + e : e;
+  var titik = String.fromCharCode(8230);
+  if (t && (t.length + e.length) > MAXC) return t.slice(0, MAXT) + (t.length > MAXT ? titik : '');
+  if (e.length > MAXC) {
+    var pot = e.slice(0, MAXC).split(' ');
+    pot.pop();
+    return pot.join(' ') + ' ' + titik;
+  }
+  return t ? t + bbNL + bbNL + e : e;
 }
 
 function bbShareCard(p) {
-  var W = 1080, H = 1350;
-  var cv = document.createElement('canvas'); cv.width = W; cv.height = H;
-  var x = cv.getContext('2d');
+  var W = 1080;
   var ink = '#0E0E0E', oranye = '#FF3B1A', krem = '#EFEBE3', kremMuda = '#F6F3EB', abu = '#6E6A63';
+  var cv = document.createElement('canvas'); cv.width = W; cv.height = 1350;
+  var x = cv.getContext('2d');
+  x.textBaseline = 'top';
+  var fontBait = "500 56px 'Newsreader', Georgia, serif";
+  x.font = fontBait;
+
+  var teks = bbCardText(p.title, p.excerpt);
+  var paras = teks.split(bbNL);
+  var groups = [], cur = [];
+  for (var i = 0; i < paras.length; i++) {
+    if (paras[i].trim() === '') { if (cur.length) { groups.push(cur); cur = []; } }
+    else cur.push(paras[i]);
+  }
+  if (cur.length) groups.push(cur);
+
+  // susun baris; justify: tiap baris paragraf rata kiri-kanan, baris terakhir tiap paragraf rata kiri
+  var maxW = W - 192, lineH = 80, paraGap = 56, maxRows = 10;
+  var layout = [], sisa = maxRows;
+  var titik = String.fromCharCode(8230);
+  outer: for (var g = 0; g < groups.length; g++) {
+    var lines = bbWrapPara(x, groups[g].join(' '), maxW);
+    for (var li = 0; li < lines.length; li++) {
+      if (sisa <= 0) {
+        var last = layout[layout.length - 1];
+        if (last && !last.gap && !last.ellipsis) {
+          while (last.words.join(' ').length > 90 && last.words.length > 1) last.words.pop();
+          last.words.push(titik); last.ellipsis = true; last.justify = false;
+        }
+        break outer;
+      }
+      layout.push({ words: lines[li], justify: !(li === lines.length - 1) && lines[li].length > 1 });
+      sisa--;
+    }
+    if (g < groups.length - 1) layout.push({ gap: true });
+  }
+
+  // tinggi otomatis: mengikuti jumlah baris + jarak antar paragraf
+  var topY = 320, footH = 280;
+  var textH = layout.reduce(function (acc, r) { return acc + (r.gap ? paraGap : lineH); }, 0);
+  var H = Math.max(1000, Math.min(2200, topY + textH + footH));
+  cv.height = H;
+  x = cv.getContext('2d');
+  x.textBaseline = 'top';
+
+  // latar + bingkai tinta
   x.fillStyle = krem; x.fillRect(0, 0, W, H);
   x.fillStyle = kremMuda; x.fillRect(40, 40, W - 80, H - 80);
   x.strokeStyle = ink; x.lineWidth = 4; x.strokeRect(2, 2, W - 4, H - 4);
 
   // wordmark
-  x.fillStyle = ink; x.textBaseline = 'top';
-  x.font = "700 52px 'Newsreader', Georgia, serif";
+  x.fillStyle = ink; x.font = "700 52px 'Newsreader', Georgia, serif";
   x.fillText('BERBIRRU', 96, 96);
   var wBer = x.measureText('BERBIRRU').width;
   x.fillStyle = oranye; x.fillText('.COM', 96 + wBer, 96);
-  x.fillStyle = ink; x.lineWidth = 2;
   x.fillRect(96, 176, W - 192, 2);
 
-  // label
+  // label tanggal
   var tgl;
   try { tgl = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }); }
   catch (e) { tgl = ''; }
   x.fillStyle = abu; x.font = "600 30px 'DM Sans', Arial, sans-serif";
-  x.fillText(('WARKAH \\u00b7 ' + tgl).toUpperCase(), 96, 232);
+  x.fillText(('WARKAH · ' + tgl).toUpperCase(), 96, 232);
 
-  // bait — Newsreader serif, maks 10 baris
-  x.fillStyle = ink; x.font = "500 56px 'Newsreader', Georgia, serif";
-  var teks = bbCardText(p.title, p.excerpt);
-  var akhirY = bbWrapText(x, teks, 96, 320, W - 192, 80, 10);
+  // bait — justify
+  x.fillStyle = ink; x.font = fontBait;
+  var cy = topY;
+  for (var r = 0; r < layout.length; r++) {
+    var row = layout[r];
+    if (row.gap) { cy += paraGap; continue; }
+    var ws = row.words;
+    if (row.justify) {
+      var sum = 0;
+      for (var k = 0; k < ws.length; k++) sum += x.measureText(ws[k]).width;
+      var extra = maxW - sum;
+      if (extra > 0 && extra < 400) {
+        var step = extra / (ws.length - 1), cx = 96;
+        for (var j = 0; j < ws.length; j++) {
+          x.fillText(ws[j], cx, cy);
+          cx += x.measureText(ws[j]).width + step;
+        }
+      } else { x.fillText(ws.join(' '), 96, cy); }
+    } else { x.fillText(ws.join(' '), 96, cy); }
+    cy += lineH;
+  }
 
   // footer
-  var who = '@' + p.pen_name + (p.city ? ' \\u00b7 ' + p.city : '');
+  var footY = H - footH + 40;
+  var who = '@' + p.pen_name + (p.city ? ' · ' + p.city : '');
   x.fillStyle = abu; x.font = "500 38px 'DM Sans', Arial, sans-serif";
-  x.fillText(who, 96, H - 240);
+  x.fillText(who, 96, footY);
   x.fillStyle = ink; x.font = "700 42px 'Newsreader', Georgia, serif";
-  x.fillText('Baca selengkapnya di BERBIRRU.COM', 96, H - 152);
-  x.fillStyle = oranye; x.fillRect(96, H - 92, 260, 6);
+  x.fillText('Baca selengkapnya di BERBIRRU.COM', 96, footY + 88);
+  x.fillStyle = oranye; x.fillRect(96, footY + 148, 260, 6);
 
   return new Promise(function (res) { cv.toBlob(function (b) { res(b); }, 'image/png'); });
 }
@@ -89,7 +150,8 @@ function sharePostBtn(btn) {
 
   var url = 'https://berbirru.com/chain/' + root;
   var potongan = (title || excerpt).slice(0, 160);
-  var hook = '\\u201c' + potongan + (potongan.length >= 160 ? '\\u2026' : '') + '\\u201d \\u2014 @' + pen + (city ? ' \\u00b7 ' + city : '') + '\\nBaca selengkapnya di BERBIRRU.COM \\u2192 ' + url;
+  var newl = String.fromCharCode(10);
+  var hook = '\u201c' + potongan + (potongan.length >= 160 ? '\u2026' : '') + '\u201d \u2014 @' + pen + (city ? ' \u00b7 ' + city : '') + newl + 'Baca selengkapnya di BERBIRRU.COM \u2192 ' + url;
 
   bbShareCard(p).then(function (blob) {
     var file = null;
