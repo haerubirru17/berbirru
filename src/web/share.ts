@@ -149,9 +149,20 @@ function sharePostBtn(btn) {
   var p = { id: id, pen_name: pen, city: city, title: title, excerpt: excerpt };
 
   var url = 'https://berbirru.com/chain/' + root;
-  var potongan = (title || excerpt).slice(0, 160);
-  var newl = String.fromCharCode(10);
-  var hook = '\u201c' + potongan + (potongan.length >= 160 ? '\u2026' : '') + '\u201d \u2014 @' + pen + (city ? ' \u00b7 ' + city : '') + newl + 'Baca selengkapnya di BERBIRRU.COM \u2192 ' + url;
+  var baruL = String.fromCharCode(10);
+  var emD = String.fromCharCode(8212), kiri = String.fromCharCode(8220), kanan = String.fromCharCode(8221), titik = String.fromCharCode(8230), panah = String.fromCharCode(8594), titikDua = String.fromCharCode(183);
+  var longPost = (title.length + excerpt.length) > 260;
+  var hookUtama;
+  if (longPost) {
+    // teks share = SETENGAH isi bait (biar penasaran), dipotong di batas kata
+    var h = excerpt.slice(0, Math.floor(excerpt.length / 2)).split(' ');
+    if (h.length > 1) h.pop();
+    hookUtama = h.join(' ').replace(/[,;:.]$/, '') + (titik);
+  } else {
+    // kutipan pendek: langsung utuh (sama seperti yang tampil di gambar)
+    hookUtama = (title || excerpt).slice(0, 160);
+  }
+  var hook = kiri + hookUtama + kanan + ' ' + emD + ' @' + pen + (city ? ' ' + titikDua + ' ' + city : '') + baruL + 'Baca selengkapnya di BERBIRRU.COM ' + panah + ' ' + url;
 
   bbShareCard(p).then(function (blob) {
     var file = null;
