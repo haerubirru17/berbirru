@@ -82,6 +82,9 @@ export function renderChainPage(opts: {
     .ttime { font-size:10px; color: #8895AC; font-weight: 600; }
     .ttitle { font-family: 'Newsreader', serif; font-size: 16.5px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
     .tbody { font-size: 13.5px; line-height: 1.65; color: #22314A; }
+    .font-serif { font-family: 'Newsreader', serif !important; font-size: 16px; }
+    .font-sans { font-family: 'DM Sans', sans-serif !important; }
+    .font-mono { font-family: 'Roboto Mono', monospace !important; font-size: 13.5px; }
     .tbody p { margin-bottom: 8px; }
     .tfoot-mini { margin-top: 8px; font-size: 11px; font-weight: 800; color: var(--muted); }
     .rail { position: relative; padding-left: 17px; margin-top: 14px; }
