@@ -71,6 +71,8 @@ export function renderSearchPage(user: any = null): string {
     .chip-pen { font-weight: 800; font-size: 13.5px; }
     .chip-city { font-size: 11.5px; color: var(--muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     /* Kartu warkah hasil cari — kembar kartu feed (desain terkunci) */
+    .thread-card p { margin: 0 0 .55em; }
+    .thread-card p:last-child { margin-bottom: 0; }
     .thread-card {
       background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
       box-shadow: var(--shadow-hard); overflow: hidden; margin-bottom: 10px;

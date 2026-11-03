@@ -20,7 +20,7 @@ const xss = [
 ];
 for (const p of xss) {
   const out = sanitizeRich(p);
-  assert(!/<(script|img|svg|iframe|a|div|body|input|style)\b/i.test(out), `tag lolos: ${p} -> ${out}`);
+  assert(!/<(script|img|svg|iframe|a|body|input|style)\b/i.test(out), `tag lolos: ${p} -> ${out}`);
   assert(!/on\w+\s*=/i.test(out), `handler lolos: ${p} -> ${out}`);
   assert(!/javascript:/i.test(out), `js-url lolos: ${p} -> ${out}`);
 }
@@ -36,6 +36,11 @@ assert(sanitizeRich(good) === good, 'format sah berubah: ' + sanitizeRich(good))
 
 // 4. Class asing dibuang, class font dipertahankan.
 assert(sanitizeRich('<span class="evil font-mono">x</span>') === '<span class="font-mono">x</span>', 'class filter salah');
+
+// 4b. div/p kini dipertahankan TANPA atribut apa pun (paragraf editor) — handler XSS pasti hilang.
+assert(sanitizeRich('<div onclick="alert(1)">x</div>') === '<div>x</div>', 'atribut div tidak dibuang');
+assert(sanitizeRich('<p onmouseover="x()" style="a">isi</p>') === '<p>isi</p>', 'atribut p tidak dibuang');
+assert(sanitizeRich('<div><br></div>') === '<div><br></div>', 'baris kosong hilang');
 
 // 5. Data lama di DB (dari dump produksi) tetap utuh.
 const legacy = '<b>Halo cek system, </b>cek system, <i>cek system, <u><span class="font-mono"><span class="font-serif">cek system,&nbsp;';

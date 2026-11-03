@@ -5,7 +5,7 @@
 // cuma tampil sebagai teks. Upgrade path: ganti ke parser sungguhan (mis. DOMPurify
 // + linkedom) kalau nanti benar-benar perlu menoleransi HTML arbitrer.
 
-const ALLOWED_TAGS = ['b', 'strong', 'i', 'em', 'u', 's', 'br', 'blockquote', 'span'];
+const ALLOWED_TAGS = ['b', 'strong', 'i', 'em', 'u', 's', 'br', 'p', 'div', 'blockquote', 'span'];
 const FONT_CLASSES = ['font-sans', 'font-serif', 'font-mono'];
 
 // Elemen yang isinya dibuang total (bukan cuma tag-nya) — ini vektor XSS/script.
@@ -69,7 +69,7 @@ export function sanitizeRich(input: unknown): string {
   });
 
   // 3. Sisa '<' yang bukan tag allowlist yang utuh → jadikan teks biasa.
-  s = s.replace(/<(?!\/?(?:b|strong|i|em|u|s|br|blockquote|span)\b[^>]*>)/gi, '&lt;');
+  s = s.replace(/<(?!\/?(?:b|strong|i|em|u|s|br|p|div|blockquote|span)\b[^>]*>)/gi, '&lt;');
 
   return s;
 }

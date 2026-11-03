@@ -229,6 +229,8 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     .thread-body { padding: 14px 14px 12px; }
     .thread-title { font-family: 'Archivo Black', sans-serif; font-size: 15px; font-weight: 800; color: var(--ink); margin-bottom: 6px; }
     .thread-text { font-size: 14px; font-weight: 600; line-height: 1.6; color: #0F172A; }
+    .thread-text p { margin: 0 0 .55em; }
+    .thread-text p:last-child { margin-bottom: 0; }
     .thread-text blockquote {
       background: #F8FAFC;
       border-left: 3.5px solid var(--ink);

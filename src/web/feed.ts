@@ -148,6 +148,8 @@ export function renderFeedPage(user: any = null): string {
     .thread-body { padding: 14px 14px 12px; flex: 1; display: flex; flex-direction: column; }
     .thread-title { font-family: 'Newsreader', serif; font-size: 17px; font-weight: 600; color: var(--ink); margin-bottom: 6px; line-height: 1.3; }
     .thread-text { font-size: 14px; font-weight: 600; line-height: 1.6; color: #0F172A; flex: 1; }
+    .thread-text p { margin: 0 0 .55em; }
+    .thread-text p:last-child { margin-bottom: 0; }
     .thread-text-wrap { position: relative; }
     .thread-text-collapsed {
       max-height: 110px;
