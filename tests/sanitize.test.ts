@@ -37,6 +37,10 @@ assert(sanitizeRich(good) === good, 'format sah berubah: ' + sanitizeRich(good))
 // 4. Class asing dibuang, class font dipertahankan.
 assert(sanitizeRich('<span class="evil font-mono">x</span>') === '<span class="font-mono">x</span>', 'class filter salah');
 
+// 4c. div/p boleh membawa class font (untuk paragraf editor), class lain dibuang.
+assert(sanitizeRich('<div class="font-serif evil">x</div>') === '<div class="font-serif">x</div>', 'class div salah');
+assert(sanitizeRich('<p class="evil">x</p>') === '<p>x</p>', 'class p tidak dibuang');
+
 // 4b. div/p kini dipertahankan TANPA atribut apa pun (paragraf editor) — handler XSS pasti hilang.
 assert(sanitizeRich('<div onclick="alert(1)">x</div>') === '<div>x</div>', 'atribut div tidak dibuang');
 assert(sanitizeRich('<p onmouseover="x()" style="a">isi</p>') === '<p>isi</p>', 'atribut p tidak dibuang');

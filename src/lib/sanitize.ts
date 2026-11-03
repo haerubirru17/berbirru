@@ -58,12 +58,12 @@ export function sanitizeRich(input: unknown): string {
     const closing = m.startsWith('</');
     if (!ALLOWED_TAGS.includes(t)) return '';
     if (t === 'br') return '<br>';
-    if (t === 'span') {
-      if (closing) return '</span>';
+    if (t === 'span' || t === 'div' || t === 'p') {
+      if (closing) return '</' + t + '>';
       const raw = String(attrsRaw ?? '');
       const mm = /class\s*=\s*(?:"([^"]*)"|'([^']*)')/i.exec(raw);
       const cls = ((mm ? (mm[1] ?? mm[2]) : '').split(/\s+/)).filter((x) => FONT_CLASSES.includes(x));
-      return cls.length ? `<span class="${cls.join(' ')}">` : '<span>';
+      return cls.length ? `<${t} class="${cls.join(' ')}">` : `<${t}>`;
     }
     return closing ? `</${t}>` : `<${t}>`;
   });

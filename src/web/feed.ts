@@ -754,14 +754,62 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
       currentFontClass = fontClass;
       const selection = window.getSelection();
       const canvas = document.getElementById('editorCanvas');
+      if (!canvas) return;
 
-      if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
-        const range = selection.getRangeAt(0);
-        const span = document.createElement('span');
-        span.className = fontClass;
-        span.appendChild(range.extractContents());
-        range.insertNode(span);
-        selection.removeAllRanges();
+      var wholeSel = false;
+      var norm = function (t) { return String(t || '').split(' ').filter(function (w) { return w; }).join(' '); };
+      if (selection && selection.rangeCount > 0 && !selection.getRangeAt(0).collapsed) {
+        wholeSel = norm(selection.toString()) === norm(canvas.textContent);
+      }
+
+      // seragamkan: teks telanjang langsung di canvas dibungkus div
+      Array.from(canvas.childNodes).forEach(function (n) {
+        if (n.nodeType === 3 && n.textContent.trim() !== '') {
+          var d = document.createElement('div');
+          d.textContent = n.textContent;
+          n.replaceWith(d);
+        }
+      });
+
+      var applyAll = function () {
+        canvas.classList.remove('font-sans', 'font-serif', 'font-mono');
+        canvas.classList.add(fontClass);
+        canvas.querySelectorAll('div, p').forEach(function (b) {
+          b.classList.remove('font-sans', 'font-serif', 'font-mono');
+          b.classList.add(fontClass);
+        });
+        canvas.querySelectorAll('span.font-sans, span.font-serif, span.font-mono').forEach(function (s) {
+          s.classList.remove('font-sans', 'font-serif', 'font-mono');
+          if (!s.getAttribute('class')) s.removeAttribute('class');
+        });
+      };
+
+      if (selection && selection.rangeCount > 0 && !selection.getRangeAt(0).collapsed) {
+        if (wholeSel) {
+          applyAll();
+        } else {
+          const blocks = [];
+          canvas.querySelectorAll('div, p').forEach(function (b) {
+            if (selection.getRangeAt(0).intersectsNode(b)) blocks.push(b);
+          });
+          if (blocks.length) {
+            // font per paragraf — span pembungkus pecah saat multi-paragraf (bug serif: paragraf 2 jadi sans)
+            blocks.forEach(function (b) {
+              b.classList.remove('font-sans', 'font-serif', 'font-mono');
+              b.classList.add(fontClass);
+              b.querySelectorAll('span.font-sans, span.font-serif, span.font-mono').forEach(function (sp) {
+                sp.classList.remove('font-sans', 'font-serif', 'font-mono');
+                if (!sp.getAttribute('class')) sp.removeAttribute('class');
+              });
+            });
+          } else {
+            var span = document.createElement('span');
+            span.className = fontClass;
+            span.appendChild(selection.getRangeAt(0).extractContents());
+            selection.getRangeAt(0).insertNode(span);
+            selection.removeAllRanges();
+          }
+        }
       } else {
         document.execCommand('insertHTML', false, '<span class="' + fontClass + '">&#8203;</span>');
       }
