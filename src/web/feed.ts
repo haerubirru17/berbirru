@@ -465,7 +465,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
   ${renderBottomNav('feed', user, false)}
 
   <script>
-    let currentMode = 'viral';
+    let currentMode = (() => { const t = new URLSearchParams(location.search).get('tab'); return ['viral','latest','following'].includes(t) ? t : 'viral'; })();
     let currentChainParentId = null;
     let currentFontClass = 'font-sans';
     let currentVisibility = 'public';
@@ -859,6 +859,15 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
       else clearTimeout(unreadTimer);
     });
 
+    // ?tab=latest dsb (CTA "Jelajahi warkah" landing): sinkronkan tab aktif sebelum load pertama.
+    (function initTabFromUrl() {
+      const i = ['viral', 'latest', 'following'].indexOf(currentMode);
+      if (i > 0) {
+        document.querySelectorAll('.mode-tab').forEach((t) => t.classList.remove('active'));
+        const tabs = document.querySelectorAll('.mode-tab');
+        if (tabs[i]) tabs[i].classList.add('active');
+      }
+    })();
     loadFeed();
     checkUnreadNotifs();
   </script>

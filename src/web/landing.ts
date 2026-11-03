@@ -304,7 +304,7 @@ ${WARKAH_CARD_CSS}
         <a href="#estafet">Estafet</a>
         <a href="#tanya">Tanya jawab</a>
         <a href="${masuk}">${labelMasuk}</a>
-        <a class="navcta" href="/feed">Jelajahi warkah</a>
+        <a class="navcta" href="/feed?tab=latest">Jelajahi warkah</a>
       </nav>
       <div class="navright">
         <button class="mobtn" id="mobtn" type="button" aria-label="Buka menu" aria-expanded="false" aria-controls="mobnav">
@@ -317,7 +317,7 @@ ${WARKAH_CARD_CSS}
       <a href="#estafet">Estafet</a>
       <a href="#tanya">Tanya jawab</a>
       <a href="${masuk}">${labelMasuk}</a>
-      <a href="/feed" class="navcta">Jelajahi warkah</a>
+      <a href="/feed?tab=latest" class="navcta">Jelajahi warkah</a>
     </nav>
   </div>
 </header>
@@ -355,7 +355,7 @@ ${WARKAH_CARD_CSS}
             <p>Pernah menulis ide bagus di sembarang tempat, lalu lupa di mana menyimpannya? Berbirru rumahnya — tempat mengabadikan setiap patah kata agar tersimpan rapi, mudah ditemukan, dan bisa dilanjutkan bersama.</p>
             <div class="hero-ctas">
               <a class="btn coral" href="${ctaHref}">Mulai menulis →</a>
-              <a class="btn ghost" href="/feed">Jelajahi warkah</a>
+              <a class="btn ghost" href="/feed?tab=latest">Lihat warkah terbaru →</a>
             </div>
           </div>
         </div>
