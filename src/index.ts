@@ -32,6 +32,7 @@ import { renderOwnerPage } from './web/owner';
 import { renderAkunAdminPage } from './web/akunAdmin';
 import { renderBuktiPencairan } from './web/pencairan';
 import { applyKernTheme, wantsKern } from './web/kern-theme';
+import { INTERACTION_CSS } from './web/interaction';
 import { bolehLihatPesanan, bolehUnggahBukti, jenisDokumen, kunciBukti, kunciDokumen, MAKS_BUKTI_PER_PIHAK } from './lib/berkas';
 import { createQrisTransaction, getQrisStatus, verifyWebhook, KlikQrisEnv } from './klikqris';
 import { providerAmountMatches, settlementAmounts, PASAR_FEE, WITHDRAW_MIN, withdrawFee, withdrawTotal, kodePencairan } from './lib/pasar-settlement';
@@ -106,6 +107,20 @@ app.use('*', async (c, next) => {
 });
 
 // ---- AUTH HELPERS ----
+
+// Interaksi global: pasang CSS tap/click polish di SEMUA halaman HTML (termasuk SKIN_LOCK).
+app.use('*', async (c, next) => {
+  await next();
+  if (!c.res.headers.get('content-type')?.includes('text/html')) return;
+  const response = c.res;
+  const html = await response.text();
+  if (!/<head\b/i.test(html)) { c.res = response; return; }
+  const headers = new Headers(response.headers);
+  headers.delete('content-length');
+  c.res = new Response(html.replace(/<\/head\s*>/i, `${INTERACTION_CSS}</head>`), {
+    status: response.status, statusText: response.statusText, headers,
+  });
+});
 
 // Pemilih skin: cookie user menang atas preset env (showroom sandbox). Produksi default = neo.
 // Landing (/) dan /login DIKUNCI neobrutalism — jendela branding, tidak mengikuti skin user (keputusan owner 1 Nov).
