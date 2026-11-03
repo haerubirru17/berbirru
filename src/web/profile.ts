@@ -330,7 +330,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
     <!-- Profile Card with Cover/Banner Header -->
     <div class="profile-card">
       <div class="cover-banner" ${isMe ? `onclick="if(!event.target.closest('.banner-floating-nav'))document.getElementById('coverInput').click()" style="cursor:pointer" title="Ganti foto sampul"` : ''}>
-        <a href="/" class="kern-profile-brand" aria-label="BERBIRRU Beranda" onclick="event.stopPropagation()"><span class="kern-brand-mark">B</span><span>BERBIRRU</span></a>
+        <a href="/" class="kern-profile-brand kern-brand-official" aria-label="BERBIRRU Beranda" onclick="event.stopPropagation()"><span class="kbrand-badge"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg><b>BERBIRRU</b></span><span class="kbrand-com">.com</span></a>
       ${isMe ? '<input type="file" id="coverInput" data-kind="cover" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="pickMedia(this)">' : ''}
         ${isMe ? `
         <div class="cover-edit-badge media-edit-badge" onclick="event.stopPropagation(); document.getElementById('coverInput').click();" title="Ganti foto sampul">
