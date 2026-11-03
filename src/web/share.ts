@@ -22,6 +22,16 @@ function bbWrapText(ctx, text, x, y, maxW, lineH, maxRows) {
   return cy;
 }
 
+// Batas karakter bait di kartu. Panjang + berjudul -> cukup judul saja.
+function bbCardText(title, excerpt) {
+  var MAXC = 260, MAXT = 140;
+  var e = String(excerpt || '');
+  var t = String(title || '');
+  if (t && (t.length + e.length) > MAXC) return t.slice(0, MAXT) + (t.length > MAXT ? '\u2026' : '');
+  if (e.length > MAXC) return e.slice(0, MAXC).replace(/\s+\S*$/, '') + ' \u2026';
+  return t ? t + '\\n\\n' + e : e;
+}
+
 function bbShareCard(p) {
   var W = 1080, H = 1350;
   var cv = document.createElement('canvas'); cv.width = W; cv.height = H;
@@ -49,7 +59,7 @@ function bbShareCard(p) {
 
   // bait — Newsreader serif, maks 10 baris
   x.fillStyle = ink; x.font = "500 56px 'Newsreader', Georgia, serif";
-  var teks = (p.title ? p.title + '\\n\\n' : '') + (p.excerpt || '');
+  var teks = bbCardText(p.title, p.excerpt);
   var akhirY = bbWrapText(x, teks, 96, 320, W - 192, 80, 10);
 
   // footer
