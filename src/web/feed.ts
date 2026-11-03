@@ -1,6 +1,7 @@
 import { THEME } from './theme';
 import { renderBottomNav } from './layout';
 import { NOTIFY_HTML } from './notify';
+import { SHARE_CARD_JS } from './share';
 
 export function renderFeedPage(user: any = null): string {
   return `<!DOCTYPE html>
@@ -465,6 +466,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
 
   <!-- 5-TAB DOCKED BOTTOM NAVBAR -->
   ${renderBottomNav('feed', user, false)}
+  ${SHARE_CARD_JS}
 
   <script>
     let currentMode = (() => { const t = new URLSearchParams(location.search).get('tab'); return ['viral','latest','following'].includes(t) ? t : 'viral'; })();
@@ -586,6 +588,9 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
                 <svg class="ico" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
                 <span>\${p.saves_count || 0}</span>
               </button>
+              \${p.visibility === 'private' ? '' : \`<button class="act-btn" aria-label="Bagikan warkah" title="Bagikan warkah" onclick="sharePostBtn(this)" data-id="\${p.id}" data-parent="\${p.parent_id || ''}">
+                <svg class="ico" viewBox="0 0 24 24" fill="none"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7M16 6l-4-4-4 4M12 18V2"/></svg>
+              </button>\`}
             </div>
             <span class="chain-split">
               <button class="chain-btn" aria-label="Sambungkan bait" data-title="\${escapeHtml(p.title || p.pen_name)}" onclick="openStudioModal('\${p.id}', this.dataset.title)">
