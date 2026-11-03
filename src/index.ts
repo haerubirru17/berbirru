@@ -129,6 +129,14 @@ app.use('*', async (c, next) => {
   await next();
   if (SKIN_LOCK.has(c.req.path)) return;
   if (!c.res.headers.get('content-type')?.includes('text/html')) return;
+  // Halaman ini cookie-dependent (skin) — jangan sampai cache browser/proxy menyajikan
+  // versi skin lama (penyebab profil "krem" terlihat padahal skin sudah neo).
+  if (!c.res.headers.get('cache-control')) {
+    const response0 = c.res;
+    const headers0 = new Headers(response0.headers);
+    headers0.set('Cache-Control', 'no-store, must-revalidate');
+    c.res = new Response(response0.body, { status: response0.status, statusText: response0.statusText, headers: headers0 });
+  }
   if (!wantsKern(c.req.header('cookie'), c.env.KERN_THEME_PRESET)) return;
   const response = c.res;
   const html = await response.text();

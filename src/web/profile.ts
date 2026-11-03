@@ -231,6 +231,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     .thread-text { font-size: 14px; font-weight: 600; line-height: 1.6; color: #0F172A; }
     .thread-text p { margin: 0 0 .55em; }
     .thread-text p:last-child { margin-bottom: 0; }
+    .profile-tab-total { display: none; }
     .thread-text blockquote {
       background: #F8FAFC;
       border-left: 3.5px solid var(--ink);

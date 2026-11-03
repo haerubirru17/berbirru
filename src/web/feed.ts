@@ -504,12 +504,12 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
         const data = await res.json();
 
         if (data.message && currentMode === 'following') {
-          container.innerHTML = '<div style="background:#F6F3EB;padding:24px;border:1px solid #0E0E0E;border-radius:0;text-align:center;font-weight:600;box-shadow:none;color:#0E0E0E;font-family:Recursive,monospace;">' + data.message + ' <br><br><a href="/login" style="display:inline-block;padding:8px 16px;background:#0E0E0E;color:#EFEBE3;border-radius:0;text-decoration:none;font-weight:700;">Masuk Sekarang</a></div>';
+          container.innerHTML = '<div style="background:#FFF;padding:24px;border:3px solid var(--ink);border-radius:16px;box-shadow:4px 4px 0 #1E293B;text-align:center;font-weight:700;color:#0F172A;font-family:\'DM Sans\',Arial,sans-serif;">' + data.message + ' <br><br><a href="/login" style="display:inline-block;padding:8px 16px;background:var(--blue-primary);color:#FFF;border:var(--border-thick);border-radius:12px;box-shadow:2px 3px 0 #1E293B;text-decoration:none;font-weight:700;">Masuk Sekarang</a></div>';
           return;
         }
 
         if (!data.posts || !data.posts.length) {
-          container.innerHTML = '<div style="background:#F6F3EB;padding:24px;border:1px solid #0E0E0E;border-radius:0;text-align:center;font-weight:600;box-shadow:none;color:#0E0E0E;font-family:Recursive,monospace;">Belum ada warkah di feed ini. Jadilah yang pertama menggoreskan bait!</div>';
+          container.innerHTML = '<div style="background:#FFF;padding:24px;border:3px solid var(--ink);border-radius:16px;box-shadow:4px 4px 0 #1E293B;text-align:center;font-weight:700;color:#0F172A;font-family:\'DM Sans\',Arial,sans-serif;">Belum ada warkah di feed ini. Jadilah yang pertama menggoreskan bait!</div>';
           return;
         }
         container.innerHTML = data.posts.map(p => renderPostCard(p)

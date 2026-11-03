@@ -112,7 +112,7 @@ body:has(#notifListContainer) .hub-link{background:transparent!important;border:
     .profile-meta-wrap:has(.profile-cover-photo.has-cover) .bio-box{min-height:0 !important}
     .profile-meta-wrap:has(.profile-cover-photo.has-cover) .stats-inline{margin-top:8px !important}
     .profile-cover-photo[role=button]{cursor:pointer}
-    .profile-tab-total{margin-left:auto;align-self:center;white-space:nowrap;color:var(--kmuted);font:500 9px var(--kmono);text-transform:uppercase}
+    .profile-tab-total{display:block;margin-left:auto;align-self:center;white-space:nowrap;color:var(--kmuted);font:500 9px var(--kmono);text-transform:uppercase}
     .feed-list .profile-empty{background:transparent!important;border:0!important;border-top:1px solid var(--kink)!important;border-radius:0!important;box-shadow:none!important;margin:0;padding:24px 16px!important;text-align:left!important;color:var(--kmuted);font:500 13px/1.5 'Roboto Flex',Arial,sans-serif!important}
     .profile-since{display:block;text-align:right;min-height:12px;font:500 9px var(--kmono);letter-spacing:.07em;text-transform:uppercase;color:var(--ksignal);margin-top:81px}
     .profile-liked-count{display:block;position:absolute;right:0;bottom:-15px;text-align:right;min-height:15px;font:500 9px var(--kmono);text-transform:uppercase;letter-spacing:.05em;color:var(--kmuted);margin-top:0}
