@@ -171,6 +171,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     .follow-verified { width:14px; height:14px; flex:none; }
     .follow-meta { color:var(--muted); font-size:10px; font-weight:700; margin-top:2px; }
     .follow-action { border:2px solid var(--ink); background:var(--blue); color:#FFF; box-shadow:2px 2px 0 var(--ink-soft); padding:7px 10px; font-size:10px; font-weight:800; cursor:pointer; }
+    .follow-remove { background:#FFF !important; color:#B91C1C !important; border-color:#B91C1C !important; box-shadow:2px 2px 0 rgba(185,28,28,.25) !important; }
     .follow-empty, .follow-loading { padding:34px 10px; text-align:center; color:var(--muted); font-size:12px; font-weight:700; }
 
     /* Tab Underline Bersih (Hanya 1 Aktif) */
@@ -904,7 +905,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
         <div class="follow-row" data-pen="\${escapeHtml(u.pen_name)}">
           <div class="follow-avatar" style="\${followAvatarStyle(u.pen_name, u.avatar_key)}">\${escapeHtml((u.pen_name || 'D')[0].toUpperCase())}</div>
           <div class="follow-info"><div class="follow-name">@\${escapeHtml(u.pen_name)}\${u.is_admin ? '<svg class="follow-verified" viewBox="0 0 24 24" fill="none" aria-label="Akun admin" role="img"><circle cx="12" cy="12" r="10" fill="#1D61E7"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div><div class="follow-meta">\${escapeHtml(u.display_name || u.pen_name)}\${u.city ? ' · ' + escapeHtml(u.city) : ''}</div></div>
-          \${u.pen_name !== currentPenName ? \`<button class="follow-action" data-pen="\${escapeHtml(u.pen_name)}" data-on="\${u.is_following ? '1' : '0'}">\${u.is_following ? 'Mengikuti' : 'Ikuti'}</button>\` : ''}
+          \${u.pen_name !== currentPenName ? \`<button class="follow-action" data-pen="\${escapeHtml(u.pen_name)}" data-on="\${u.is_following ? '1' : '0'}">\${u.is_following ? 'Mengikuti' : 'Ikuti'}</button>\` + (followSheetType === 'followers' ? \`<button class="follow-action follow-remove" data-pen="\${escapeHtml(u.pen_name)}">Hapus</button>\` : '') : ''}
         </div>\`).join('');
       list.querySelectorAll('.follow-row').forEach(row => row.addEventListener('click', (ev) => {
         // Klik baris = buka profil akun; klik tombol Ikuti/Mengikuti tetap di sheet.
@@ -935,6 +936,27 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
           await refreshProfileCounts();
           await loadFollowList(followSheetType, false);
         } catch (err) { btn.disabled = false; bbToast(err.message || 'Gagal mengubah status ikuti.', 'error'); }
+      }));
+      list.querySelectorAll('.follow-remove').forEach(btn => btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        try {
+          const res = await fetch('/api/users/' + encodeURIComponent(currentPenName) + '/remove-follower', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pen_name: btn.dataset.pen })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Gagal menghapus pengikut');
+          btn.closest('.follow-row')?.remove();
+          const count = Math.max(0, Number(document.getElementById('countFollowers')?.textContent || 0) - 1);
+          const countEl = document.getElementById('countFollowers');
+          if (countEl) countEl.textContent = String(count);
+          document.getElementById('followTabFollowers').textContent = 'Pengikut · ' + count;
+          document.getElementById('followSheetHint').textContent = count + ' orang mengikuti @' + currentPenName;
+          if (!document.querySelector('#followList .follow-row')) renderFollowRows([]);
+          await refreshProfileCounts();
+        } catch (err) { bbToast(err.message || 'Gagal menghapus pengikut.', 'error'); }
+        finally { btn.disabled = false; }
       }));
     }
     function scheduleFollowPoll() {

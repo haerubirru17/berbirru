@@ -525,4 +525,29 @@ app.post('/api/users/:pen_name/follow', async (c: any) => {
     return c.json({ following: true });
   }
 });
+
+app.post('/api/users/:pen_name/remove-follower', async (c: any) => {
+  const user = await getAuthUser(c);
+  if (!user) return c.json({ error: 'Silakan masuk terlebih dahulu' }, 401);
+
+  if (await hitRate(c.env.DB, `engage:${user.id}`, 60, 60)) {
+    return c.json({ error: 'Terlalu banyak interaksi. Tunggu sebentar.' }, 429);
+  }
+
+  const penName = c.req.param('pen_name').replace(/^@/, '').toLowerCase();
+  const owner: any = await c.env.DB.prepare('SELECT id FROM users WHERE pen_name = ? LIMIT 1').bind(penName).first();
+  if (!owner) return c.json({ error: 'Penulis tidak ditemukan' }, 404);
+  if (owner.id !== user.id) return c.json({ error: 'Hanya bisa mengelola pengikutmu sendiri' }, 403);
+
+  const body = await c.req.json().catch(() => ({}));
+  const followerPen = String(body?.pen_name || '').replace(/^@/, '').toLowerCase();
+  if (!followerPen) return c.json({ error: 'Nama pengikut tidak valid' }, 400);
+  const follower: any = await c.env.DB.prepare('SELECT id FROM users WHERE pen_name = ? LIMIT 1').bind(followerPen).first();
+  if (!follower) return c.json({ error: 'Pengikut tidak ditemukan' }, 404);
+  if (follower.id === user.id) return c.json({ error: 'Tidak valid' }, 400);
+
+  const del = await c.env.DB.prepare('DELETE FROM follows WHERE follower_id = ? AND following_id = ?').bind(follower.id, user.id).run();
+  await c.env.DB.prepare("DELETE FROM notifications WHERE user_id = ? AND actor_id = ? AND type = 'follow'").bind(user.id, follower.id).run();
+  return c.json({ removed: (del.meta.changes || 0) > 0 });
+});
 }

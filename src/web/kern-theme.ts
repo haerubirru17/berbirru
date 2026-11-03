@@ -29,9 +29,9 @@ body .bnav .bnav-item.is-on .bnav-lbl{background:transparent!important;color:var
 body :is(.btn-primary,.pf-go,.btn-buy){background:var(--kern-ink)!important;color:var(--kern-paper)!important;border-color:var(--kern-ink)!important}
 body :is(.brand-badge,.pasar-top,.market-header){box-shadow:none!important}
 body .brand-badge{background:transparent!important;border:0!important;border-radius:0!important;transform:none!important;padding:0!important;color:var(--kern-ink)!important}
-body .brand-badge h1{font:800 19px 'Roboto Flex',Arial,sans-serif!important;color:var(--kern-ink)!important}
-body .brand-badge svg{stroke:var(--kern-ink)!important}
-body .brand-com-tag{background:transparent!important;color:var(--kern-accent)!important;transform:none!important}
+body .brand-badge h1{font:700 23px 'Newsreader',Georgia,serif!important;letter-spacing:-.01em;color:var(--kern-ink)!important}
+body .brand-badge svg{display:none!important}
+body .brand-com-tag{background:transparent!important;color:var(--kern-accent)!important;transform:none!important;font:700 13px 'Newsreader',Georgia,serif!important;letter-spacing:.02em!important;text-transform:uppercase!important}
 body .brand-com-tag::after{display:none!important}
 body .act-btn.active svg,.act-btn.saved svg{fill:var(--kern-accent)!important;stroke:var(--kern-accent)!important}
 body .act-btn.active,body .act-btn.saved{background:transparent!important;border-color:transparent!important}
@@ -76,9 +76,9 @@ body :is(.lembar-wrap,.tcard,.step .foot>div){background:var(--kern-card)!import
 /* Notifications: editorial rules, not framed neobrutal cards (including the JS empty state). */
 body:has(#notifListContainer) .top-header{margin:0 -14px 16px;padding:0 14px 12px;border-bottom:1px solid var(--kern-ink)}
 body:has(#notifListContainer) .brand-badge{background:transparent!important;border:0!important;padding:0!important;color:var(--kern-ink)!important;transform:none!important}
-body:has(#notifListContainer) .brand-badge h1{font:800 19px 'Roboto Flex',Arial,sans-serif!important;color:var(--kern-ink)!important}
-body:has(#notifListContainer) .brand-badge svg{stroke:var(--kern-ink)!important}
-body:has(#notifListContainer) .brand-com-tag{transform:none!important;font:700 18px 'Roboto Flex',Arial,sans-serif!important;color:var(--kern-accent)!important;margin-left:3px!important}
+body:has(#notifListContainer) .brand-badge h1{font:700 23px 'Newsreader',Georgia,serif!important;letter-spacing:-.01em;color:var(--kern-ink)!important}
+body:has(#notifListContainer) .brand-badge svg{display:none!important}
+body:has(#notifListContainer) .brand-com-tag{transform:none!important;font:700 13px 'Newsreader',Georgia,serif!important;letter-spacing:.02em!important;color:var(--kern-accent)!important;margin-left:3px!important;text-transform:uppercase!important}
 body:has(#notifListContainer) .brand-com-tag::after{display:none!important}
 body:has(#notifListContainer) .notif-section-row{padding-bottom:9px;border-bottom:1px solid var(--kern-ink);margin-bottom:0}
 body:has(#notifListContainer) .notif-section-label{font:500 10px 'Recursive',monospace!important;letter-spacing:.06em;color:var(--kern-muted)!important}
