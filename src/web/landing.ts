@@ -355,7 +355,7 @@ ${WARKAH_CARD_CSS}
             <p>Pernah menulis ide bagus di sembarang tempat, lalu lupa di mana menyimpannya? Berbirru rumahnya — tempat mengabadikan setiap patah kata agar tersimpan rapi, mudah ditemukan, dan bisa dilanjutkan bersama.</p>
             <div class="hero-ctas">
               <a class="btn coral" href="${ctaHref}">Mulai menulis →</a>
-              <a class="btn ghost" href="/feed?tab=latest">Lihat warkah terbaru →</a>
+              <a class="btn ghost" href="/feed?tab=latest">Lihat Warkah →</a>
             </div>
           </div>
         </div>
