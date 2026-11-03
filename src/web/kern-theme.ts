@@ -183,6 +183,33 @@ body:has(#notifListContainer) .hub-link{background:transparent!important;border:
     .profile-card .stats-inline{margin-left:-16px !important;margin-right:-16px !important}
     .profile-tabs-reddit,.feed-list .thread-card{margin-left:0 !important;margin-right:0 !important}
     .feed-list .thread-header-soft{margin-left:-14px !important;margin-right:-14px !important}
+/* Chain (/chain) — lembar sambungan: kertas krem, garis tipis, serif. Scope body:has(.tcard) supaya
+   tidak bocor ke halaman lain yang kebetulan punya kelas serupa (mis. dokumen pencairan). */
+body:has(.tcard) .brand{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;transform:none!important;padding:0!important;color:var(--kink)!important}
+body:has(.tcard) .brand svg{display:none!important}
+body:has(.tcard) .brand h1{font:700 23px 'Newsreader',Georgia,serif!important;letter-spacing:-.01em;color:var(--kink)!important}
+body:has(.tcard) .back{background:transparent!important;border:1px solid var(--kink)!important;border-radius:0!important;box-shadow:none!important;color:var(--kink)!important;font:600 10px var(--kmono)!important;text-transform:uppercase!important;letter-spacing:.05em!important}
+body:has(.tcard) .notice{background:var(--ksurface)!important;border:1px solid var(--kink)!important;border-radius:0!important;color:var(--kmuted)!important;font:500 12px var(--kmono)!important}
+body:has(.tcard) .tcard{background:var(--ksurface)!important;border:1px solid var(--kink)!important;border-radius:0!important;box-shadow:none!important}
+body:has(.tcard) .tcard.root{background:var(--kpaper)!important}
+body:has(.tcard) .root-tag{color:var(--kmuted)!important;font:600 9px var(--kmono)!important;letter-spacing:.09em}
+body:has(.tcard) .tava{background:var(--ksurface)!important;color:var(--kink)!important;border:1px solid var(--kink)!important;border-radius:0!important;font-family:var(--kserif)!important}
+body:has(.tcard) .tname{color:var(--kink)!important;font-weight:800!important}
+body:has(.tcard) .ttime{color:var(--kmuted)!important;font:500 9px var(--kmono)!important}
+body:has(.tcard) .ttitle{color:var(--kink)!important;font-size:18px!important;font-weight:650!important}
+body:has(.tcard) .tbody{color:var(--kink)!important}
+body:has(.tcard) .tfoot-mini{color:var(--kmuted)!important;font:500 10px var(--kmono)!important}
+body:has(.tcard) .lbl{color:var(--kmuted)!important;font:600 9px var(--kmono)!important;letter-spacing:.09em}
+body:has(.tcard) .rail::before{background:var(--kink)!important;width:1.5px!important}
+body:has(.tcard) .rail .tcard .knob{background:var(--ksignal)!important;border:1px solid var(--kink)!important;border-radius:0!important}
+body:has(.tcard) .reply-box{background:var(--ksurface)!important;border:1px solid var(--kink)!important;border-radius:0!important;box-shadow:none!important}
+body:has(.tcard) .reply-hint{color:var(--kmuted)!important;font-weight:500!important}
+body:has(.tcard) #quickReply{background:var(--kpaper)!important;border:1px solid var(--kink)!important;border-radius:0!important;color:var(--kink)!important}
+body:has(.tcard) #quickReply:focus{outline:none!important;border-color:var(--ksignal)!important}
+body:has(.tcard) .reply-send{background:var(--kink)!important;color:var(--kpaper)!important;border:1px solid var(--kink)!important;border-radius:0!important;box-shadow:none!important;font:700 11px var(--kmono)!important;text-transform:uppercase!important}
+body:has(.tcard) .cta{background:var(--ksignal)!important;border:1px solid var(--kink)!important;border-radius:0!important;box-shadow:none!important;color:var(--kink)!important;font:700 12px var(--kmono)!important;text-transform:uppercase!important}
+/* Feed: tombol "Lembar Sambungan penuh" */
+body .ctamini a{background:transparent!important;border:1px solid var(--kink)!important;border-radius:0!important;color:var(--kink)!important;font:600 10px var(--kmono)!important;text-transform:uppercase!important;letter-spacing:.04em!important}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 </style>`;
 
