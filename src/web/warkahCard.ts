@@ -16,7 +16,7 @@ export const WARKAH_CARD_CSS = `
   .wf .date-sub{font-size:9.5px;font-weight:700;color:#64748B}
   .wf .thread-body{padding:14px 14px 12px;flex:1;display:flex;flex-direction:column}
   .wf .thread-title{font-family:'Newsreader',serif;font-size:17px;font-weight:600;color:var(--wf-ink);margin-bottom:6px;line-height:1.3}
-  .wf .thread-text{font-size:14px;font-weight:600;line-height:1.6;color:#0F172A;flex:1}
+  .wf .thread-text{font-size:14px;font-weight:400;line-height:1.6;color:#0F172A;flex:1}
   .wf .thread-footer{padding:8px 10px;background:#fff;display:flex;justify-content:space-between;align-items:center;border-top:2px solid var(--wf-ink);gap:6px;flex-wrap:nowrap;overflow:hidden;margin-top:auto}
   .wf .actions-left{display:flex;gap:4px;flex-shrink:1;min-width:0}
   .wf .act-btn{cursor:pointer;touch-action:manipulation;color:var(--wf-ink);background:#FAFAFA;border:2px solid var(--wf-ink);border-radius:8px;padding:0 8px;height:30px;font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;gap:4px;min-width:0;overflow:hidden;white-space:nowrap}

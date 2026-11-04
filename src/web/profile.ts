@@ -228,7 +228,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     .date-sub { font-size: 9.5px; font-weight: 700; color: var(--muted); }
     .thread-body { padding: 14px 14px 12px; }
     .thread-title { font-family: 'Archivo Black', sans-serif; font-size: 15px; font-weight: 800; color: var(--ink); margin-bottom: 6px; }
-    .thread-text { font-size: 14px; font-weight: 600; line-height: 1.6; color: #0F172A; }
+    .thread-text { font-size: 14px; font-weight: 400; line-height: 1.6; color: #0F172A; }
     .thread-text p { margin: 0 0 .55em; }
     .thread-text p:last-child { margin-bottom: 0; }
     .profile-tab-total { display: none; }
