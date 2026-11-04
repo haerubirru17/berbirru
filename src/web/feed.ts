@@ -825,6 +825,16 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
 
     async function submitStudioWarkah() {
       const title = document.getElementById('studioTitle').value.trim();
+      // font pilihan (dipilih sebelum/sesudah mengetik) diterapkan ke semua paragraf
+      // yang belum punya class font — Enter membuat div baru di luar span font editor.
+      if (currentFontClass && currentFontClass !== 'font-sans') {
+        const cv = document.getElementById('editorCanvas');
+        cv.querySelectorAll('div, p').forEach(function (b) {
+          if (!b.classList.contains('font-sans') && !b.classList.contains('font-serif') && !b.classList.contains('font-mono')) {
+            b.classList.add(currentFontClass);
+          }
+        });
+      }
       const content = document.getElementById('editorCanvas').innerHTML.trim();
       if (!content || stripHtml(content).trim() === '') return bbToast('Tuliskan isi warkah terlebih dahulu.', 'warning');
 
