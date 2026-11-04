@@ -325,9 +325,11 @@ app.get('/chain/:id', async (c) => {
   const user = await getAuthUser(c);
   const id = c.req.param('id');
 
+  const ownerEmail = String(c.env.OWNER_EMAIL || '').toLowerCase();
+  const adminSel = ', CASE WHEN lower(u.email) = lower(?2) THEN 1 ELSE 0 END AS is_admin';
   const target: any = await c.env.DB.prepare(
-    'SELECT p.*, u.pen_name FROM posts p JOIN users u ON p.author_id = u.id WHERE p.id = ?'
-  ).bind(id).first();
+    'SELECT p.*, u.pen_name, u.avatar_key' + adminSel + ' FROM posts p JOIN users u ON p.author_id = u.id WHERE p.id = ?1'
+  ).bind(id, ownerEmail).first();
   if (!target) return c.redirect('/feed');
   // Warkah privat = hanya penulisnya. Tanpa guard ini, tautan /chain/<id> jadi
   // pintu belakang yang membocorkan isi privat ke siapa pun (termasuk guest).
@@ -339,8 +341,8 @@ app.get('/chain/:id', async (c) => {
   let rootAuthor: string = target.pen_name;
   if (target.parent_id) {
     const parent: any = await c.env.DB.prepare(
-      'SELECT p.*, u.pen_name FROM posts p JOIN users u ON p.author_id = u.id WHERE p.id = ?'
-    ).bind(target.parent_id).first();
+      'SELECT p.*, u.pen_name, u.avatar_key' + adminSel + ' FROM posts p JOIN users u ON p.author_id = u.id WHERE p.id = ?1'
+    ).bind(target.parent_id, ownerEmail).first();
     if (parent) {
       // Audit C-04: guard yang sama seperti target — parent privat milik orang lain jangan dipromosikan jadi root.
       if (parent.visibility === 'private' && (!user || user.id !== parent.author_id)) return c.notFound();
@@ -353,11 +355,11 @@ app.get('/chain/:id', async (c) => {
   const { results } = await c.env.DB.prepare(
     // saat yatim, anak-anak tetap menunjuk induk yang sudah dihapus — kueri pakai id mayat itu.
     // Balasan privat milik orang lain tidak boleh ikut tampil di rantai publik.
-    `SELECT p.*, u.pen_name FROM posts p JOIN users u ON p.author_id = u.id
+    `SELECT p.*, u.pen_name, u.avatar_key, CASE WHEN lower(u.email) = lower(?) THEN 1 ELSE 0 END AS is_admin FROM posts p JOIN users u ON p.author_id = u.id
      WHERE p.parent_id = ? AND ${vis.sql} ORDER BY p.created_at ASC LIMIT 50`
-  ).bind(orphans ? target.parent_id : root.id, ...vis.binds).all();
+  ).bind(ownerEmail, orphans ? target.parent_id : root.id, ...vis.binds).all();
 
-  return c.html(renderChainPage({ user, root: hardenPost(root), rootAuthor, orphans, children: (results || []).map(hardenPost) }));
+  return c.html(renderChainPage({ user, root: hardenPost(root), rootAuthor, rootAvatarKey: root.avatar_key, rootIsAdmin: !!root.is_admin, orphans, children: (results || []).map(hardenPost) }));
 });
 
 mountKurir(app);

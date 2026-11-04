@@ -17,17 +17,20 @@ export function renderChainPage(opts: {
   user: any;
   root: any;
   rootAuthor: string;
+  rootAvatarKey?: string | null;
+  rootIsAdmin?: boolean;
   orphans: boolean;           // induk asli sudah dihapus penulisnya
   children: any[];
 }): string {
-  const { user, root, rootAuthor, orphans, children } = opts;
-  const rootAva = (rootAuthor[0] || 'D').toUpperCase();
+  const { user, root, rootAuthor, rootAvatarKey, rootIsAdmin, orphans, children } = opts;
+  const avaStyle = (key: any) => key ? 'background-image:url(/media/' + esc(key) + ');background-size:cover;background-position:center;color:transparent;' : '';
+  const check = '<svg class="vcheck" viewBox="0 0 24 24" fill="none" aria-label="Akun admin" role="img"><circle cx="12" cy="12" r="10" fill="#1D61E7"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
   const childrenHtml = children.map((b: any) => `
     <div class="tcard">
       <span class="knob"></span>
       <div class="tmini">
-        <div class="tava" style="background:${['#1D5FD6', '#7A4FBF', '#C2410C', '#0F7B3D', '#B45309'][(b.pen_name || 'D').charCodeAt(0) % 5]}">${(b.pen_name[0] || 'D').toUpperCase()}</div>
+        <div class="tava" style="background:${['#1D5FD6', '#7A4FBF', '#C2410C', '#0F7B3D', '#B45309'][(b.pen_name || 'D').charCodeAt(0) % 5]};${b.avatar_key ? avaStyle(b.avatar_key) : ''}">${(b.pen_name[0] || 'D').toUpperCase()}</div>
         <div><a class="tname" href="/u/${esc(b.pen_name)}">@${esc(b.pen_name)}</a>${b.is_admin ? '<svg class="vcheck" viewBox="0 0 24 24" fill="none" aria-label="Akun admin" role="img"><circle cx="12" cy="12" r="10" fill="#1D61E7"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''} <span class="ttime">· ${esc(fmtTime(b.created_at))}</span></div>
       </div>
       ${b.title ? `<div class="ttitle">${esc(b.title)}</div>` : ''}
@@ -151,8 +154,8 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
         <span>${orphans ? 'Bait Sambungan Tertua' : 'Bait Asli'}</span>
       </div>
       <div class="tmini">
-        <div class="tava">${rootAva}</div>
-        <div><a class="tname" href="/u/${esc(rootAuthor)}">@${esc(rootAuthor)}</a> <span class="ttime">· ${esc(fmtTime(root.created_at))}</span></div>
+        <div class="tava" style="${avaStyle(rootAvatarKey)}">${(rootAuthor[0] || 'D').toUpperCase()}</div>
+        <div><a class="tname" href="/u/${esc(rootAuthor)}">@${esc(rootAuthor)}</a>${rootIsAdmin ? check : ''} <span class="ttime">· ${esc(fmtTime(root.created_at))}</span></div>
       </div>
       ${root.title ? `<div class="ttitle">${esc(root.title)}</div>` : ''}
       <div class="tbody">${root.content}</div>
