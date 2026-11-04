@@ -193,7 +193,8 @@ body:has(.tcard) .notice{background:var(--ksurface)!important;border:1px solid v
 body:has(.tcard) .tcard{background:var(--ksurface)!important;border:1px solid var(--kink)!important;border-radius:0!important;box-shadow:none!important}
 body:has(.tcard) .tcard.root{background:var(--kpaper)!important}
 body:has(.tcard) .root-tag{color:var(--kmuted)!important;font:600 9px var(--kmono)!important;letter-spacing:.09em}
-body:has(.tcard) .tava{background:var(--ksurface)!important;color:var(--kink)!important;border:1px solid var(--kink)!important;border-radius:0!important;font-family:var(--kserif)!important}
+body:has(.tcard) .tava{background-color:var(--ksurface)!important;color:var(--kink)!important;border:1px solid var(--kink)!important;border-radius:0!important;font-family:var(--kserif)!important}
+body:has(.tcard) .tava[style*="background-image"]{color:transparent!important}
 body:has(.tcard) .tname{color:var(--kink)!important;font-weight:800!important}
 body:has(.tcard) .ttime{color:var(--kmuted)!important;font:500 9px var(--kmono)!important}
 body:has(.tcard) .ttitle{color:var(--kink)!important;font-size:18px!important;font-weight:650!important}
