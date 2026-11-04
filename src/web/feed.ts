@@ -174,7 +174,7 @@ export function renderFeedPage(user: any = null): string {
     }
     
     .font-serif { font-family: 'Newsreader', serif !important; font-size: 16px; }
-    .font-sans { font-family: 'DM Sans', sans-serif !important; }
+    .font-sans { font-family: 'DM Sans', sans-serif !important; font-size: 14px; }
     .font-mono { font-family: 'Roboto Mono', monospace !important; font-size: 13.5px; }
 
     .thread-footer {
@@ -266,7 +266,7 @@ export function renderFeedPage(user: any = null): string {
 
     /* Kanvas editor: panel berisi, bukan whitespace mengambang */
     .rich-editor-canvas {
-      width: 100%; flex: 1; min-height: 300px; font-size: 16.5px; line-height: 1.8;
+      width: 100%; flex: 1; min-height: 300px; font-size: 14px; line-height: 1.6;
       color: #1E293B; outline: none; word-break: break-word;
       background: #F6F8FB; border: 1.5px solid #E8ECF2; border-radius: 14px; padding: 16px;
     }

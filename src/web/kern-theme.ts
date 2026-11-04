@@ -100,7 +100,8 @@ body:has(#notifListContainer) .hub-link{background:transparent!important;border:
     .kern-profile-brand .kbrand-com{font-family:'Newsreader',Georgia,serif;font-weight:700;font-size:13px;letter-spacing:.02em;color:var(--ksignal);line-height:1}
     .banner-floating-nav{justify-content:flex-end !important}
     .banner-floating-nav .nav-btn-glass{display:none !important}
-    .profile-eyebrow{display:block;text-align:right;font:500 9px var(--kmono);letter-spacing:.07em;text-transform:uppercase;color:var(--kmuted);margin-top:13px}
+    .profile-eyebrow{display:block;text-align:right;font:500 9px var(--kmono);letter-spacing:.07em;text-transform:uppercase;color:var(--kmuted);margin-top:10px}
+    .eyebrow-role{display:none}
     .profile-cover-photo{height:68px;margin-top:12px;background-position:center;background-repeat:no-repeat;background-size:contain}
     .profile-cover-photo.has-cover{height:auto;aspect-ratio:16/9}
     .profile-meta-wrap .profile-eyebrow{text-align:left}
@@ -124,10 +125,10 @@ body:has(#notifListContainer) .hub-link{background:transparent!important;border:
     .settings-item{border-radius:0 !important;color:var(--kink) !important;font:600 11px var(--kmono) !important;text-transform:uppercase !important}
     .settings-item:hover,.settings-item:active{background:var(--kpaper) !important;color:var(--kink) !important}
     .profile-meta-wrap{position:relative;padding-bottom:0 !important}
-    .avatar-action-row{display:block !important;margin:14px 0 0 !important;height:0 !important;overflow:visible}
+    .avatar-action-row{display:block !important;margin:10px 0 0 !important;height:0 !important;overflow:visible}
     .profile-right-actions{position:absolute;top:0;right:0;margin:0 !important}
     .city-badge-top{background:transparent !important;border:0 !important;box-shadow:none !important;color:var(--kmuted) !important;padding:0 !important;font:500 10px var(--kmono) !important;text-transform:uppercase !important;letter-spacing:.06em !important;border-radius:0 !important}
-    .avatar-wrapper{float:right !important;position:relative !important;margin:42px 0 0 14px !important;right:auto !important;bottom:auto !important;z-index:3}
+    .avatar-wrapper{float:right !important;position:relative !important;margin:-42px 0 0 14px !important;right:auto !important;bottom:auto !important;z-index:3}
     .avatar-box{width:84px !important;height:84px !important;background-color:var(--ksurface) !important;color:var(--kink) !important;border:1px solid var(--kink) !important;border-radius:0 !important;box-shadow:none !important;font-family:var(--kserif) !important;font-size:34px !important}
     .media-edit-badge{border-radius:0 !important;box-shadow:none !important;background:var(--kpaper) !important;border:1px solid var(--kink) !important}
     .btn-follow-badge{position:absolute !important;left:-14px !important;right:auto !important;top:50% !important;bottom:auto !important;transform:translateY(-50%) !important;width:27px !important;height:27px !important;background:var(--ksignal) !important;color:var(--kink) !important;border:1px solid var(--kink) !important;border-radius:0 !important;box-shadow:none !important}

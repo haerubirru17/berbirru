@@ -98,6 +98,8 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
       box-shadow: 0 2px 0 rgba(11,25,44,0.35);
     }
     .media-edit-badge svg { width: 14px; height: 14px; stroke: var(--ink); stroke-width: 2.4; fill: none; }
+    /* ikon kamera dihapus: user langsung klik avatar/cover utk ganti gambar */
+    .media-edit-badge, .cover-edit-badge { display:none !important; }
     .cover-edit-badge {
       /* menimpa posisi badge kamera avatar untuk dipakai di banner */
       right: 12px; bottom: 44px; z-index: 11;
@@ -395,7 +397,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
       </div>
 
       <div class="profile-meta-wrap">
-        <div class="profile-eyebrow">Profil publik / Penulis</div>
+        <div class="profile-eyebrow"><span class="eyebrow-base">Profil publik</span><span class="eyebrow-role"> / Penulis</span></div>
         <div class="profile-cover-photo" id="profileCoverPhoto" ${isMe ? 'onclick="document.getElementById(\'coverInput\').click()" role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();document.getElementById(\'coverInput\').click()}" aria-label="Ganti foto sampul"' : 'aria-hidden="true"'}></div>
         <div class="profile-since" id="profileSince"></div>
         <div class="avatar-action-row">

@@ -1,0 +1,63 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BERBIRRU — Profil</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,100..900,0..100,0..1&family=Recursive:slnt,wght,CASL,CRSV,MONO@-15..0,300..1000,0..1,0..1,0..1&family=Roboto+Flex:opsz,slnt,wdth,wght,GRAD@8..144,-10..0,25..151,100..1000,-200..150&display=swap" rel="stylesheet"><style>
+:root{--paper:#EFEBE3;--surface:#F6F3EB;--ink:#0E0E0E;--muted:#6E6A63;--signal:#FF3B1A;--rule:1px solid var(--ink);--sans:'Roboto Flex',Arial,sans-serif;--serif:'Fraunces',Georgia,serif;--mono:'Recursive',Consolas,monospace}
+*{box-sizing:border-box;margin:0;padding:0}html,body{background:#D7D2C8;color:var(--ink)}body{font-family:var(--sans);font-variation-settings:'wght' 430,'wdth' 95}button{font:inherit;cursor:pointer}a{color:inherit;text-decoration:none}
+.app{max-width:540px;margin:0 auto;background:var(--paper);border-inline:var(--rule);min-height:100vh;padding-bottom:84px}
+/* ── topbar (existing app: brand + aksi) ─────────────────── */
+.topbar{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:var(--rule);position:sticky;top:0;background:var(--paper);z-index:5}
+.brand{display:flex;align-items:center;gap:7px}.brand-mark{font-weight:900;font-size:24px;letter-spacing:-.14em}.brand-mark::before{content:'●';font-size:8px;color:var(--signal);vertical-align:top;margin-right:2px}.brand-name{font-weight:700;font-size:14px;letter-spacing:-.02em}.top-menu{border:var(--rule);background:transparent;padding:8px 10px;font:600 9px var(--mono);text-transform:uppercase;letter-spacing:.06em}
+/* ── header profil: potret + identitas ───────────────────── */
+.p-head{padding:20px 16px 0}
+.p-row{display:flex;gap:14px;align-items:flex-start}
+.p-photo{display:none}
+.p-photo img{width:100%;height:100%;object-fit:cover;display:block;filter:grayscale(1) contrast(1.04)}
+.p-idside{flex:1;display:flex;flex-direction:column;align-items:flex-end;justify-content:space-between;height:108px;padding:2px 0;text-align:right}
+.p-eyebrow{font:500 9px var(--mono);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.p-since{font:500 9px var(--mono);text-transform:uppercase;letter-spacing:.07em;color:var(--signal)}
+.p-name{font:550 40px/.92 var(--serif);font-variation-settings:'opsz' 60,'wght' 550,'SOFT' 40,'WONK' 1;letter-spacing:-.05em;margin:14px 0 2px}
+.p-name small{font-size:.55em;color:var(--signal);font-style:italic;margin-right:2px}
+.p-meta{font:500 10px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px}
+.p-bio{font:430 19px/1.4 var(--serif);font-variation-settings:'opsz' 30,'SOFT' 60;max-width:430px;margin-bottom:16px}
+
+.p-photocell{position:relative;height:70px;display:flex;align-items:center;justify-content:flex-end;margin-right:-8px;z-index:3}
+.p-photo2{width:70px;height:70px;border:var(--rule);background:var(--paper);overflow:hidden;position:relative;z-index:2}
+.p-photo2 img{width:100%;height:100%;object-fit:cover;display:block;filter:grayscale(1)}
+.p-plus{position:absolute;left:-12px;top:50%;transform:translateY(-50%);width:25px;height:25px;padding:0;display:grid;place-items:center;background:var(--signal);color:var(--paper);border:var(--rule);font:700 17px/1 var(--sans);white-space:nowrap}
+.p-stat{border-top:var(--rule);border-bottom:var(--rule);display:grid;grid-template-columns:1fr 1fr 1fr 82px;align-items:center;gap:8px;padding:10px 0;margin:0 -16px;padding-inline:16px;position:relative;z-index:1}
+.p-stat div b{display:block;font:560 20px var(--serif);letter-spacing:-.03em}.p-stat div span{font:500 8.5px var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+/* ── tab sheet ───────────────────────────────────────────── */
+.tabs{display:flex;gap:7px;padding:11px 16px;border-bottom:var(--rule)}.tab{border:var(--rule);background:transparent;padding:6px 9px;font:500 9px var(--mono);text-transform:uppercase;letter-spacing:.04em}.tab.active{background:var(--ink);color:var(--paper)}
+/* ── warkah (format feed sama dgn beranda) ───────────────── */
+.post{border-bottom:var(--rule);padding:15px 16px}.post-head{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.post-ava{width:30px;height:30px;border:var(--rule);display:grid;place-items:center;font:600 15px var(--serif);background:var(--surface)}
+.post-name{font-weight:600;font-size:12px}.post-meta{font:500 8.5px var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:3px}.post-time{margin-left:auto;font:500 8.5px var(--mono);color:var(--muted)}
+.post-title{font:550 30px/1 var(--serif);font-variation-settings:'opsz' 50,'wght' 550,'SOFT' 40,'WONK' 1;letter-spacing:-.05em;margin-bottom:7px}.post-title.casual{font-family:var(--sans);font-weight:760;font-variation-settings:'opsz' 40,'wght' 760,'wdth' 80}
+.post-text{font-size:14px;line-height:1.45;max-width:470px}
+.post-foot{border-top:var(--rule);margin-top:13px;padding-top:10px;display:flex;justify-content:space-between;align-items:center}
+.post-actions{display:flex;gap:14px}.p-act{border:0;background:none;font:500 9px var(--mono);text-transform:uppercase}.p-act span{color:var(--muted)}
+.cont{border:0;background:none;color:var(--signal);font:600 9px var(--mono);text-transform:uppercase;text-decoration:underline;text-underline-offset:3px}
+/* ── bottomnav (existing 5 item) ─────────────────────────── */
+.bottomnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(100%,540px);background:var(--paper);border-top:var(--rule);display:grid;grid-template-columns:repeat(5,1fr);padding:8px 6px calc(8px + env(safe-area-inset-bottom));z-index:5}
+.navitem{border:0;background:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:4px;font:500 8px var(--mono);text-transform:uppercase;letter-spacing:.04em}.navitem b{font-weight:400;font-size:17px;line-height:1}.navitem.active{color:var(--ink)}.navitem.active b{color:var(--signal)}.navitem.active::after{content:'';width:4px;height:4px;background:var(--signal)}
+.private{display:inline-block;border:var(--rule);padding:3px 6px;font:500 8px var(--mono);color:var(--muted);margin-left:6px}
+</style></head><body><main class="app">
+<header class="topbar"><a class="brand"><span class="brand-mark">B</span><span class="brand-name">BERBIRRU</span></a><button class="top-menu">Menu</button></header>
+<section class="p-head">
+  <div class="p-row">
+    <div class="p-photo" role="img" aria-label="Foto profil"><img src="https://picsum.photos/seed/kern-face/232/280?grayscale" alt=""></div>
+    <div class="p-idside"><span class="p-eyebrow">Profil publik / Penulis</span><span class="p-since">Sejak 2026</span></div>
+  </div>
+  <h1 class="p-name"><small>@</small>senja_kelabu</h1>
+  <div class="p-meta">Jakarta · Warga</div>
+  <p class="p-bio">Menulis untuk menemukan kalimat yang tidak bisa dilupakan.</p>
+  <div class="p-stat">
+    <div><b>04</b><span>warkah</span></div>
+    <div><b>312</b><span>pengikut</span></div>
+    <div><b>58</b><span>mengikuti</span></div>
+    <div class="p-photocell"><button class="p-plus" aria-label="Ikuti">+</button><div class="p-photo2" role="img" aria-label="Foto profil"><img src="https://picsum.photos/seed/kern-face/160/200?grayscale" alt=""></div></div>
+  </div>
+</section>
+<nav class="tabs"><button class="tab active">Warkah</button><button class="tab">Sambungan</button><button class="tab">Tentang</button></nav>
+<article class="post"><div class="post-head"><div class="post-ava">S</div><div><div class="post-name">@senja_kelabu</div><div class="post-meta">publik</div></div><span class="post-time">28 Okt</span></div><h2 class="post-title">Aku</h2><div class="post-text">Aku ini binatang jalang, dari kumpulannya terbuang. Biar peluru menembus kulitku, aku tetap meradang menerjang.</div><div class="post-foot"><div class="post-actions"><button class="p-act">♡ <span>302</span></button><button class="p-act">□ <span>158</span></button></div><button class="cont">Sambungan →</button></div></article>
+<article class="post"><div class="post-head"><div class="post-ava">S</div><div><div class="post-name">@senja_kelabu<span class="private">privat</span></div><div class="post-meta">hanya pemilik</div></div><span class="post-time">27 Okt</span></div><h2 class="post-title casual">Luka &amp; Cahaya</h2><div class="post-text">Konten warkah privat tidak ditampilkan.</div><div class="post-foot"><div class="post-actions"><button class="p-act">♡ <span>—</span></button><button class="p-act">□ <span>—</span></button></div></div></article>
+<nav class="bottomnav"><button class="navitem"><b>⌂</b>Beranda</button><button class="navitem"><b>▧</b>Pasar</button><button class="navitem"><b>＋</b>Tulis</button><button class="navitem"><b>♧</b>Notif</button><button class="navitem active"><b>◉</b>Profil</button></nav>
+</main></body></html>
