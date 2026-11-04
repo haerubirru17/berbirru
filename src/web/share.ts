@@ -75,9 +75,11 @@ function bbShareCard(p) {
   }
 
   // tinggi otomatis: mengikuti jumlah baris + jarak antar paragraf
+  // kartu judul-saja: persegi 1080x1080, judul dipusatkan vertikal di ruang bebas
   var topY = 320, footH = 280;
   var textH = layout.reduce(function (acc, r) { return acc + (r.gap ? paraGap : lineH); }, 0);
-  var H = Math.max(1000, Math.min(2200, topY + textH + footH));
+  var H = judulSaja ? 1080 : Math.max(1000, Math.min(2200, topY + textH + footH));
+  if (judulSaja) topY = 292 + Math.max(40, (H - footH + 40 - 292 - textH) / 2);
   cv.height = H;
   x = cv.getContext('2d');
   x.textBaseline = 'top';
