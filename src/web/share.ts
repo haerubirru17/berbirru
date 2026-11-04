@@ -44,6 +44,7 @@ function bbShareCard(p) {
   x.font = fontBait;
 
   var teks = bbCardText(p.title, p.excerpt);
+  var MAXC2 = 260; var judulSaja = !!(p.title && (String(p.title).length + String(p.excerpt || '').length) > MAXC2);
   var paras = teks.split(bbNL);
   var groups = [], cur = [];
   for (var i = 0; i < paras.length; i++) {
@@ -100,8 +101,9 @@ function bbShareCard(p) {
   x.fillStyle = abu; x.font = "600 30px 'DM Sans', Arial, sans-serif";
   x.fillText(('WARKAH · ' + tgl).toUpperCase(), 96, 232);
 
-  // bait — justify
+  // bait — justify; kartu judul-saja rata tengah
   x.fillStyle = ink; x.font = fontBait;
+  if (judulSaja) for (var q = 0; q < layout.length; q++) layout[q].justify = false;
   var cy = topY;
   for (var r = 0; r < layout.length; r++) {
     var row = layout[r];
@@ -117,8 +119,10 @@ function bbShareCard(p) {
           x.fillText(ws[j], cx, cy);
           cx += x.measureText(ws[j]).width + step;
         }
-      } else { x.fillText(ws.join(' '), 96, cy); }
-    } else { x.fillText(ws.join(' '), 96, cy); }
+      } else if (judulSaja) { x.textAlign = 'center'; x.fillText(ws.join(' '), W / 2, cy); x.textAlign = 'left'; }
+      else { x.fillText(ws.join(' '), 96, cy); }
+    } else if (judulSaja) { x.textAlign = 'center'; x.fillText(ws.join(' '), W / 2, cy); x.textAlign = 'left'; }
+    else { x.fillText(ws.join(' '), 96, cy); }
     cy += lineH;
   }
 
