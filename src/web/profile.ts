@@ -172,6 +172,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     .info-st { flex:1; border:2px solid var(--ink); border-radius:12px; text-align:center; padding:9px 0; box-shadow:3px 3px 0 var(--ink-soft); }
     .info-st b { display:block; font-size:17px; font-weight:800; color:#1D61E7; }
     .info-st span { font-size:9px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+    #infoSheet { padding-bottom:26px; }
     .follow-switch { display:grid; grid-template-columns:1fr 1fr; margin:13px 0 8px; border:2px solid var(--ink); background:#FFF; }
     .follow-switch button { border:0; padding:9px 6px; background:#FFF; color:var(--muted); font:800 11px 'DM Sans',sans-serif; cursor:pointer; }
     .follow-switch button.active { background:var(--blue); color:#FFF; }
