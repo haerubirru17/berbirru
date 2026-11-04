@@ -50,6 +50,7 @@ import { mountOwner, sweepOrders } from './routes/owner';
 import { mountSocial } from './routes/social';
 import { mountPasar } from './routes/pasar';
 import { mountAuth } from './routes/auth';
+import { mountAdmin } from './routes/admin';
 import { notifyOrder, logOrderEvent, sellerBalance, ORDER_EXPIRE_MIN, AUTO_COMPLETE_DAYS, KURIR_MAP } from './lib/pasar-core';
 import { isOwner as isOwnerU } from './lib/shared';
 const isOwner = isOwnerU;
@@ -128,6 +129,7 @@ const SKIN_LOCK = new Set(['/', '/login', '/lupa-sandi']);
 app.use('*', async (c, next) => {
   await next();
   if (SKIN_LOCK.has(c.req.path)) return;
+  if (c.req.path.startsWith('/admin')) return; // konsol sosial punya visual operasional mandiri
   if (!c.res.headers.get('content-type')?.includes('text/html')) return;
   // Halaman ini cookie-dependent (skin) — jangan sampai cache browser/proxy menyajikan
   // versi skin lama (penyebab profil "krem" terlihat padahal skin sudah neo).
@@ -300,6 +302,7 @@ app.get('/sitemap.xml', async (c) => {
 mountAuth(app);
 mountMedia(app);
 mountSocial(app);
+mountAdmin(app);
 
 
 

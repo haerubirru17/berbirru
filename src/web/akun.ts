@@ -64,7 +64,8 @@ ${PASAR_BASE_CSS}
     ${penjual ? baris('/pasar/saya?tab=saldo', icoDuit, 'Saldo & Tarik Dana', 'Sisa saldo dan riwayat pencairan') : ''}
     ${baris('/akun/alamat', icoPin, 'Alamat Pengiriman', 'Nama, nomor HP, kode pos, alamat')}
     ${baris('/u/' + encodeURIComponent(user.pen_name), icoLuaran, 'Profil Publik', 'Warkah, pengikut, dan bio')}
-    ${owner ? baris('/owner', icoKeluar, 'Dashboard Owner', 'Sengketa, pencairan, verifikasi penjual') : ''}
+    ${owner ? baris('/admin', icoOrang, 'Dashboard Sosial', 'Pengguna, warkah, dan kesehatan komunitas') : ''}
+    ${owner ? baris('/owner', icoKeluar, 'Dashboard Rekber', 'Sengketa, pencairan, verifikasi penjual') : ''}
   </div>
 
   <div class="ak-card">
