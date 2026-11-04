@@ -160,6 +160,18 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     .follow-sheet-title { font-family:'Newsreader',serif; font-size:24px; font-weight:700; }
     .follow-sheet-hint { color:var(--muted); font-size:11px; font-weight:700; margin-top:3px; }
     .follow-sheet-close { width:34px; height:34px; border:2px solid var(--ink); background:#FFF; box-shadow:2px 2px 0 var(--ink-soft); font-size:20px; font-weight:800; cursor:pointer; }
+    .info-head { display:flex; align-items:center; gap:13px; padding:14px 0 15px; }
+    .info-ava { width:54px; height:54px; flex:none; border-radius:50%; border:2px solid var(--ink); display:grid; place-items:center; font-size:20px; font-weight:800; color:#FFF; background:#1D61E7; background-size:cover; background-position:center; }
+    .info-pen { font-size:17px; font-weight:800; color:var(--ink); display:flex; align-items:center; gap:6px; }
+    .info-status { font-size:11px; font-weight:700; color:var(--muted); margin-top:3px; }
+    .info-row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 2px; border-bottom:1px solid #E2E8F0; }
+    .info-row:last-of-type { border-bottom:none; }
+    .info-k { font-size:11px; font-weight:700; color:var(--muted); flex:none; }
+    .info-v { font-size:13px; font-weight:700; color:var(--ink); text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:230px; }
+    .info-stats { display:flex; gap:8px; padding-top:12px; border-top:2px solid #E2E8F0; margin-top:4px; }
+    .info-st { flex:1; border:2px solid var(--ink); border-radius:12px; text-align:center; padding:9px 0; box-shadow:3px 3px 0 var(--ink-soft); }
+    .info-st b { display:block; font-size:17px; font-weight:800; color:#1D61E7; }
+    .info-st span { font-size:9px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
     .follow-switch { display:grid; grid-template-columns:1fr 1fr; margin:13px 0 8px; border:2px solid var(--ink); background:#FFF; }
     .follow-switch button { border:0; padding:9px 6px; background:#FFF; color:var(--muted); font:800 11px 'DM Sans',sans-serif; cursor:pointer; }
     .follow-switch button.active { background:var(--blue); color:#FFF; }
@@ -356,7 +368,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
                 <svg style="width:14px;height:14px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                 <span>Edit Profil</span>
               </div>
-              <div class="settings-item" onclick="bbToast('BERBIRRU — Platform sastra & kolaborasi warkah di edge.', 'info'); toggleSettingsMenu(false);">
+              <div class="settings-item" onclick="openInfoSheet(); toggleSettingsMenu(false);">
                 <svg style="width:14px;height:14px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
                 <span>Informasi Akun</span>
               </div>
@@ -508,6 +520,30 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
       <button id="followTabFollowing" type="button" role="tab" onclick="openFollowSheet('following')">Mengikuti</button>
     </div>
     <div class="follow-list" id="followList"><div class="follow-loading">Pilih daftar untuk melihat akun.</div></div>
+  </section>
+
+  <div class="follow-sheet-backdrop" id="infoSheetBackdrop" onclick="closeInfoSheet()"></div>
+  <section class="follow-sheet" id="infoSheet" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
+    <div class="follow-sheet-head">
+      <div><div class="follow-sheet-title" id="infoTitle">Informasi Akun</div><div class="follow-sheet-hint">Data akunmu di Berbirru.</div></div>
+      <button class="follow-sheet-close" type="button" aria-label="Tutup" onclick="closeInfoSheet()">&times;</button>
+    </div>
+    <div class="info-head">
+      <div class="info-ava" id="infoAva">${(penName[0] || 'D').toUpperCase()}</div>
+      <div>
+        <div class="info-pen" id="infoPen">@${penName}</div>
+        <div class="info-status" id="infoStatus">Penulis</div>
+      </div>
+    </div>
+    <div class="info-row"><span class="info-k">Nama tampilan</span><span class="info-v" id="infoDisplayName">—</span></div>
+    <div class="info-row"><span class="info-k">Email</span><span class="info-v" id="infoEmail">${currentUser && currentUser.email ? String(currentUser.email).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') : '—'}</span></div>
+    <div class="info-row"><span class="info-k">Kota</span><span class="info-v" id="infoCity">—</span></div>
+    <div class="info-row"><span class="info-k">Bergabung</span><span class="info-v" id="infoSince">—</span></div>
+    <div class="info-stats">
+      <div class="info-st"><b id="infoCountKarya">0</b><span>Karya</span></div>
+      <div class="info-st"><b id="infoCountFollowers">0</b><span>Pengikut</span></div>
+      <div class="info-st"><b id="infoCountFollowing">0</b><span>Mengikuti</span></div>
+    </div>
   </section>
 
   <!-- 5-TAB DOCKED BOTTOM NAVBAR -->
@@ -996,7 +1032,31 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
       loadFollowList(type);
     }
     function closeFollowSheet() { clearTimeout(followListTimer); document.getElementById('followSheet').style.display = 'none'; document.getElementById('followSheetBackdrop').style.display = 'none'; document.body.style.overflow = ''; }
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeFollowSheet(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeFollowSheet(); closeInfoSheet(); } });
+    function openInfoSheet() {
+      const d = currentUserData || {};
+      const ab = document.getElementById('avatarLetter') || document.getElementById('avatarBox');
+      const cs = getComputedStyle(ab);
+      const img = cs.backgroundImage;
+      const ava = document.getElementById('infoAva');
+      ava.style.backgroundImage = img && img !== 'none' ? img : 'none';
+      ava.textContent = (currentPenName[0] || 'D').toUpperCase();
+      ava.style.color = img && img !== 'none' ? 'transparent' : '#FFF';
+      document.getElementById('infoPen').textContent = '@' + currentPenName;
+      const isAdmin = !document.getElementById('adminBadge').hidden;
+      document.getElementById('infoStatus').textContent = isAdmin ? 'Akun admin — terverifikasi' : 'Penulis';
+      document.getElementById('infoDisplayName').textContent = d.display_name || currentPenName;
+      document.getElementById('infoCity').textContent = d.city || 'Nusantara';
+      const since = document.getElementById('profileSince').textContent;
+      document.getElementById('infoSince').textContent = since || '—';
+      document.getElementById('infoCountKarya').textContent = String(parseInt(document.getElementById('profileTabTotal').textContent) || 0);
+      document.getElementById('infoCountFollowers').textContent = document.getElementById('countFollowers').textContent || '0';
+      document.getElementById('infoCountFollowing').textContent = document.getElementById('countFollowing').textContent || '0';
+      document.getElementById('infoSheet').style.display = 'block';
+      document.getElementById('infoSheetBackdrop').style.display = 'block';
+      document.body.style.overflow = 'hidden';
+    }
+    function closeInfoSheet() { document.getElementById('infoSheet').style.display = 'none'; document.getElementById('infoSheetBackdrop').style.display = 'none'; document.body.style.overflow = ''; }
     document.getElementById('followSheet')?.addEventListener('touchstart', e => { followTouchX = e.touches[0].clientX; }, { passive: true });
     document.getElementById('followSheet')?.addEventListener('touchend', e => { const dx = e.changedTouches[0].clientX - followTouchX; if (Math.abs(dx) > 45) openFollowSheet(dx < 0 ? 'following' : 'followers'); });
 

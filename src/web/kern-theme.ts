@@ -165,6 +165,16 @@ body:has(#notifListContainer) .hub-link{background:transparent!important;border:
     .follow-sheet-head{border-bottom:1px solid var(--kink) !important}
     .follow-sheet-title{font-family:var(--kserif) !important}
     .follow-sheet-close{border:1px solid var(--kink) !important;background:transparent !important;box-shadow:none !important;border-radius:0 !important}
+    .info-ava{border:1px solid var(--kink) !important;border-radius:0 !important;font-family:var(--kserif) !important}
+    .info-pen{font-family:var(--kserif) !important}
+    .info-status{font:500 10px var(--kmono) !important;color:var(--kmuted) !important}
+    .info-row{border-bottom:1px solid var(--kline) !important}
+    .info-k{font:600 9.5px var(--kmono) !important;letter-spacing:.09em;color:var(--kmuted) !important;text-transform:uppercase}
+    .info-v{font:600 15px var(--kserif) !important;color:var(--kink) !important}
+    .info-stats{border-top:1px solid var(--kline) !important}
+    .info-st{border-radius:0 !important;border:1px solid var(--kink) !important;box-shadow:none !important;background:transparent !important}
+    .info-st b{font-family:var(--kserif) !important;color:var(--kink) !important}
+    .info-st span{font:500 9px var(--kmono) !important;color:var(--kmuted) !important}
     .follow-switch{border:1px solid var(--kink) !important;background:transparent !important}
     .follow-switch button{background:transparent !important;color:var(--kmuted) !important;font:500 10px var(--kmono) !important;text-transform:uppercase !important}
     .follow-switch button.active{background:var(--kink) !important;color:var(--kpaper) !important}
