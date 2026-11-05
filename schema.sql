@@ -10,6 +10,12 @@ CREATE TABLE IF NOT EXISTS users (
   bio TEXT DEFAULT 'Goresan perenungan rasa dan bait kata.',
   -- 0 = menunggu bukti kepemilikan email (OTP). User lama = 1 (default migrasi 0002).
   email_verified INTEGER NOT NULL DEFAULT 1,
+  account_status TEXT NOT NULL DEFAULT 'active'
+    CHECK (account_status IN ('active','suspended')),
+  suspended_reason TEXT,
+  suspended_at TEXT,
+  suspended_by TEXT,
+  account_action_id TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -123,6 +129,19 @@ CREATE TABLE IF NOT EXISTS social_admin_actions (
   created_at TEXT NOT NULL
 );
 
+-- 11. Audit status akun sosial; terpisah dari audit post dan owner_actions Rekber.
+CREATE TABLE IF NOT EXISTS social_account_actions (
+  id TEXT PRIMARY KEY,
+  action TEXT NOT NULL CHECK (action IN ('user_suspend','user_reinstate')),
+  target_user_id TEXT NOT NULL,
+  actor_user_id TEXT NOT NULL,
+  actor_email TEXT NOT NULL,
+  reason TEXT NOT NULL CHECK (length(reason) BETWEEN 10 AND 500),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY (target_user_id) REFERENCES users(id),
+  FOREIGN KEY (actor_user_id) REFERENCES users(id)
+);
+
 -- Indexes for lightning-fast queries
 CREATE INDEX IF NOT EXISTS idx_posts_created ON posts(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_posts_parent ON posts(parent_id);
@@ -134,3 +153,7 @@ CREATE INDEX IF NOT EXISTS idx_social_admin_actions_post
   ON social_admin_actions(target_post_id, created_at DESC, id DESC);
 CREATE INDEX IF NOT EXISTS idx_social_admin_actions_time
   ON social_admin_actions(created_at DESC, id DESC);
+CREATE INDEX IF NOT EXISTS idx_users_account_status_created
+  ON users(account_status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_social_account_actions_target_created
+  ON social_account_actions(target_user_id, created_at DESC);

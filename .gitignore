@@ -13,5 +13,6 @@ backups/
 !schema.sql
 !scripts/golden-fixture.sql
 !tests/fixtures/current-schema-pre-0033.sql
+!tests/fixtures/current-schema-pre-0034.sql
 golden/current.json
 *_dev.env

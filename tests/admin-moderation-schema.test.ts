@@ -13,8 +13,10 @@ for (const src of [migration, schema]) {
   assert.match(src, /CREATE TABLE(?: IF NOT EXISTS)? social_admin_actions/i);
   assert.match(src, /CHECK\s*\(action\s+IN\s*\('post_quarantine','post_restore'\)\)/i);
   assert.match(src, /target_post_id\s+TEXT\s+NOT NULL/i);
-  assert.doesNotMatch(src, /user_suspend|user_reinstate|target_type/i);
+  assert.doesNotMatch(src, /target_type/i);
 }
+// Era 0034: schema.sql adalah bootstrap gabungan dua domain; larangan aksi akun hanya berlaku pada migration 0033 (post-only).
+assert.doesNotMatch(migration, /user_suspend|user_reinstate/i, '0033 harus tetap post-only');
 assert.doesNotMatch(migration, /\b(DROP|DELETE|TRUNCATE)\b/i, 'migration additive tidak boleh destruktif');
 assert.match(migration, /ALTER TABLE posts ADD COLUMN moderation_status/i);
 assert.doesNotMatch(fixture, /moderation_status|social_admin_actions/i, 'fixture wajib merepresentasikan schema sebelum 0033');
