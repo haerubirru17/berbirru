@@ -41,6 +41,9 @@ app.put('/api/me/media/:kind', async (c: any) => {
 
   // key per-user+jenis: timpa lama, tak menumpuk sampah di bucket
   const key = `${spec.dir}/${me.id}.${ext}`;
+  // Rilis B (plan §91): cek status active KEDUA, tepat sebelum put R2.
+  const hidup: any = await c.env.DB.prepare(`SELECT 1 AS ok FROM users WHERE id = ? AND account_status = 'active'`).bind(me.id).first();
+  if (!hidup) return c.json({ error: 'Sesi tidak valid. Muat ulang halaman.' }, 401);
   await c.env.MEDIA.put(key, buf, { httpMetadata: { contentType: ct } });
 
   const old: any = await c.env.DB.prepare(`SELECT ${spec.col} AS k FROM users WHERE id = ?`).bind(me.id).first();
@@ -50,7 +53,8 @@ app.put('/api/me/media/:kind', async (c: any) => {
   // key R2 authoritative; guard gagal = key baru dihapus best-effort (anti-orphan).
   const up: any = await c.env.DB.prepare(`UPDATE users SET ${spec.col} = ? WHERE id = ? AND account_status = 'active'`).bind(stored, me.id).run();
   if (!up.meta.changes) {
-    await c.env.MEDIA.delete(key).catch(() => {});
+    // Cleanup gagal = orphan non-authoritative dicatat server-side (key class, bukan secret).
+    await c.env.MEDIA.delete(key).catch(() => console.warn('media: orphan key setelah guard tolak:', key));
     return c.json({ error: 'Sesi tidak valid. Muat ulang halaman.' }, 401);
   }
 

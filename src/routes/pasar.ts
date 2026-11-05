@@ -102,8 +102,9 @@ app.use('/api/pasar/*', async (c: any, next: any) => {
 // Validasi (tipe, sniff isi berkas, batas 5 MB) ada di sini — pemanggil tidak menduplikasi.
 async function putFoto(
   c: any,
-  keyName: (ext: string) => string
-): Promise<{ key: string } | { error: string; status: 400 | 413 | 415 | 503 }> {
+  keyName: (ext: string) => string,
+  uploaderId: string
+): Promise<{ key: string } | { error: string; status: 400 | 401 | 413 | 415 | 503 }> {
   const ct = (c.req.header('Content-Type') || '').split(';')[0].trim().toLowerCase();
   const ext = PHOTO_TYPES[ct];
   if (!ext) return { error: 'Hanya JPEG/PNG/WebP', status: 415 };
@@ -117,6 +118,10 @@ async function putFoto(
   const isWebP = b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50;
   const sniffExt = isJpeg ? 'jpg' : isPng ? 'png' : isWebP ? 'webp' : null;
   if (!sniffExt || sniffExt !== ext) return { error: 'Isi berkas tidak cocok dengan tipenya', status: 415 };
+  // Rilis B (plan §91): cek status active KEDUA, tepat sebelum put — akun yang
+  // di-suspend di jendela antara pintu dan sini tidak menitipkan objek R2 baru.
+  const hidup: any = await c.env.DB.prepare(`SELECT 1 AS ok FROM users WHERE id = ? AND account_status = 'active'`).bind(uploaderId).first();
+  if (!hidup) return { error: 'Sesi tidak valid. Muat ulang halaman.', status: 401 };
   const key = keyName(ext);
   await c.env.MEDIA.put(key, buf, { httpMetadata: { contentType: ct } });
   return { key };
@@ -127,7 +132,7 @@ app.post('/api/pasar/upload', async (c: any) => {
   if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
   // Audit D-07: R2 berbayar dan tanpa lifecycle → batasi per-akun.
   if (await hitRate(c.env.DB, `up:${me.id}`, 20, 3600)) return c.json({ error: 'Terlalu banyak unggahan. Coba lagi nanti.' }, 429);
-  const r = await putFoto(c, (ext) => `${PHOTO_DIR}/${me.id}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`);
+  const r = await putFoto(c, (ext) => `${PHOTO_DIR}/${me.id}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`, me.id);
   if ('error' in r) return c.json({ error: r.error }, r.status);
   return c.json({ ok: true, key: r.key, url: `/media/${r.key}?v=${Date.now()}` });
 });
@@ -176,7 +181,7 @@ app.post('/api/pasar/order/:id/evidence', async (c: any) => {
     return c.json({ error: 'Terlalu banyak unggahan. Coba lagi nanti.' }, 429);
   }
   const note = String(c.req.query('note') || '').trim().slice(0, 200);
-  const r = await putFoto(c, (ext) => kunciBukti(o.id, me.id, ext));
+  const r = await putFoto(c, (ext) => kunciBukti(o.id, me.id, ext), me.id);
   if ('error' in r) return c.json({ error: r.error }, r.status);
   // Audit B-12: count masuk INSERT atomik supaya dua unggahan konkuren tak melampaui cap per-pihak.
   const ins = await c.env.DB.prepare(
@@ -213,7 +218,7 @@ app.post('/api/pasar/seller/docs', async (c: any) => {
     return c.json({ error: 'Terlalu banyak unggahan. Coba lagi nanti.' }, 429);
   }
   const lama: any = await c.env.DB.prepare('SELECT r2_key FROM seller_docs WHERE user_id = ? AND kind = ?').bind(me.id, kind).first();
-  const r = await putFoto(c, (ext) => kunciDokumen(me.id, kind, ext));
+  const r = await putFoto(c, (ext) => kunciDokumen(me.id, kind, ext), me.id);
   if ('error' in r) return c.json({ error: r.error }, r.status);
   const sim = await c.env.DB.prepare(
     `INSERT INTO seller_docs (user_id, kind, r2_key) SELECT ?,?,?

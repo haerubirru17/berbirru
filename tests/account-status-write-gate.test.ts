@@ -84,4 +84,15 @@ assert.equal((owner.match(/account_status = 'active'/g) || []).length >= 6, true
 assert.match(owner, /UPDATE users SET seller_status=\?[\s\S]{0,300}account_status = 'active'/,
   'seller review users-update wajib active');
 
-console.log('OK — Task 4: predicate active pada seluruh hakim user-driven; system paths bebas');
+// === Rilis B: R2 upload bound (plan §91) ===
+assert.equal((pasar.match(/putFoto\(\s*c: any,\s*keyName: \(ext: string\) => string,\s*uploaderId: string\s*\)/g) || []).length, 1,
+  'putFoto wajib terima uploaderId utk cek active kedua');
+assert.equal((pasar.match(/SELECT 1 AS ok FROM users WHERE id = \? AND account_status = 'active'/g) || []).length, 1,
+  'putFoto wajib cek active KEDUA sebelum put');
+assert.equal((pasar.match(/await putFoto\(c, \(ext\) =>[\s\S]{0,140}?, me\.id\)/g) || []).length, 3,
+  'tiga caller putFoto wajib lolos identitas utk cek kedua');
+assert.match(media, /SELECT 1 AS ok FROM users WHERE id = \? AND account_status = 'active'/,
+  'media put wajib cek active kedua sebelum put');
+assert.match(media, /orphan key setelah guard tolak/, 'cleanup gagal wajib tercatat server-side');
+
+console.log('OK — Task 4+Rilis B: predicate active pada seluruh hakim user-driven; R2 bound; system paths bebas');
