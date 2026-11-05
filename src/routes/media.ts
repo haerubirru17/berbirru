@@ -46,7 +46,13 @@ app.put('/api/me/media/:kind', async (c: any) => {
   const old: any = await c.env.DB.prepare(`SELECT ${spec.col} AS k FROM users WHERE id = ?`).bind(me.id).first();
   // simpan key + versi (?v=) — setiap render URL-nya beda dari upload sebelumnya, cache browser tak pernah basi
   const stored = `${key}?v=${Date.now()}`;
-  await c.env.DB.prepare(`UPDATE users SET ${spec.col} = ? WHERE id = ?`).bind(stored, me.id).run();
+  // Task 4: guard active — akun yang tepat-diSUSPEND tidak boleh menjadikan
+  // key R2 authoritative; guard gagal = key baru dihapus best-effort (anti-orphan).
+  const up: any = await c.env.DB.prepare(`UPDATE users SET ${spec.col} = ? WHERE id = ? AND account_status = 'active'`).bind(stored, me.id).run();
+  if (!up.meta.changes) {
+    await c.env.MEDIA.delete(key).catch(() => {});
+    return c.json({ error: 'Sesi tidak valid. Muat ulang halaman.' }, 401);
+  }
 
   // buang objek lama kalau ekstensinya beda (strip versi sebelum hapus dari R2)
   const oldBase = String(old?.k || '').split('?')[0];

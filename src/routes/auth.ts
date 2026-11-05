@@ -178,9 +178,11 @@ app.post('/api/auth/register', async (c: any) => {
     }
     // Akun pending: kirim OTP ulang saja. Audit A-6: nama pena/city dari registran awal
     // (mungkin bukan pemilik inbox) kembali menjadi milik siapa pun yang punya inbox.
-    await c.env.DB.prepare(
-      'UPDATE users SET pen_name = ?, city = ? WHERE id = ?'
+    const claim = await c.env.DB.prepare(
+      "UPDATE users SET pen_name = ?, city = ? WHERE id = ? AND account_status = 'active'"
     ).bind(cleanPenName, String(city || '').trim() || 'Nusantara', byEmail.id).run();
+    // Task 4: claim zero = akun pivot di-suspend tepat sebelum tulis — berhenti seragam.
+    if (!claim.meta.changes) return c.json(UNIFORM);
     userId = byEmail.id;
   } else {
     userId = crypto.randomUUID();
@@ -260,7 +262,7 @@ app.post('/api/auth/login', async (c: any) => {
   // Migrasi transparan: hash lama (SHA-256 + salt statis) di-upgrade ke PBKDF2 saat login.
   if (check.needsRehash) {
     const upgraded = await hashPassword(password);
-    await c.env.DB.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(upgraded, user.id).run();
+    await c.env.DB.prepare("UPDATE users SET password_hash = ? WHERE id = ? AND account_status = 'active'").bind(upgraded, user.id).run();
   }
 
   // Login berhasil → reset penghitung gagal akun ini (hanya kegagalan berturut yang menumpuk).
@@ -304,13 +306,16 @@ app.post('/api/auth/change-password', async (c: any) => {
     return c.json({ error: 'Terlalu sering mengganti kata sandi. Coba lagi nanti.' }, 429);
   }
 
-  await c.env.DB.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(await hashPassword(password), user.id).run();
+  // Task 4: guard active pada statement hakim — suspend in-flight tidak boleh
+  // mengganti sandi maupun mencabut sesi (zero mutation), respons generik.
+  const pwdUp = await c.env.DB.prepare("UPDATE users SET password_hash = ? WHERE id = ? AND account_status = 'active'").bind(await hashPassword(password), user.id).run();
+  if (!pwdUp.meta.changes) return c.json({ error: 'Sesi tidak valid. Muat ulang halaman.' }, 401);
 
   // Cabut semua sesi LAIN (vuln-0001): rotasi sandi mengakhiri sesi curian;
   // sesi yang melakukan rotasi tetap hidup. token_hash IS NOT NULL menjaga baris OTP pending.
   await c.env.DB.prepare(
-    'DELETE FROM sessions WHERE user_id = ? AND token_hash IS NOT NULL AND token_hash <> ?'
-  ).bind(user.id, await sha256hex(getCookie(c, 'berbirru_session') || '')).run();
+    "DELETE FROM sessions WHERE user_id = ? AND token_hash IS NOT NULL AND token_hash <> ? AND EXISTS (SELECT 1 FROM users cu WHERE cu.id = ? AND cu.account_status = 'active')"
+  ).bind(user.id, await sha256hex(getCookie(c, 'berbirru_session') || ''), user.id).run();
 
   return c.json({ ok: true });
 });
@@ -626,7 +631,7 @@ app.post('/api/auth/verify-otp', async (c: any) => {
   if (flow) {
     // Flow cookie sekali pakai: hanya terhapus bila klaim menang (marker terpasang).
     stmts.push(c.env.DB.prepare(
-      'DELETE FROM sessions WHERE id = ? AND EXISTS (SELECT 1 FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ? AND u.account_status = \'active\')'
+      "DELETE FROM sessions WHERE id = ? AND EXISTS (SELECT 1 FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ? AND u.account_status = 'active')"
     ).bind(flow.id, marker));
   }
   stmtIdx++; // cap: hasilnya bebas (0..n), tak dijadikan invariant
@@ -677,7 +682,7 @@ app.post('/api/auth/logout-all', async (c: any) => {
   if (!user) return c.json({ error: 'Silakan masuk terlebih dahulu' }, 401);
   const token = getCookie(c, 'berbirru_session') || '';
   // Sesi lain + OTP yang masih menggantung ikut dimatikan.
-  await c.env.DB.prepare('DELETE FROM sessions WHERE user_id = ? AND (token_hash IS NULL OR token_hash != ?)').bind(user.id, await sha256hex(token)).run();
+  await c.env.DB.prepare("DELETE FROM sessions WHERE user_id = ? AND (token_hash IS NULL OR token_hash != ?) AND EXISTS (SELECT 1 FROM users lu WHERE lu.id = ? AND lu.account_status = 'active')").bind(user.id, await sha256hex(token), user.id).run();
   return c.json({ ok: true });
 });
 

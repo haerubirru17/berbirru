@@ -184,8 +184,8 @@ app.post('/api/owner/orders/:id/resolve', async (c: any) => {
         c.env.DB.prepare(
           `UPDATE orders SET status = 'refunded', resolution_note = ?, refund_ref = ?, refund_amount = ?,
              refunded_at = datetime('now'), resolved_at = datetime('now'), updated_at = datetime('now')
-           WHERE id = ? AND status = 'disputed'`
-        ).bind(note, ref, nominal, o.id),
+           WHERE id = ? AND status = 'disputed' AND EXISTS (SELECT 1 FROM users au WHERE au.id = ? AND au.account_status = 'active')`
+        ).bind(note, ref, nominal, o.id, me!.id),
         // Kredit hanya kalau update di atas benar-benar terjadi (idempoten, tidak dobel).
         c.env.DB.prepare(
           "INSERT INTO ledger (user_id, order_id, delta, kind) SELECT ?,?,?,? FROM orders WHERE id = ? AND status = 'refunded'"
@@ -207,7 +207,7 @@ app.post('/api/owner/orders/:id/resolve', async (c: any) => {
   let r: any[];
   try {
     r = await c.env.DB.batch([
-      c.env.DB.prepare("UPDATE orders SET status = 'completed', resolution_note = ?, resolved_at = datetime('now'), updated_at = datetime('now') WHERE id = ? AND status = 'disputed'").bind(note, o.id),
+      c.env.DB.prepare(`UPDATE orders SET status = 'completed', resolution_note = ?, resolved_at = datetime('now'), updated_at = datetime('now') WHERE id = ? AND status = 'disputed' AND EXISTS (SELECT 1 FROM users au WHERE au.id = ? AND au.account_status = 'active')`).bind(note, o.id, me!.id),
       c.env.DB.prepare("INSERT INTO ledger (user_id, order_id, delta, kind) SELECT ?,?,?,? FROM orders WHERE id = ? AND status = 'completed'").bind(o.seller_id, o.id, money.sale, 'sale', o.id),
       c.env.DB.prepare("INSERT INTO ledger (user_id, order_id, delta, kind) SELECT ?,?,?,? FROM orders WHERE id = ? AND status = 'completed'").bind(o.seller_id, o.id, money.fee, 'fee', o.id),
       c.env.DB.prepare("INSERT INTO order_events (order_id, actor, from_st, to_st, note) SELECT ?,?,?,?,? FROM orders WHERE id = ? AND status = 'completed'")
@@ -238,10 +238,10 @@ app.post('/api/owner/reports/:id/resolve', async (c: any) => {
   const status = decision === 'hide' ? 'removed' : 'ignored';
   await c.env.DB.batch([
     c.env.DB.prepare(
-      "UPDATE listing_reports SET status = ?, reviewed_at = datetime('now'), review_note = ?, reviewer_email = ? WHERE listing_id = ? AND status = 'open'"
-    ).bind(status, note, me?.email || null, l.id),
+      `UPDATE listing_reports SET status = ?, reviewed_at = datetime('now'), review_note = ?, reviewer_email = ? WHERE listing_id = ? AND status = 'open' AND EXISTS (SELECT 1 FROM users au WHERE au.id = ? AND au.account_status = 'active')`
+    ).bind(status, note, me?.email || null, l.id, me!.id),
     ...(decision === 'hide'
-      ? [c.env.DB.prepare("UPDATE listings SET status = 'hidden' WHERE id = ? AND status = 'active'").bind(l.id)]
+      ? [c.env.DB.prepare(`UPDATE listings SET status = 'hidden' WHERE id = ? AND status = 'active' AND EXISTS (SELECT 1 FROM users sl WHERE sl.id = ? AND sl.account_status = 'active')`).bind(l.id, me!.id)]
       : []),
   ]);
   if (decision === 'hide') {
@@ -263,7 +263,7 @@ app.post('/api/owner/sellers/:id/review', async (c: any) => {
   const res = await c.env.DB.prepare(
     `UPDATE users SET seller_status=?, seller_reviewed_at=datetime('now'), seller_reject_reason=?,
        seller_review_note = COALESCE(NULLIF(?, ''), seller_review_note)
-     WHERE id=? AND seller_status='pending'`
+     WHERE id=? AND account_status = 'active' AND seller_status='pending'`
   ).bind(approve ? 'approved' : 'rejected', approve ? null : reason, reason, c.req.param('id')).run();
   if ((res.meta?.changes || 0) === 0) return c.json({ error: 'Pengajuan tidak ditemukan' }, 404);
   if (approve) {
@@ -272,7 +272,7 @@ app.post('/api/owner/sellers/:id/review', async (c: any) => {
     if (u?.shop_name && !u.shop_slug) {
       const dipakai = await c.env.DB.prepare('SELECT shop_slug FROM users WHERE shop_slug IS NOT NULL').all();
       const slug = slugUnik(u.shop_name, (dipakai.results || []).map((x: any) => x.shop_slug));
-      await c.env.DB.prepare('UPDATE users SET shop_slug = ? WHERE id = ? AND shop_slug IS NULL').bind(slug, c.req.param('id')).run();
+      await c.env.DB.prepare(`UPDATE users SET shop_slug = ? WHERE id = ? AND shop_slug IS NULL AND account_status = 'active'`).bind(slug, c.req.param('id')).run();
     }
   }
   await notifyOrder(c.env.DB, {
@@ -302,8 +302,8 @@ app.post('/api/owner/withdrawals/:id/settle', async (c: any) => {
   const rows: any[] = [
     c.env.DB.prepare(
       `UPDATE withdrawals SET status = ?, review_note = ?, transfer_ref = ?, reviewed_at = datetime('now'),
-         paid_at = ${decision === 'reject' ? 'NULL' : "datetime('now')"} WHERE id = ? AND status = 'requested'`
-    ).bind(status, note, ref || null, id),
+         paid_at = ${decision === 'reject' ? 'NULL' : "datetime('now')"} WHERE id = ? AND status = 'requested' AND EXISTS (SELECT 1 FROM users au WHERE au.id = ? AND au.account_status = 'active')`
+    ).bind(status, note, ref || null, id, me!.id),
   ];
   if (decision === 'pay') {
     rows.push(

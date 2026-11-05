@@ -31,9 +31,11 @@ app.patch('/api/users/me', async (c: any) => {
   const cleanBio = bio !== undefined ? String(bio).trim().slice(0, 300) : user.bio;
   const cleanDisplayName = display_name !== undefined ? String(display_name).trim().slice(0, 40) : user.display_name;
 
-  await c.env.DB.prepare(
-    'UPDATE users SET pen_name = ?, city = ?, bio = ?, display_name = ? WHERE id = ?'
+  const profileUp = await c.env.DB.prepare(
+    "UPDATE users SET pen_name = ?, city = ?, bio = ?, display_name = ? WHERE id = ? AND account_status = 'active'"
   ).bind(cleanPenName, cleanCity, cleanBio, cleanDisplayName, user.id).run();
+  // Task 4: guard active — suspend in-flight = zero mutation, respons generik.
+  if (!profileUp.meta.changes) return c.json({ error: 'Sesi tidak valid. Muat ulang halaman.' }, 401);
 
   return c.json({ ok: true, user: { id: user.id, pen_name: cleanPenName, city: cleanCity, bio: cleanBio, display_name: cleanDisplayName } });
 });
@@ -369,20 +371,32 @@ app.post('/api/posts', async (c: any) => {
 
   const contentText = stripTags(cleanContent);
   if (!parentId) {
-    await c.env.DB.batch([
-      c.env.DB.prepare('INSERT INTO posts (id, author_id, title, content, parent_id, visibility) VALUES (?, ?, ?, ?, NULL, ?)').bind(postId, user.id, cleanTitle, cleanContent, cleanVisibility),
-      c.env.DB.prepare('INSERT INTO posts_fts (id, title, content_text) VALUES (?, ?, ?)').bind(postId, cleanTitle || '', contentText),
+    const rootRes: any[] = await c.env.DB.batch([
+      // Task 4: hakim INSERT...SELECT guarded active — suspend in-flight = zero mutation.
+      c.env.DB.prepare(`INSERT INTO posts (id, author_id, title, content, parent_id, visibility)
+        SELECT ?, ?, ?, ?, NULL, ? FROM users au
+        WHERE au.id = ? AND au.account_status = 'active'`)
+        .bind(postId, user.id, cleanTitle, cleanContent, cleanVisibility, user.id),
+      c.env.DB.prepare(`INSERT INTO posts_fts (id, title, content_text)
+        SELECT ?, ?, ? FROM users au
+        WHERE au.id = ? AND au.account_status = 'active'
+          AND EXISTS (SELECT 1 FROM posts np WHERE np.id = ?)`)
+        .bind(postId, cleanTitle || '', contentText, user.id, postId),
     ]);
+    if (!rootRes[0]?.meta?.changes) return c.json({ error: 'Sesi tidak valid. Muat ulang halaman.' }, 401);
   } else {
     const result: any[] = await c.env.DB.batch([
       c.env.DB.prepare(`INSERT INTO posts (id, author_id, title, content, parent_id, visibility)
         SELECT ?, ?, ?, ?, parent.id, ? FROM posts parent
         WHERE parent.id = ? AND parent.moderation_status = 'visible'
-          AND (parent.visibility != 'private' OR parent.author_id = ?)`)
-        .bind(postId, user.id, cleanTitle, cleanContent, cleanVisibility, parentId, user.id),
+          AND (parent.visibility != 'private' OR parent.author_id = ?)
+          AND EXISTS (SELECT 1 FROM users au WHERE au.id = ? AND au.account_status = 'active')`)
+        .bind(postId, user.id, cleanTitle, cleanContent, cleanVisibility, parentId, user.id, user.id),
       c.env.DB.prepare(`INSERT INTO posts_fts (id, title, content_text)
-        SELECT id, ?, ? FROM posts WHERE id = ? AND author_id = ?`)
-        .bind(cleanTitle || '', contentText, postId, user.id),
+        SELECT ?, ?, ? FROM users au
+        WHERE au.id = ? AND au.account_status = 'active'
+          AND EXISTS (SELECT 1 FROM posts np WHERE np.id = ? AND np.author_id = ?)`)
+        .bind(postId, cleanTitle || '', contentText, user.id, postId, user.id),
       c.env.DB.prepare(`UPDATE posts SET chains_count = chains_count + 1
         WHERE id = ? AND moderation_status = 'visible'
           AND EXISTS (SELECT 1 FROM posts child WHERE child.id = ? AND child.parent_id = posts.id AND child.author_id = ?)`)
@@ -413,8 +427,11 @@ app.delete('/api/posts/:id', async (c: any) => {
   if (!post) return c.json({ error: 'Postingan tidak ditemukan' }, 404);
   if (post.author_id !== user.id) return c.json({ error: 'Anda tidak memiliki akses untuk menghapus postingan ini' }, 403);
 
-  const guard = `EXISTS (SELECT 1 FROM posts target WHERE target.id = ? AND target.author_id = ?
-    AND target.moderation_status = 'visible' AND COALESCE(target.moderation_action_id,'') = ?)`;
+  // Task 4: guard snapshot moderasi + status akun — salah satu berubah = semua statement gugur.
+  const guard = `EXISTS (SELECT 1 FROM posts target JOIN users act ON act.id = target.author_id
+    WHERE target.id = ? AND target.author_id = ?
+    AND target.moderation_status = 'visible' AND COALESCE(target.moderation_action_id,'') = ?
+    AND act.account_status = 'active')`;
   const result: any[] = await c.env.DB.batch([
     c.env.DB.prepare(`DELETE FROM likes WHERE post_id = ? AND ${guard}`).bind(postId, postId, user.id, post.moderation_marker),
     c.env.DB.prepare(`DELETE FROM bookmarks WHERE post_id = ? AND ${guard}`).bind(postId, postId, user.id, post.moderation_marker),
@@ -422,8 +439,8 @@ app.delete('/api/posts/:id', async (c: any) => {
     c.env.DB.prepare(`DELETE FROM posts_fts WHERE id = ? AND ${guard}`).bind(postId, postId, user.id, post.moderation_marker),
     c.env.DB.prepare(`UPDATE posts SET chains_count = MAX(0, chains_count - 1) WHERE id = ? AND ? IS NOT NULL AND ${guard}`)
       .bind(post.parent_id, post.parent_id, postId, user.id, post.moderation_marker),
-    c.env.DB.prepare("DELETE FROM posts WHERE id = ? AND author_id = ? AND moderation_status = 'visible' AND COALESCE(moderation_action_id,'') = ?")
-      .bind(postId, user.id, post.moderation_marker),
+    c.env.DB.prepare("DELETE FROM posts WHERE id = ? AND author_id = ? AND moderation_status = 'visible' AND COALESCE(moderation_action_id,'') = ? AND EXISTS (SELECT 1 FROM users act WHERE act.id = ? AND act.account_status = 'active')")
+      .bind(postId, user.id, post.moderation_marker, user.id),
   ]);
   if (!result[5]?.meta?.changes) return c.json({ error: 'Status warkah sudah berubah. Coba lagi.' }, 409);
   return c.json({ ok: true });
@@ -446,11 +463,14 @@ app.post('/api/posts/:id/like', async (c: any) => {
   const intended = !existing;
   const relation = intended
     ? c.env.DB.prepare(`INSERT OR IGNORE INTO likes (user_id, post_id)
-        SELECT ?, p.id FROM posts p WHERE p.id = ? AND p.moderation_status = 'visible'
-          AND COALESCE(p.moderation_action_id,'') = ?`).bind(user.id, postId, post.moderation_marker)
+        SELECT ?, p.id FROM posts p
+        JOIN users au ON au.id = ?
+        WHERE p.id = ? AND p.moderation_status = 'visible'
+          AND COALESCE(p.moderation_action_id,'') = ?
+          AND au.account_status = 'active'`).bind(user.id, user.id, postId, post.moderation_marker)
     : c.env.DB.prepare(`DELETE FROM likes WHERE user_id = ? AND post_id = ? AND EXISTS
-        (SELECT 1 FROM posts p WHERE p.id = ? AND p.moderation_status = 'visible'
-          AND COALESCE(p.moderation_action_id,'') = ?)`).bind(user.id, postId, postId, post.moderation_marker);
+        (SELECT 1 FROM posts p JOIN users au ON au.id = ? WHERE p.id = ? AND p.moderation_status = 'visible'
+          AND COALESCE(p.moderation_action_id,'') = ? AND au.account_status = 'active')`).bind(user.id, postId, user.id, postId, post.moderation_marker);
   const notification = intended
     ? c.env.DB.prepare(`INSERT INTO notifications (id, user_id, actor_id, type, post_id)
         SELECT ?, p.author_id, ?, 'like', p.id FROM posts p
@@ -469,13 +489,15 @@ app.post('/api/posts/:id/like', async (c: any) => {
       WHERE id = ? AND moderation_status = 'visible' AND COALESCE(moderation_action_id,'') = ?`).bind(postId, postId, post.moderation_marker),
     notification,
     c.env.DB.prepare(`SELECT moderation_status, COALESCE(moderation_action_id,'') AS moderation_marker,
-      EXISTS(SELECT 1 FROM likes WHERE user_id = ? AND post_id = posts.id) AS intended_state, likes_count
-      FROM posts WHERE id = ?`).bind(user.id, postId),
+      EXISTS(SELECT 1 FROM likes WHERE user_id = ? AND post_id = posts.id) AS intended_state, likes_count,
+      EXISTS(SELECT 1 FROM users au WHERE au.id = ? AND au.account_status = 'active') AS actor_active
+      FROM posts WHERE id = ?`).bind(user.id, user.id, postId),
   ]);
   const state: any = result[3]?.results?.[0];
   if (!state || state.moderation_status !== 'visible' || state.moderation_marker !== post.moderation_marker) {
     return c.json({ error: 'Status warkah sudah berubah. Coba lagi.' }, 409);
   }
+  if (Number(state.actor_active) !== 1) return c.json({ error: 'Sesi tidak valid. Muat ulang halaman.' }, 401);
   return c.json({ liked: Number(state.intended_state) === 1, likes_count: Number(state.likes_count || 0) });
 });
 
@@ -495,11 +517,14 @@ app.post('/api/posts/:id/bookmark', async (c: any) => {
   const intended = !existing;
   const relation = intended
     ? c.env.DB.prepare(`INSERT OR IGNORE INTO bookmarks (user_id, post_id)
-        SELECT ?, p.id FROM posts p WHERE p.id = ? AND p.moderation_status = 'visible'
-          AND COALESCE(p.moderation_action_id,'') = ?`).bind(user.id, postId, post.moderation_marker)
+        SELECT ?, p.id FROM posts p
+        JOIN users au ON au.id = ?
+        WHERE p.id = ? AND p.moderation_status = 'visible'
+          AND COALESCE(p.moderation_action_id,'') = ?
+          AND au.account_status = 'active'`).bind(user.id, user.id, postId, post.moderation_marker)
     : c.env.DB.prepare(`DELETE FROM bookmarks WHERE user_id = ? AND post_id = ? AND EXISTS
-        (SELECT 1 FROM posts p WHERE p.id = ? AND p.moderation_status = 'visible'
-          AND COALESCE(p.moderation_action_id,'') = ?)`).bind(user.id, postId, postId, post.moderation_marker);
+        (SELECT 1 FROM posts p JOIN users au ON au.id = ? WHERE p.id = ? AND p.moderation_status = 'visible'
+          AND COALESCE(p.moderation_action_id,'') = ? AND au.account_status = 'active')`).bind(user.id, postId, user.id, postId, post.moderation_marker);
   const notification = intended
     ? c.env.DB.prepare(`INSERT INTO notifications (id, user_id, actor_id, type, post_id)
         SELECT ?, p.author_id, ?, 'save', p.id FROM posts p
@@ -518,13 +543,15 @@ app.post('/api/posts/:id/bookmark', async (c: any) => {
       WHERE id = ? AND moderation_status = 'visible' AND COALESCE(moderation_action_id,'') = ?`).bind(postId, postId, post.moderation_marker),
     notification,
     c.env.DB.prepare(`SELECT moderation_status, COALESCE(moderation_action_id,'') AS moderation_marker,
-      EXISTS(SELECT 1 FROM bookmarks WHERE user_id = ? AND post_id = posts.id) AS intended_state, saves_count
-      FROM posts WHERE id = ?`).bind(user.id, postId),
+      EXISTS(SELECT 1 FROM bookmarks WHERE user_id = ? AND post_id = posts.id) AS intended_state, saves_count,
+      EXISTS(SELECT 1 FROM users au WHERE au.id = ? AND au.account_status = 'active') AS actor_active
+      FROM posts WHERE id = ?`).bind(user.id, user.id, postId),
   ]);
   const state: any = result[3]?.results?.[0];
   if (!state || state.moderation_status !== 'visible' || state.moderation_marker !== post.moderation_marker) {
     return c.json({ error: 'Status warkah sudah berubah. Coba lagi.' }, 409);
   }
+  if (Number(state.actor_active) !== 1) return c.json({ error: 'Sesi tidak valid. Muat ulang halaman.' }, 401);
   return c.json({ bookmarked: Number(state.intended_state) === 1, saves_count: Number(state.saves_count || 0) });
 });
 
@@ -545,17 +572,23 @@ app.post('/api/users/:pen_name/follow', async (c: any) => {
 
   const existing = await c.env.DB.prepare('SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?').bind(user.id, target.id).first();
   if (existing) {
-    await c.env.DB.prepare('DELETE FROM follows WHERE follower_id = ? AND following_id = ?').bind(user.id, target.id).run();
+    const unf = await c.env.DB.prepare(`DELETE FROM follows WHERE follower_id = ? AND following_id = ?
+      AND EXISTS (SELECT 1 FROM users au WHERE au.id = ? AND au.account_status = 'active')`).bind(user.id, target.id, user.id).run();
+    if (!unf.meta.changes) return c.json({ error: 'Sesi tidak valid. Muat ulang halaman.' }, 401);
     // buang notif follow lama — unfollow berarti "X mulai mengikuti" tak lagi benar
-    await c.env.DB.prepare("DELETE FROM notifications WHERE user_id = ? AND actor_id = ? AND type = 'follow'").bind(target.id, user.id).run();
+    await c.env.DB.prepare(`DELETE FROM notifications WHERE user_id = ? AND actor_id = ? AND type = 'follow'
+      AND EXISTS (SELECT 1 FROM users au WHERE au.id = ? AND au.account_status = 'active')`).bind(target.id, user.id, user.id).run();
     return c.json({ following: false });
   } else {
     // Audit C-05: OR IGNORE (pola like/bookmark) — follow konkuren tidak 500 lagi.
-    const ins = await c.env.DB.prepare('INSERT OR IGNORE INTO follows (follower_id, following_id) VALUES (?, ?)').bind(user.id, target.id).run();
+    const ins = await c.env.DB.prepare(`INSERT OR IGNORE INTO follows (follower_id, following_id)
+      SELECT ?, ? FROM users au WHERE au.id = ? AND au.account_status = 'active'`).bind(user.id, target.id, user.id).run();
     if (!ins.meta.changes) return c.json({ following: true });
     const dup = await c.env.DB.prepare('SELECT 1 FROM notifications WHERE user_id = ? AND actor_id = ? AND type = ? LIMIT 1').bind(target.id, user.id, 'follow').first();
     if (!dup) {
-      await c.env.DB.prepare('INSERT INTO notifications (id, user_id, actor_id, type) VALUES (?, ?, ?, ?)').bind(crypto.randomUUID(), target.id, user.id, 'follow').run();
+      await c.env.DB.prepare(`INSERT INTO notifications (id, user_id, actor_id, type)
+        SELECT ?, ?, ?, 'follow' FROM users au WHERE au.id = ? AND au.account_status = 'active'`)
+        .bind(crypto.randomUUID(), target.id, user.id, user.id).run();
     }
     return c.json({ following: true });
   }
@@ -581,8 +614,10 @@ app.post('/api/users/:pen_name/remove-follower', async (c: any) => {
   if (!follower) return c.json({ error: 'Pengikut tidak ditemukan' }, 404);
   if (follower.id === user.id) return c.json({ error: 'Tidak valid' }, 400);
 
-  const del = await c.env.DB.prepare('DELETE FROM follows WHERE follower_id = ? AND following_id = ?').bind(follower.id, user.id).run();
-  await c.env.DB.prepare("DELETE FROM notifications WHERE user_id = ? AND actor_id = ? AND type = 'follow'").bind(user.id, follower.id).run();
+  const del = await c.env.DB.prepare(`DELETE FROM follows WHERE follower_id = ? AND following_id = ?
+    AND EXISTS (SELECT 1 FROM users au WHERE au.id = ? AND au.account_status = 'active')`).bind(follower.id, user.id, user.id).run();
+  await c.env.DB.prepare(`DELETE FROM notifications WHERE user_id = ? AND actor_id = ? AND type = 'follow'
+    AND EXISTS (SELECT 1 FROM users au WHERE au.id = ? AND au.account_status = 'active')`).bind(user.id, follower.id, user.id).run();
   return c.json({ removed: (del.meta.changes || 0) > 0 });
 });
 }
