@@ -49,6 +49,12 @@ CREATE TABLE IF NOT EXISTS posts (
   likes_count INTEGER DEFAULT 0,
   saves_count INTEGER DEFAULT 0,
   chains_count INTEGER DEFAULT 0,
+  moderation_status TEXT NOT NULL DEFAULT 'visible'
+    CHECK (moderation_status IN ('visible','quarantined')),
+  moderation_reason TEXT,
+  moderated_at TEXT,
+  moderated_by TEXT,
+  moderation_action_id TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -104,8 +110,27 @@ CREATE TABLE IF NOT EXISTS rate_limits (
   expires_at TIMESTAMP NOT NULL
 );
 
+-- 10. Audit moderasi sosial; sengaja terpisah dari owner_actions Rekber.
+CREATE TABLE IF NOT EXISTS social_admin_actions (
+  id TEXT PRIMARY KEY,
+  actor_user_id TEXT NOT NULL,
+  actor_email TEXT NOT NULL,
+  action TEXT NOT NULL CHECK (action IN ('post_quarantine','post_restore')),
+  target_post_id TEXT NOT NULL,
+  from_status TEXT NOT NULL CHECK (from_status IN ('visible','quarantined')),
+  to_status TEXT NOT NULL CHECK (to_status IN ('visible','quarantined')),
+  reason TEXT NOT NULL CHECK (length(reason) BETWEEN 10 AND 500),
+  created_at TEXT NOT NULL
+);
+
 -- Indexes for lightning-fast queries
 CREATE INDEX IF NOT EXISTS idx_posts_created ON posts(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_posts_parent ON posts(parent_id);
 CREATE INDEX IF NOT EXISTS idx_posts_author ON posts(author_id);
 CREATE INDEX IF NOT EXISTS idx_users_pen_name ON users(pen_name);
+CREATE INDEX IF NOT EXISTS idx_posts_moderation_created
+  ON posts(moderation_status, created_at DESC, id DESC);
+CREATE INDEX IF NOT EXISTS idx_social_admin_actions_post
+  ON social_admin_actions(target_post_id, created_at DESC, id DESC);
+CREATE INDEX IF NOT EXISTS idx_social_admin_actions_time
+  ON social_admin_actions(created_at DESC, id DESC);
