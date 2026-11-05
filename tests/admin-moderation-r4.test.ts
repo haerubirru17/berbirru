@@ -46,8 +46,8 @@ assert.match(transition, /INSERT INTO social_admin_actions/);
 assert.doesNotMatch(transition, /stripTags\s*\(content\)/, 'stripTags tidak boleh dipanggil dari SQL');
 
 const profile = readFileSync(new URL('../src/web/profile.ts', import.meta.url), 'utf8');
-assert.match(profile, /isOwnerUser \? `[\s\S]*settings-item[\s\S]*\/admin[\s\S]*Bilik Admin/,
-  'menu hamburger profil owner wajib punya shortcut universal Bilik Admin');
+assert.match(profile, /isOwnerUser \? `[\s\S]*Bilik Admin[\s\S]*id="bilikSub"[\s\S]*href="\/admin"[\s\S]*Admin Sosial[\s\S]*href="\/owner"[\s\S]*Admin Rekber/,
+  'Bilik Admin wajib punya dropdown Admin Sosial + Admin Rekber');
 assert.match(profile, /renderProfilePage\(penName: string, isMe = false, currentUser: any = null, isOwnerUser = false\)/);
 const indexSrc = readFileSync(new URL('../src/index.ts', import.meta.url), 'utf8');
 assert.match(indexSrc, /renderProfilePage\(targetPenName, isMe, user, isOwner\(c\.env, user\)\)/,
