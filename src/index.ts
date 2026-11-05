@@ -204,7 +204,7 @@ app.get('/u/:pen_name', async (c) => {
 
   const targetPenName = penNameParam.replace(/^@/, '').toLowerCase();
   const isMe = Boolean(user && user.pen_name.toLowerCase() === targetPenName);
-  return c.html(renderProfilePage(targetPenName, isMe, user));
+  return c.html(renderProfilePage(targetPenName, isMe, user, isOwner(c.env, user)));
 });
 
 // ---- SEO & CRAWLER ENDPOINTS ----

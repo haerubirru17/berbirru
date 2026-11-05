@@ -2,7 +2,7 @@ import { THEME } from './theme';
 import { renderBottomNav } from './layout';
 import { NOTIFY_HTML } from './notify';
 
-export function renderProfilePage(penName: string, isMe = false, currentUser: any = null): string {
+export function renderProfilePage(penName: string, isMe = false, currentUser: any = null, isOwnerUser = false): string {
   const SKIN_MENU_ITEMS = `
               <div class="settings-divider"></div>
               <div class="settings-item" data-skin="neo" onclick="setSkin('neo')" title="Ganti gaya halaman">
@@ -375,6 +375,11 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
                 <svg style="width:14px;height:14px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
                 <span>Informasi Akun</span>
               </div>
+              ${isOwnerUser ? `
+              <a class="settings-item" href="/admin/posts" onclick="toggleSettingsMenu(false)" title="Moderasi warkah">
+                <svg style="width:14px;height:14px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <span>Moderasi Warkah</span>
+              </a>` : ''}
               <div class="settings-divider"></div>
               <div class="settings-item danger" onclick="handleLogout()">
                 <svg style="width:14px;height:14px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>

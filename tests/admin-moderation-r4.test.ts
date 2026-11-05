@@ -44,4 +44,12 @@ assert.match(transition, /moderation_action_id/);
 assert.match(transition, /DELETE FROM posts_fts WHERE id = \?/);
 assert.match(transition, /INSERT INTO social_admin_actions/);
 assert.doesNotMatch(transition, /stripTags\s*\(content\)/, 'stripTags tidak boleh dipanggil dari SQL');
+
+const profile = readFileSync(new URL('../src/web/profile.ts', import.meta.url), 'utf8');
+assert.match(profile, /isOwnerUser \? `[\s\S]*settings-item[\s\S]*\/admin\/posts[\s\S]*Moderasi Warkah/,
+  'menu hamburger profil owner wajib punya shortcut Moderasi Warkah');
+assert.match(profile, /renderProfilePage\(penName: string, isMe = false, currentUser: any = null, isOwnerUser = false\)/);
+const indexSrc = readFileSync(new URL('../src/index.ts', import.meta.url), 'utf8');
+assert.match(indexSrc, /renderProfilePage\(targetPenName, isMe, user, isOwner\(c\.env, user\)\)/,
+  'route profil wajib meneruskan flag owner ke renderer');
 console.log('OK — R4 admin moderation contract terkunci');
