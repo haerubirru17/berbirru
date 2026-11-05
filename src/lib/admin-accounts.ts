@@ -10,7 +10,7 @@ export async function suspendAccount(
   by: string,
   actorEmail: string,
   ownerEmail: string
-): Promise<{ ok: boolean }> {
+): Promise<{ ok: boolean; actionId: string }> {
   const actionId = crypto.randomUUID();
   const result: any[] = await db.batch([
     // Hakim: transisi kondisional + owner exclusion di module (plan §6.2.1).
@@ -40,7 +40,7 @@ export async function suspendAccount(
   ]);
   // Otoritas = hakim + audit (guarded marker menjamin 1 bila hakim 1).
   // Tidak ada invariant-throw pasca commit (pelajaran R4 + review B W1).
-  return { ok: result[0].meta.changes === 1 && result[2].meta.changes === 1 };
+  return { ok: result[0].meta.changes === 1 && result[2].meta.changes === 1, actionId };
 }
 
 export async function reinstateAccount(
@@ -51,7 +51,7 @@ export async function reinstateAccount(
   by: string,
   actorEmail: string,
   ownerEmail: string
-): Promise<{ ok: boolean }> {
+): Promise<{ ok: boolean; actionId: string }> {
   const actionId = crypto.randomUUID();
   const result: any[] = await db.batch([
     // Hakim: hanya suspended yang bisa dipulihkan; metadata suspend dibersihkan.
@@ -71,5 +71,5 @@ export async function reinstateAccount(
        WHERE u.id = ? AND u.account_status = 'active' AND u.account_action_id = ?`
     ).bind(actionId, by, actorEmail, reason, at, targetId, actionId),
   ]);
-  return { ok: result[0].meta.changes === 1 && result[1].meta.changes === 1 };
+  return { ok: result[0].meta.changes === 1 && result[1].meta.changes === 1, actionId };
 }

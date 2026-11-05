@@ -66,9 +66,18 @@ assert(route.includes("app.get('/admin'"), 'route /admin wajib terpisah');
 assert(route.includes('isOwner(c.env, me)') && route.includes('c.notFound()'), 'non-owner harus 404');
 assert(route.includes("Cache-Control', 'no-store"), 'dashboard wajib no-store');
 const adminPostRoutes = [...route.matchAll(/app\.post\('([^']+)'/g)].map((m) => m[1]).sort();
-assert.deepEqual(adminPostRoutes, ['/api/admin/posts/:id/quarantine', '/api/admin/posts/:id/restore']);
+// T6: tepat empat POST — moderasi warkah + transisi akun; verb lain tetap terlarang.
+assert.deepEqual(adminPostRoutes, [
+  '/api/admin/posts/:id/quarantine', '/api/admin/posts/:id/restore',
+  '/api/admin/users/:id/reinstate', '/api/admin/users/:id/suspend',
+]);
 assert.doesNotMatch(route, /app\.(put|patch|delete)\(/i, 'admin sosial tidak boleh PUT/PATCH/DELETE');
-assert.doesNotMatch(route, /suspend|hard.?delete|owner_actions/i, 'scope akun/Rekber/hard-delete tetap terlarang');
+assert.doesNotMatch(route, /hard.?delete|owner_actions/i, 'hard-delete/Rekber scope tetap terlarang');
+assert(route.includes("app.get('/admin/users'"), 'page /admin/users wajib ada');
+for (const w of ['admin-posts', 'admin-users', 'admin-audit']) {
+  const wt = readFileSync(new URL('../src/web/' + w + '.ts', import.meta.url), 'utf8');
+  assert(wt.includes('href="/admin/users"') && wt.includes('href="/admin/posts"'), w + ': nav Akun+Warkah ada');
+}
 
 const index = readFileSync(new URL('../src/index.ts', import.meta.url), 'utf8');
 assert(index.includes('mountAdmin(app)'), 'route admin wajib dipasang');

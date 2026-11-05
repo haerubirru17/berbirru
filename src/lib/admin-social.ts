@@ -143,3 +143,19 @@ export async function loadAdminDashboard(db: D1Database): Promise<AdminDashboard
     })),
   };
 }
+
+// Task 6: daftar akun utk /admin/users — kolom minimum, email dimasking DI LOADER.
+export interface AdminUser {
+  id: string; penName: string; displayName: string;
+  emailMasked: string; status: string; isOwner: boolean;
+}
+
+export async function loadAdminUsers(db: D1Database, ownerEmail: string): Promise<AdminUser[]> {
+  const { results }: any = await db.prepare(`SELECT id, pen_name, display_name, email, account_status
+    FROM users ORDER BY created_at DESC, id DESC LIMIT 50`).all();
+  return (results as any[]).map((u: any) => ({
+    id: String(u.id || ''), penName: String(u.pen_name || ''), displayName: String(u.display_name || ''),
+    emailMasked: maskEmail(String(u.email || '')), status: String(u.account_status || 'active'),
+    isOwner: String(u.email || '').toLowerCase() === String(ownerEmail || '').toLowerCase(),
+  }));
+}
