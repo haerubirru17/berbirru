@@ -87,12 +87,20 @@ assert.match(owner, /UPDATE users SET seller_status=\?[\s\S]{0,300}account_statu
 // === Rilis B: R2 upload bound (plan §91) ===
 assert.equal((pasar.match(/putFoto\(\s*c: any,\s*keyName: \(ext: string\) => string,\s*uploaderId: string\s*\)/g) || []).length, 1,
   'putFoto wajib terima uploaderId utk cek active kedua');
-assert.equal((pasar.match(/SELECT 1 AS ok FROM users WHERE id = \? AND account_status = 'active'/g) || []).length, 1,
-  'putFoto wajib cek active KEDUA sebelum put');
+assert.equal((pasar.match(/SELECT 1 AS ok FROM users WHERE id = \? AND account_status = 'active'/g) || []).length, 3,
+  'putFoto + upload-delete + evidence fallback wajib cek active KEDUA (Rilis B W3+W4)');
 assert.equal((pasar.match(/await putFoto\(c, \(ext\) =>[\s\S]{0,140}?, me\.id\)/g) || []).length, 3,
   'tiga caller putFoto wajib lolos identitas utk cek kedua');
 assert.match(media, /SELECT 1 AS ok FROM users WHERE id = \? AND account_status = 'active'/,
   'media put wajib cek active kedua sebelum put');
 assert.match(media, /orphan key setelah guard tolak/, 'cleanup gagal wajib tercatat server-side');
 
-console.log('OK — Task 4+Rilis B: predicate active pada seluruh hakim user-driven; R2 bound; system paths bebas');
+// === Rilis B pascareview: W1-W3 ===
+assert.equal((auth.match(/INSERT INTO sessions \(id, user_id, token(_hash)?, expires_at\)[\s\S]{0,220}SELECT[\s\S]{0,180}account_status = 'active'/g) || []).length, 5,
+  'verify-otp mint + tiket reset + issueOtp/issueResetOtp/issueOtpFlow wajib INSERT...SELECT active (T3 + W2)');
+assert.doesNotMatch(auth, /flow && flowRes\.meta\.changes !== 1/,
+  'flow-delete bukan invariant (W1: 0 sah, row bisa dimakan send-otp konkuren)');
+assert.match(pasar, /evidence: orphan key setelah guard tolak/, 'W3: evidence cleanup wajib log orphan');
+assert.match(pasar, /seller-docs: orphan key setelah guard tolak/, 'W3: seller-docs cleanup wajib log orphan');
+
+console.log('OK — Task 4+Rilis B: predicate active pada seluruh hakim user-driven; R2 bound; W1-W4 closed; system paths bebas');

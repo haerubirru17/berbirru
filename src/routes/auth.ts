@@ -329,9 +329,13 @@ const issueResetOtp = async (env: any, userId: string, email: string): Promise<b
   const kode = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0');
   const hash = await hashPassword(kode);
   await env.DB.prepare("DELETE FROM sessions WHERE user_id = ? AND token LIKE 'rsto_%'").bind(userId).run();
-  await env.DB.prepare(
-    "INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, datetime('now', '+10 minutes'))"
-  ).bind(crypto.randomUUID(), userId, 'rsto_' + hash).run();
+  // W2 review B: kode reset hanya untuk akun active.
+  const rstIns = await env.DB.prepare(
+    `INSERT INTO sessions (id, user_id, token, expires_at)
+     SELECT ?, ?, ?, datetime('now', '+10 minutes') FROM users au
+     WHERE au.id = ? AND au.account_status = 'active'`
+  ).bind(crypto.randomUUID(), userId, 'rsto_' + hash, userId).run();
+  if (!rstIns.meta.changes) return false;
   const terkirim = await sendOtpEmail(email, kode, env);
   // Jangan tinggalkan kode yang tidak pernah sampai ke inbox.
   if (!terkirim) await env.DB.prepare("DELETE FROM sessions WHERE user_id = ? AND token LIKE 'rsto_%'").bind(userId).run();
@@ -479,10 +483,15 @@ async function issueOtpFlow(c: any, userId: string): Promise<void> {
   const raw = crypto.randomUUID() + '-' + crypto.randomUUID();
   const key = 'otpf_' + await sha256hex(raw);
   await c.env.DB.prepare("DELETE FROM sessions WHERE user_id = ? AND token_hash LIKE 'otpf_%'").bind(userId).run();
-  await c.env.DB.prepare(
-    "INSERT INTO sessions (id, user_id, token_hash, expires_at) VALUES (?, ?, ?, datetime('now', '+10 minutes'))"
-  ).bind(crypto.randomUUID(), userId, key).run();
-  setCookie(c, OTP_FLOW_COOKIE, raw, { path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 600 });
+  // W2 review B: artefak flow hanya untuk akun active (insert conditional).
+  const flowIns = await c.env.DB.prepare(
+    `INSERT INTO sessions (id, user_id, token_hash, expires_at)
+     SELECT ?, ?, ?, datetime('now', '+10 minutes') FROM users au
+     WHERE au.id = ? AND au.account_status = 'active'`
+  ).bind(crypto.randomUUID(), userId, key, userId).run();
+  if (flowIns.meta.changes) {
+    setCookie(c, OTP_FLOW_COOKIE, raw, { path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 600 });
+  }
 }
 
 async function validOtpFlow(c: any, userId: string): Promise<any | null> {
@@ -504,9 +513,14 @@ async function issueOtp(env: any, userId: string, cleanEmail: string): Promise<{
   // Hash, bukan kode mentah: kalau isi tabel bocor, kode tidak langsung bisa dipakai.
   const otpHash = await hashPassword(otpCode);
   const otpId = crypto.randomUUID();
-  await env.DB.prepare(
-    'INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, datetime("now", "+10 minutes"))'
-  ).bind(otpId, userId, `otp_${otpHash}`).run();
+  // W2 review B: OTP hanya diterbitkan untuk akun active — suspended tak menghasilkan
+  // kode baru maupun email; respons pemanggil tetap UNIFORM.
+  const ins = await env.DB.prepare(
+    `INSERT INTO sessions (id, user_id, token, expires_at)
+     SELECT ?, ?, ?, datetime('now', '+10 minutes') FROM users au
+     WHERE au.id = ? AND au.account_status = 'active'`
+  ).bind(otpId, userId, `otp_${otpHash}`, userId).run();
+  if (!ins.meta.changes) return { ok: false };
   const ok = await sendOtpEmail(cleanEmail, otpCode, env);
   if (!ok) await env.DB.prepare('DELETE FROM sessions WHERE id = ?').bind(otpId).run();
   return { ok };
@@ -652,11 +666,11 @@ app.post('/api/auth/verify-otp', async (c: any) => {
     return c.json(BAD_OTP, 400);
   }
   const acc = result[1];
-  const flowRes = flow ? result[flowIdx] : null;
   const minted = result[mintIdx];
   const markerRes = result[delIdx];
-  if (acc.meta.changes !== 1 || minted.meta.changes !== 1 || markerRes.meta.changes !== 1
-      || (flow && flowRes.meta.changes !== 1)) {
+  // W1 review B: penghapusan flow BUKAN invariant — baris flow sah-sah saja hilang
+  // duluan (send-otp konkuren memang membersihkan baris otpf_). 0 perubahan valid.
+  if (acc.meta.changes !== 1 || minted.meta.changes !== 1 || markerRes.meta.changes !== 1) {
     console.error('verify-otp: invariant mismatch (changes only)', result.map((r: any) => r.meta.changes));
     return c.json({ error: 'Terjadi kesalahan internal. Coba lagi.' }, 500);
   }

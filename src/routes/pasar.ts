@@ -144,6 +144,9 @@ app.delete('/api/pasar/upload', async (c: any) => {
   // hanya boleh hapus foto miliknya sendiri di folder pasar
   if (!key.startsWith(`${PHOTO_DIR}/${me.id}_`)) return c.json({ error: 'Key tak valid' }, 403);
   if (!/^[a-z0-9_/-]+\.(jpg|png|webp)$/i.test(key)) return c.json({ error: 'Key tak valid' }, 400);
+  // W4 review B: R2 delete user-driven juga dijepit cek active kedua (plan §91).
+  const hidup: any = await c.env.DB.prepare(`SELECT 1 AS ok FROM users WHERE id = ? AND account_status = 'active'`).bind(me.id).first();
+  if (!hidup) return c.json({ error: 'Sesi tidak valid. Muat ulang halaman.' }, 401);
   await c.env.MEDIA.delete(key).catch(() => {});
   return c.json({ ok: true });
 });
@@ -192,6 +195,10 @@ app.post('/api/pasar/order/:id/evidence', async (c: any) => {
        AND EXISTS (SELECT 1 FROM users au WHERE au.id = ? AND au.account_status = 'active')`
   ).bind(crypto.randomUUID(), o.id, me.id, me.id === o.buyer_id ? 'buyer' : 'seller', r.key, note || null, o.id, me.id, me.id).run();
   if (!ins.meta.changes) {
+    // W3 review B: INSERT gagal = key baru jangan jadi orphan tanpa jejak.
+    await c.env.MEDIA.delete(r.key).catch(() => console.warn('evidence: orphan key setelah guard tolak:', r.key));
+    const hidup: any = await c.env.DB.prepare(`SELECT 1 AS ok FROM users WHERE id = ? AND account_status = 'active'`).bind(me.id).first();
+    if (!hidup) return c.json({ error: 'Sesi tidak valid. Muat ulang halaman.' }, 401);
     return c.json({ error: `Maksimal ${MAKS_BUKTI_PER_PIHAK} foto per pihak` }, 409);
   }
   return c.json({ ok: true });
@@ -227,7 +234,7 @@ app.post('/api/pasar/seller/docs', async (c: any) => {
   ).bind(me.id, kind, r.key, me.id).run();
   if (!sim.meta?.changes) {
     // Gagal-tertutup: kunci R2 baru jangan jadi orphan saat akun ternyata tersuspend.
-    await c.env.MEDIA.delete(r.key).catch(() => {});
+    await c.env.MEDIA.delete(r.key).catch(() => console.warn('seller-docs: orphan key setelah guard tolak:', r.key));
     return c.json({ error: 'Sesi tidak valid. Muat ulang halaman.' }, 401);
   }
   if (lama?.r2_key && lama.r2_key !== r.key) await c.env.MEDIA.delete(lama.r2_key).catch(() => {});
