@@ -21,11 +21,43 @@ export type AdminDashboard = {
   }>;
 };
 
+export type AdminPost = {
+  id: string;
+  title: string;
+  content: string;
+  visibility: string;
+  createdAt: string;
+  moderationStatus: 'visible' | 'quarantined';
+  moderationReason: string;
+  moderatedAt: string;
+  moderatedBy: string;
+  moderationActionId: string;
+  penName: string;
+};
+
 const n = (value: unknown) => Number(value || 0);
 
 export function maskEmail(value: string): string {
   const [local = '', domain = ''] = String(value || '').split('@', 2);
   return `${local.slice(0, 2) || local.slice(0, 1)}***@${domain}`;
+}
+
+export async function loadAdminPosts(db: D1Database, status: 'visible' | 'quarantined'): Promise<AdminPost[]> {
+  const rows: any = await db.prepare(`SELECT p.id, p.title, p.content, p.visibility, p.created_at,
+    p.moderation_status, p.moderation_reason, p.moderated_at,
+    p.moderated_by, p.moderation_action_id,
+    u.pen_name, u.email AS author_email
+    FROM posts p JOIN users u ON u.id = p.author_id
+    WHERE p.moderation_status = ?
+    ORDER BY p.created_at DESC, p.id DESC
+    LIMIT 50`).bind(status).all();
+  return (rows?.results || []).map((p: any) => ({
+    id: String(p.id), title: String(p.title || ''), content: String(p.content || ''),
+    visibility: String(p.visibility || ''), createdAt: String(p.created_at || ''),
+    moderationStatus: p.moderation_status, moderationReason: String(p.moderation_reason || ''),
+    moderatedAt: String(p.moderated_at || ''), moderatedBy: String(p.moderated_by || ''),
+    moderationActionId: String(p.moderation_action_id || ''), penName: String(p.pen_name || ''),
+  }));
 }
 
 export async function loadAdminDashboard(db: D1Database): Promise<AdminDashboard> {

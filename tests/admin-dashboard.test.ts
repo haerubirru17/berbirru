@@ -65,7 +65,10 @@ const route = readFileSync(new URL('../src/routes/admin.ts', import.meta.url), '
 assert(route.includes("app.get('/admin'"), 'route /admin wajib terpisah');
 assert(route.includes('isOwner(c.env, me)') && route.includes('c.notFound()'), 'non-owner harus 404');
 assert(route.includes("Cache-Control', 'no-store"), 'dashboard wajib no-store');
-assert.doesNotMatch(route, /app\.(post|put|patch|delete)\(/i, 'V1 tidak boleh punya mutation route');
+const adminPostRoutes = [...route.matchAll(/app\.post\('([^']+)'/g)].map((m) => m[1]).sort();
+assert.deepEqual(adminPostRoutes, ['/api/admin/posts/:id/quarantine', '/api/admin/posts/:id/restore']);
+assert.doesNotMatch(route, /app\.(put|patch|delete)\(/i, 'admin sosial tidak boleh PUT/PATCH/DELETE');
+assert.doesNotMatch(route, /suspend|hard.?delete|owner_actions/i, 'scope akun/Rekber/hard-delete tetap terlarang');
 
 const index = readFileSync(new URL('../src/index.ts', import.meta.url), 'utf8');
 assert(index.includes('mountAdmin(app)'), 'route admin wajib dipasang');
