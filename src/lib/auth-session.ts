@@ -13,8 +13,11 @@ export async function insertActiveLoginSession(db: D1Database, userId: string, t
 // Batas sesi login paralel: simpan 4 terbaru. Baris artefak reset (rst_) dan
 // OTP-flow (otpf_) TIDAK ikut dihitung/dihapus — cap hanya menyasar sesi login.
 // Guard active: akun yang tepat disuspend tidak boleh "dipangkas" dua kali.
-export async function capLoginSessions(db: D1Database, userId: string): Promise<D1Result> {
-  return await db.prepare(
+// Bentuk stmt (marker opsional) dipakai batch verify-OTP; helper .run() dipakai login.
+export function capLoginSessionsStmt(db: D1Database, userId: string, marker?: string): D1PreparedStatement {
+  const markerGuard = marker ? ' AND EXISTS (SELECT 1 FROM sessions mk WHERE mk.token = ? AND mk.user_id = ?)' : '';
+  const binds: any[] = marker ? [userId, userId, userId, marker, userId] : [userId, userId, userId];
+  return db.prepare(
     `DELETE FROM sessions
      WHERE user_id = ?
        AND token_hash IS NOT NULL
@@ -28,6 +31,10 @@ export async function capLoginSessions(db: D1Database, userId: string): Promise<
            AND token_hash NOT LIKE 'otpf\\_%' ESCAPE '\\'
          ORDER BY created_at DESC LIMIT 4
        )
-       AND EXISTS (SELECT 1 FROM users u WHERE u.id = ? AND u.account_status = 'active')`
-  ).bind(userId, userId, userId).run();
+       AND EXISTS (SELECT 1 FROM users u WHERE u.id = ? AND u.account_status = 'active')${markerGuard}`
+  ).bind(...binds);
+}
+
+export async function capLoginSessions(db: D1Database, userId: string): Promise<D1Result> {
+  return await capLoginSessionsStmt(db, userId).run();
 }

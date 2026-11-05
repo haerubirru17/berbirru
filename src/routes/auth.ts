@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { sha256hex, hitRate, getAuthUser } from '../lib/shared';
 import { hashPassword, verifyPassword, passwordIssue } from '../lib/password';
-import { insertActiveLoginSession, capLoginSessions } from '../lib/auth-session';
+import { insertActiveLoginSession, capLoginSessions, capLoginSessionsStmt } from '../lib/auth-session';
 import { sendOtpEmail, sendPasswordChangedEmail } from '../mail';
 import { turnstileGate } from '../lib/turnstile-gate';
 
@@ -382,14 +382,32 @@ app.post('/api/auth/reset/verify', async (c: any) => {
   const cocok = row ? (await verifyPassword(String(otp).trim(), String(row.token).slice(5))).ok : false;
   if (!cocok) return c.json(SALAH, 400);
 
-  // Klaim atomik: satu kode hanya bisa jadi satu tiket.
-  const claim = await c.env.DB.prepare("DELETE FROM sessions WHERE id = ? AND token LIKE 'rsto\\_%' ESCAPE '\\'").bind(row.id).run();
-  if (!claim.meta.changes) return c.json(SALAH, 400);
 
+  // Task 3 — klaim lewat marker unik dalam SATU batch: klaim rsto → mint tiket
+  // rst_ guarded marker → hapus marker terakhir. Akun suspended gagal di klaim
+  // (EXISTS active) → kode TIDAK hangus, tiket TIDAK tercetak.
+  const marker1 = 'rsto_claim_' + crypto.randomUUID();
   const tiket = crypto.randomUUID() + crypto.randomUUID();
-  await c.env.DB.prepare(
-    "INSERT INTO sessions (id, user_id, token_hash, expires_at) VALUES (?, ?, ?, datetime('now', '+15 minutes'))"
-  ).bind(crypto.randomUUID(), user.id, 'rst_' + await sha256hex(tiket)).run();
+  const result1 = await c.env.DB.batch([
+    c.env.DB.prepare(
+      `UPDATE sessions SET token = ? WHERE id = ? AND user_id = ?
+        AND token = ? AND expires_at > datetime('now')
+        AND EXISTS (SELECT 1 FROM users u WHERE u.id = ? AND u.account_status = 'active')`
+    ).bind(marker1, row.id, user.id, String(row.token), user.id),
+    c.env.DB.prepare(
+      `INSERT INTO sessions (id, user_id, token_hash, expires_at)
+       SELECT ?, u.id, ?, datetime('now', '+15 minutes')
+       FROM users u
+       WHERE u.id = ? AND u.account_status = 'active'
+         AND EXISTS (SELECT 1 FROM sessions s WHERE s.user_id = u.id AND s.token = ?)`
+    ).bind(crypto.randomUUID(), 'rst_' + await sha256hex(tiket), user.id, marker1),
+    c.env.DB.prepare('DELETE FROM sessions WHERE id = ? AND token = ?').bind(row.id, marker1),
+  ]);
+  if (result1[0].meta.changes !== 1) return c.json(SALAH, 400);
+  if (result1[1].meta.changes !== 1 || result1[2].meta.changes !== 1) {
+    console.error('reset/verify: invariant mismatch (changes only)', result1.map((r: any) => r.meta.changes));
+    return c.json({ error: 'Terjadi kesalahan internal. Coba lagi.' }, 500);
+  }
 
   setCookie(c, RESET_COOKIE, tiket, { path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 900 });
   return c.json({ ok: true });
@@ -413,14 +431,37 @@ app.post('/api/auth/reset/finish', async (c: any) => {
   const pwdErr = passwordIssue(password, user.email, user.pen_name);
   if (pwdErr) return c.json({ error: pwdErr }, 400);
 
-  // Klaim tiket atomik — dipakai dua kali = ditolak.
-  const claim = await c.env.DB.prepare("DELETE FROM sessions WHERE id = ?").bind(baris.id).run();
-  if (!claim.meta.changes) return c.json({ error: 'Tiket reset sudah dipakai.' }, 400);
 
-  await c.env.DB.prepare('UPDATE users SET password_hash = ?, email_verified = 1 WHERE id = ?')
-    .bind(await hashPassword(password), user.id).run();
-  // Reset = keluar dari semua perangkat, termasuk sesi yang mungkin dicuri.
-  await c.env.DB.prepare('DELETE FROM sessions WHERE user_id = ?').bind(user.id).run();
+  // Task 3 — klaim tiket via marker dalam SATU batch: marker → sandi baru guarded
+  // marker+active → bersihkan SELURUH sesi/artefak user (marker ikut lenyap).
+  // SQL error di tengah = rollback penuh; password tidak setengah-jalan.
+  const marker2 = 'rst_claim_' + crypto.randomUUID();
+  const pwdHash = await hashPassword(password);
+  const result2 = await c.env.DB.batch([
+    c.env.DB.prepare(
+      `UPDATE sessions SET token_hash = ? WHERE id = ? AND user_id = ?
+        AND token_hash = ? AND expires_at > datetime('now')
+        AND EXISTS (SELECT 1 FROM users u WHERE u.id = ? AND u.account_status = 'active')`
+    ).bind(marker2, baris.id, baris.user_id, kunci, baris.user_id),
+    c.env.DB.prepare(
+      `UPDATE users SET password_hash = ?, email_verified = 1
+       WHERE id = ? AND account_status = 'active'
+       AND EXISTS (SELECT 1 FROM sessions s WHERE s.id = ? AND s.user_id = users.id AND s.token_hash = ?)`
+    ).bind(pwdHash, user.id, baris.id, marker2),
+    // Reset = keluar dari semua perangkat, termasuk sesi yang mungkin dicuri.
+    c.env.DB.prepare(
+      `DELETE FROM sessions WHERE user_id = ?
+        AND EXISTS (SELECT 1 FROM users u WHERE u.id = ? AND u.account_status = 'active'
+          AND EXISTS (SELECT 1 FROM sessions m WHERE m.id = ? AND m.token_hash = ?))`
+    ).bind(baris.user_id, baris.user_id, baris.id, marker2),
+  ]);
+  if (result2[0].meta.changes !== 1) {
+    return c.json({ error: 'Tiket reset sudah dipakai atau kedaluwarsa. Ulangi dari awal.' }, 400);
+  }
+  if (result2[1].meta.changes !== 1) {
+    console.error('reset/finish: invariant mismatch (changes only)', result2.map((r: any) => r.meta.changes));
+    return c.json({ error: 'Terjadi kesalahan internal. Coba lagi.' }, 500);
+  }
 
   setCookie(c, RESET_COOKIE, '', { path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 0 });
   try { await sendPasswordChangedEmail(user.email, c.env); } catch (_) {}
@@ -553,41 +594,69 @@ app.post('/api/auth/verify-otp', async (c: any) => {
     return c.json({ error: 'Akun ini sudah aktif — kosongkan kolom sandi baru, cukup masukkan kode OTP.' }, 400);
   }
 
-  // Klaim OTP ATMOST-ONCE (vuln-0007 putaran-4): check-then-delete lama punya jeda
-  // → dua verify konkuren sama-sama lolos & mint 2 sesi dari 1 kode. Sekarang
-  // penghapusan dilengkapi syarat token dan dijadikan HAKIM: hanya request yang
-  // klaimnya succeeds (meta.changes === 1) yang boleh lanjut.
-  const claim = await c.env.DB.prepare("DELETE FROM sessions WHERE id = ? AND token LIKE 'otp\\_%' ESCAPE '\\'").bind(session.id).run();
-  if (!claim.meta.changes) {
+
+  // Task 3 — klaim OTP via marker unik dalam SATU batch. Marker dipasang pada baris
+  // OTP (UPDATE bersyarat token exact + EXISTS active); SEMUA mutasi dependen
+  // menuntut marker itu; marker dihapus terakhir. Verify konkuren: hanya request
+  // yang memenangkan klaim yang bisa mint sesi — atomik, tanpa jeda check-then-act.
+  const marker = 'otp_claim_' + crypto.randomUUID();
+  const sessionToken = crypto.randomUUID();
+  // Rencana mutasi akun dihitung SEBELUM batch: sandi baru (aktivasi), hash
+  // otp-disabled (pending tanpa sandi — pre-hijack), atau null (verifikasi biasa).
+  const newPwdHash = new_password ? await hashPassword(new_password) : null;
+  const disableHash = (!newPwdHash && wasPending && wasPending.email_verified === 0)
+    ? ' otp-disabled:' + Array.from(crypto.getRandomValues(new Uint32Array(8))).map((n: number) => n.toString(16).padStart(8, '0')).join('')
+    : null;
+  const pwdBind = newPwdHash ?? disableHash;
+
+  const stmts: D1PreparedStatement[] = [
+    c.env.DB.prepare(
+      `UPDATE sessions SET token = ? WHERE id = ? AND user_id = ?
+        AND token = ? AND expires_at > datetime('now')
+        AND EXISTS (SELECT 1 FROM users u WHERE u.id = ? AND u.account_status = 'active')`
+    ).bind(marker, session.id, user.id, String(session.token), user.id),
+    c.env.DB.prepare(
+      `UPDATE users SET email_verified = 1, password_hash = COALESCE(?, password_hash)
+       WHERE id = ? AND account_status = 'active'
+       AND EXISTS (SELECT 1 FROM sessions s WHERE s.id = ? AND s.token = ?)`
+    ).bind(pwdBind, user.id, session.id, marker),
+  ];
+  let stmtIdx = 2;
+  const flowIdx = flow ? stmtIdx++ : -1;
+  if (flow) {
+    // Flow cookie sekali pakai: hanya terhapus bila klaim menang (marker terpasang).
+    stmts.push(c.env.DB.prepare(
+      'DELETE FROM sessions WHERE id = ? AND EXISTS (SELECT 1 FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ? AND u.account_status = \'active\')'
+    ).bind(flow.id, marker));
+  }
+  stmtIdx++; // cap: hasilnya bebas (0..n), tak dijadikan invariant
+  stmts.push(capLoginSessionsStmt(c.env.DB, user.id, marker));
+  const mintIdx = stmtIdx++;
+  stmts.push(c.env.DB.prepare(
+    `INSERT INTO sessions (id, user_id, token_hash, expires_at)
+     SELECT ?, u.id, ?, datetime('now', '+30 days')
+     FROM users u
+     WHERE u.id = ? AND u.account_status = 'active'
+       AND EXISTS (SELECT 1 FROM sessions s WHERE s.user_id = u.id AND s.token = ?)`
+  ).bind(crypto.randomUUID(), await sha256hex(sessionToken), user.id, marker));
+  const delIdx = stmtIdx++;
+  stmts.push(c.env.DB.prepare('DELETE FROM sessions WHERE id = ? AND token = ?').bind(session.id, marker));
+
+  const result = await c.env.DB.batch(stmts);
+  if (result[0].meta.changes !== 1) {
     return c.json(BAD_OTP, 400);
   }
-  if (flow) await c.env.DB.prepare('DELETE FROM sessions WHERE id = ?').bind(flow.id).run();
-  setCookie(c, OTP_FLOW_COOKIE, '', { path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 0 });
-
-  // OTP = bukti kepemilikan inbox → akun resmi aktif (Strix #23).
-  if (new_password) {
-    if (!wasPending || wasPending.email_verified !== 0) {
-      return c.json({ error: 'Kata sandi sudah terpasang — gunakan tab Masuk.' }, 400);
-    }
-    const pwdFinal = await hashPassword(new_password);
-    await c.env.DB.prepare('UPDATE users SET email_verified = 1, password_hash = ? WHERE id = ?').bind(pwdFinal, user.id).run();
-  } else if (wasPending && wasPending.email_verified === 0) {
-    // Aktivasi pertama tanpa new_password: sandi pendaftar pertama TAK pernah
-    // terbukti milik pemilik inbox → hancurkan (pre-hijack P1 tak bisa login lagi).
-    // ponytail: hash acak one-way; pemilik inbox set sandi baru via tab "Kode OTP" + change-password.
-    await c.env.DB.prepare("UPDATE users SET email_verified = 1, password_hash = ' otp-disabled:' || hex(randomblob(32)) WHERE id = ?").bind(user.id).run();
-  } else {
-    await c.env.DB.prepare('UPDATE users SET email_verified = 1 WHERE id = ?').bind(user.id).run();
+  const acc = result[1];
+  const flowRes = flow ? result[flowIdx] : null;
+  const minted = result[mintIdx];
+  const markerRes = result[delIdx];
+  if (acc.meta.changes !== 1 || minted.meta.changes !== 1 || markerRes.meta.changes !== 1
+      || (flow && flowRes.meta.changes !== 1)) {
+    console.error('verify-otp: invariant mismatch (changes only)', result.map((r: any) => r.meta.changes));
+    return c.json({ error: 'Terjadi kesalahan internal. Coba lagi.' }, 500);
   }
 
-  // Batas sesi paralel (vuln-0006) — jalur verifikasi OTP memakai helper yang sama.
-  await capLoginSessions(c.env.DB, user.id);
-
-  const sessionToken = crypto.randomUUID();
-  const minted = await insertActiveLoginSession(c.env.DB, user.id, await sha256hex(sessionToken));
-  // Mint zero = akun tepat disuspend setelah OTP sah dikonsumsi — generik, tanpa cookie.
-  if (!minted.meta.changes) return c.json(BAD_OTP, 400);
-
+  setCookie(c, OTP_FLOW_COOKIE, '', { path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 0 });
   setCookie(c, 'berbirru_session', sessionToken, { path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 60 * 60 * 24 * 30 });
   return c.json({ ok: true, user: { id: user.id, pen_name: user.pen_name } });
 });
