@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { sha256hex, hitRate, getAuthUser } from '../lib/shared';
 import { hashPassword, verifyPassword, passwordIssue } from '../lib/password';
+import { insertActiveLoginSession, capLoginSessions } from '../lib/auth-session';
 import { sendOtpEmail, sendPasswordChangedEmail } from '../mail';
 import { turnstileGate } from '../lib/turnstile-gate';
 
@@ -265,15 +266,15 @@ app.post('/api/auth/login', async (c: any) => {
   // Login berhasil → reset penghitung gagal akun ini (hanya kegagalan berturut yang menumpuk).
   await c.env.DB.prepare('DELETE FROM rate_limits WHERE key = ?').bind(`pw:${cleanEmail}`).run();
 
-  // Batas jumlah sesi paralel per akun (temuan vuln-0006): simpan 5 sesi terbaru saja.
-  await c.env.DB.prepare(
-    'DELETE FROM sessions WHERE user_id = ? AND token_hash IS NOT NULL AND id NOT IN (SELECT id FROM sessions WHERE user_id = ? AND token_hash IS NOT NULL ORDER BY created_at DESC LIMIT 4)'
-  ).bind(user.id, user.id).run();
+  // Batas jumlah sesi paralel per akun (vuln-0006): simpan 4 sesi login terbaru,
+  // tanpa memakan tiket reset (rst_) dan artefak OTP-flow (otpf_).
+  await capLoginSessions(c.env.DB, user.id);
 
   const token = crypto.randomUUID() + '-' + crypto.randomUUID();
-  await c.env.DB.prepare(
-    'INSERT INTO sessions (id, user_id, token_hash, expires_at) VALUES (?, ?, ?, datetime("now", "+30 days"))'
-  ).bind(crypto.randomUUID(), user.id, await sha256hex(token)).run();
+  const inserted = await insertActiveLoginSession(c.env.DB, user.id, await sha256hex(token));
+  // Insert zero = akun tepat disuspend setelah lockout berhasil — respons generik
+  // (pariti "sandi salah") supaya login tidak membocorkan status akun.
+  if (!inserted.meta.changes) return c.json(BAD_CRED, 401);
 
   setCookie(c, 'berbirru_session', token, { path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 60 * 60 * 24 * 30 });
   return c.json({ ok: true, user: { id: user.id, pen_name: user.pen_name } });
@@ -579,15 +580,13 @@ app.post('/api/auth/verify-otp', async (c: any) => {
     await c.env.DB.prepare('UPDATE users SET email_verified = 1 WHERE id = ?').bind(user.id).run();
   }
 
-  // Batas 5 sesi paralel (vuln-0006) — terapkan juga di jalur verifikasi OTP.
-  await c.env.DB.prepare(
-    'DELETE FROM sessions WHERE user_id = ? AND token_hash IS NOT NULL AND id NOT IN (SELECT id FROM sessions WHERE user_id = ? AND token_hash IS NOT NULL ORDER BY created_at DESC LIMIT 4)'
-  ).bind(user.id, user.id).run();
+  // Batas sesi paralel (vuln-0006) — jalur verifikasi OTP memakai helper yang sama.
+  await capLoginSessions(c.env.DB, user.id);
 
   const sessionToken = crypto.randomUUID();
-  await c.env.DB.prepare(
-    'INSERT INTO sessions (id, user_id, token_hash, expires_at) VALUES (?, ?, ?, datetime("now", "+30 days"))'
-  ).bind(crypto.randomUUID(), user.id, await sha256hex(sessionToken)).run();
+  const minted = await insertActiveLoginSession(c.env.DB, user.id, await sha256hex(sessionToken));
+  // Mint zero = akun tepat disuspend setelah OTP sah dikonsumsi — generik, tanpa cookie.
+  if (!minted.meta.changes) return c.json(BAD_OTP, 400);
 
   setCookie(c, 'berbirru_session', sessionToken, { path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 60 * 60 * 24 * 30 });
   return c.json({ ok: true, user: { id: user.id, pen_name: user.pen_name } });
