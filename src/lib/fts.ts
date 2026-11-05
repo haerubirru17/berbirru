@@ -19,7 +19,8 @@ export async function ensureFtsFilled(db: any, limit = 200): Promise<void> {
   try {
     const rows: any = await db.prepare(
       `SELECT p.id, p.title, p.content FROM posts p
-        WHERE p.id NOT IN (SELECT id FROM posts_fts)
+        WHERE p.moderation_status = 'visible'
+          AND p.id NOT IN (SELECT id FROM posts_fts)
         LIMIT ${Math.max(1, Math.min(limit | 0, 500))}`
     ).all();
     for (const p of (rows.results || []) as any[]) {

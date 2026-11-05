@@ -331,9 +331,9 @@ app.get('/chain/:id', async (c) => {
   const ownerEmail = String(c.env.OWNER_EMAIL || '').toLowerCase();
   const adminSel = ', CASE WHEN lower(u.email) = lower(?2) THEN 1 ELSE 0 END AS is_admin';
   const target: any = await c.env.DB.prepare(
-    `SELECT ${PUBLIC_POST_COLUMNS}, u.pen_name, u.avatar_key` + adminSel + ' FROM posts p JOIN users u ON p.author_id = u.id WHERE p.id = ?1'
+    `SELECT ${PUBLIC_POST_COLUMNS}, u.pen_name, u.avatar_key` + adminSel + " FROM posts p JOIN users u ON p.author_id = u.id WHERE p.id = ?1 AND p.moderation_status = 'visible'"
   ).bind(id, ownerEmail).first();
-  if (!target) return c.redirect('/feed');
+  if (!target) return c.notFound();
   // Warkah privat = hanya penulisnya. Tanpa guard ini, tautan /chain/<id> jadi
   // pintu belakang yang membocorkan isi privat ke siapa pun (termasuk guest).
   if (target.visibility === 'private' && (!user || user.id !== target.author_id)) return c.notFound();
@@ -344,7 +344,7 @@ app.get('/chain/:id', async (c) => {
   let rootAuthor: string = target.pen_name;
   if (target.parent_id) {
     const parent: any = await c.env.DB.prepare(
-      `SELECT ${PUBLIC_POST_COLUMNS}, u.pen_name, u.avatar_key` + adminSel + ' FROM posts p JOIN users u ON p.author_id = u.id WHERE p.id = ?1'
+      `SELECT ${PUBLIC_POST_COLUMNS}, u.pen_name, u.avatar_key` + adminSel + " FROM posts p JOIN users u ON p.author_id = u.id WHERE p.id = ?1 AND p.moderation_status = 'visible'"
     ).bind(target.parent_id, ownerEmail).first();
     if (parent) {
       // Audit C-04: guard yang sama seperti target — parent privat milik orang lain jangan dipromosikan jadi root.

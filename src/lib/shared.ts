@@ -50,9 +50,9 @@ export function withAdmin<T extends any>(p: T, ownerEmail: string): T {
 
 export function visibilityClause(user: any): { sql: string; binds: any[] } {
   if (user) {
-    return { sql: '(p.visibility != \'private\' OR p.author_id = ?)', binds: [user.id] };
+    return { sql: "p.moderation_status = 'visible' AND (p.visibility != 'private' OR p.author_id = ?)", binds: [user.id] };
   }
-  return { sql: "p.visibility = 'public'", binds: [] };
+  return { sql: "p.moderation_status = 'visible' AND p.visibility = 'public'", binds: [] };
 }
 
 export async function getAuthUser(c: any): Promise<{ id: string; email: string; pen_name: string; city: string; avatar_key: string | null; cover_key: string | null; display_name: string | null; bio: string; seller_status?: string; seller_full_name?: string | null; seller_phone?: string | null; seller_note?: string | null; seller_reject_reason?: string | null; shop_name?: string | null; shop_slug?: string | null;

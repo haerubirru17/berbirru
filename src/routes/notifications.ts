@@ -11,8 +11,11 @@ app.get('/api/notifications', async (c: any) => {
   const cond = scope === 'pasar' ? "n.type LIKE 'order_%'" : "(n.type IS NULL OR n.type NOT LIKE 'order_%')";
   const { results } = await c.env.DB.prepare(`
     SELECT n.id AS id, n.user_id AS user_id, n.actor_id AS actor_id, n.type AS type,
-           n.post_id AS post_id, n.order_id AS order_id, n.is_read AS is_read, n.created_at AS created_at,
-           u.pen_name as actor_pen_name, p.title as post_title, p.content as post_content,
+           CASE WHEN p.moderation_status = 'visible' THEN n.post_id ELSE NULL END AS post_id,
+           n.order_id AS order_id, n.is_read AS is_read, n.created_at AS created_at,
+           u.pen_name as actor_pen_name,
+           CASE WHEN p.moderation_status = 'visible' THEN p.title ELSE NULL END AS post_title,
+           CASE WHEN p.moderation_status = 'visible' THEN p.content ELSE NULL END AS post_content,
            l.title as order_title
     FROM notifications n
     JOIN users u ON n.actor_id = u.id

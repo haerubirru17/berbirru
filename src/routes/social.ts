@@ -1,6 +1,6 @@
 import { getAuthUser, hardenPost, withAdmin, visibilityClause, hitRate, PUBLIC_POST_COLUMNS } from '../lib/shared';
 import { sanitizeRich, escapeHtml, stripTags } from '../lib/sanitize';
-import { ftsQuery, ftsUpsert, ftsDelete, ensureFtsFilled } from '../lib/fts';
+import { ftsQuery, ensureFtsFilled } from '../lib/fts';
 
 // 12 handler sosial dipindah verbatim dari index.ts.
 export function mountSocial(app: any) {
@@ -64,7 +64,7 @@ app.get('/api/users/:pen_name', async (c: any) => {
   // Angka profil orang lain hanya menghitung warkah publik — jumlah warkah privat
   // pun tidak perlu bocor. Penulis sendiri melihat angka penuh.
   const viewer = await getAuthUser(c);
-  const visOnly = viewer && viewer.id === user.id ? '' : " AND visibility = 'public'";
+  const visOnly = ` AND moderation_status = 'visible'${viewer && viewer.id === user.id ? '' : " AND visibility = 'public'"}`;
   const postsCount = await c.env.DB.prepare(`SELECT COUNT(*) as c FROM posts WHERE author_id = ?${visOnly}`).bind(user.id).first('c') || 0;
   const likesCount = await c.env.DB.prepare(`SELECT COALESCE(SUM(likes_count), 0) as s FROM posts WHERE author_id = ?${visOnly}`).bind(user.id).first('s') || 0;
   const savesCount = await c.env.DB.prepare(`SELECT COALESCE(SUM(saves_count), 0) as s FROM posts WHERE author_id = ?${visOnly}`).bind(user.id).first('s') || 0;
@@ -140,7 +140,7 @@ app.get('/api/users/:pen_name/posts', async (c: any) => {
       FROM likes l
       JOIN posts p ON l.post_id = p.id
       JOIN users u ON p.author_id = u.id
-      WHERE l.user_id = ? AND (p.visibility != 'private' OR p.author_id = ?)
+      WHERE l.user_id = ? AND p.moderation_status = 'visible' AND (p.visibility != 'private' OR p.author_id = ?)
       ORDER BY l.created_at DESC LIMIT 30
     `;
     binds.push(targetUser.id, targetUser.id);
@@ -150,20 +150,28 @@ app.get('/api/users/:pen_name/posts', async (c: any) => {
       FROM bookmarks b
       JOIN posts p ON b.post_id = p.id
       JOIN users u ON p.author_id = u.id
-      WHERE b.user_id = ? AND (p.visibility != 'private' OR p.author_id = ?)
+      WHERE b.user_id = ? AND p.moderation_status = 'visible' AND (p.visibility != 'private' OR p.author_id = ?)
       ORDER BY b.created_at DESC LIMIT 30
     `;
     binds.push(targetUser.id, targetUser.id);
   } else if (tab === 'chains') {
-    const vis = visibilityClause(await getAuthUser(c));
+    const viewer = await getAuthUser(c);
+    const vis = visibilityClause(viewer);
     query = `
-      SELECT ${PUBLIC_POST_COLUMNS}, u.pen_name, u.city, u.avatar_key, u.email AS author_email
-      FROM posts p 
-      JOIN users u ON p.author_id = u.id 
+      SELECT p.id AS id, p.author_id AS author_id, p.title AS title, p.content AS content,
+        CASE WHEN p.parent_id IS NULL OR EXISTS (SELECT 1 FROM posts prnt
+          WHERE prnt.id = p.parent_id AND prnt.moderation_status = 'visible'
+            AND (prnt.visibility != 'private' OR prnt.author_id = ?))
+          THEN p.parent_id ELSE NULL END AS parent_id,
+        p.visibility AS visibility, p.likes_count AS likes_count, p.saves_count AS saves_count,
+        p.chains_count AS chains_count, p.created_at AS created_at,
+        u.pen_name, u.city, u.avatar_key, u.email AS author_email
+      FROM posts p
+      JOIN users u ON p.author_id = u.id
       WHERE p.author_id = ? AND p.parent_id IS NOT NULL AND ${vis.sql}
       ORDER BY p.created_at DESC LIMIT 30
     `;
-    binds.push(targetUser.id, ...vis.binds);
+    binds.push(viewer?.id || '', targetUser.id, ...vis.binds);
   } else {
     // tab === 'original'
     const vis = visibilityClause(await getAuthUser(c));
@@ -196,16 +204,16 @@ app.get('/api/posts', async (c: any) => {
   if (new TextEncoder().encode(q).byteLength > 48) return c.json({ error: 'Parameter pencarian terlalu panjang.' }, 400);
   const user = await getAuthUser(c);
   // Beranda = ruang publik. Warkah privat cuma muncul di tab Karya profil pemiliknya.
-  const vis = { sql: "p.visibility = 'public'", binds: [] as any[] };
+  const vis = { sql: "p.moderation_status = 'visible' AND p.visibility = 'public'", binds: [] as any[] };
 
   // Audit C-04: parent privat hanya dibocorkan ke pemiliknya/viewer-nya sendiri
   // (kondisional CASE pada subquery parent_content; bind pertama = viewer id).
   let query = `
     SELECT ${PUBLIC_POST_COLUMNS}, u.pen_name, u.city, u.avatar_key, u.email AS author_email,
-      (SELECT CASE WHEN prnt.visibility != 'private' OR prnt.author_id = ? THEN prnt.content ELSE NULL END
+      (SELECT CASE WHEN prnt.moderation_status = 'visible' AND (prnt.visibility != 'private' OR prnt.author_id = ?) THEN prnt.content ELSE NULL END
          FROM posts prnt WHERE prnt.id = p.parent_id) as parent_content,
-      (SELECT CASE WHEN prnt.visibility != 'private' OR prnt.author_id = ? THEN u2.pen_name ELSE NULL END FROM posts prnt JOIN users u2 ON prnt.author_id = u2.id WHERE prnt.id = p.parent_id) as parent_author,
-      (SELECT prnt.visibility FROM posts prnt WHERE prnt.id = p.parent_id) as parent_visibility
+      (SELECT CASE WHEN prnt.moderation_status = 'visible' AND (prnt.visibility != 'private' OR prnt.author_id = ?) THEN u2.pen_name ELSE NULL END FROM posts prnt JOIN users u2 ON prnt.author_id = u2.id WHERE prnt.id = p.parent_id) as parent_author,
+      (SELECT CASE WHEN prnt.moderation_status = 'visible' THEN prnt.visibility ELSE NULL END FROM posts prnt WHERE prnt.id = p.parent_id) as parent_visibility
     FROM posts p
     JOIN users u ON p.author_id = u.id
   `;
@@ -285,7 +293,7 @@ app.get('/api/posts', async (c: any) => {
 
   return c.json({ mode, posts: posts.map((p) => {
     const safe = { ...p };
-    if (safe.parent_visibility === 'private' && (!user || String(safe.parent_author || '') !== String(user.pen_name || ''))) safe.parent_id = null;
+    if (safe.parent_visibility == null || (safe.parent_visibility === 'private' && (!user || String(safe.parent_author || '') !== String(user.pen_name || '')))) safe.parent_id = null;
     delete safe.parent_visibility;
     return withAdmin(hardenPost(safe), c.env.OWNER_EMAIL as string);
   }) });
@@ -293,7 +301,7 @@ app.get('/api/posts', async (c: any) => {
 
 app.get('/api/posts/:id/chains', async (c: any) => {
   const viewer = await getAuthUser(c);
-  const parent: any = await c.env.DB.prepare('SELECT id, author_id, visibility FROM posts WHERE id = ?').bind(c.req.param('id')).first();
+  const parent: any = await c.env.DB.prepare("SELECT id, author_id, visibility FROM posts WHERE id = ? AND moderation_status = 'visible'").bind(c.req.param('id')).first();
   if (!parent || (parent.visibility === 'private' && (!viewer || viewer.id !== parent.author_id))) return c.notFound();
   const vis = visibilityClause(viewer);
   const { results } = await c.env.DB.prepare(
@@ -347,34 +355,45 @@ app.post('/api/posts', async (c: any) => {
 
   const postId = crypto.randomUUID();
 
-  // Validasi parent_id (temuan Strix #29, HIGH): hanya UUID post yang benar-benar ada
-  // yang boleh tersimpan — nilai mentah tidak pernah menyentuh konteks HTML/JS.
+  // Parent UUID yang eksplisit harus tetap layak sampai batch; jangan diam-diam turun jadi root.
   const rawParent = parent_id ? String(parent_id) : '';
+  const validParent = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawParent);
   let parentId: string | null = null;
-  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawParent)) {
-    const parentRow: any = await c.env.DB.prepare('SELECT author_id, visibility FROM posts WHERE id = ?').bind(rawParent).first();
-    // Audit C-04: parent privat milik orang lain tidak menerima sambungan anak publik —
-    // isinya tak boleh membayang ke feed/chain publik.
-    if (parentRow && !(parentRow.visibility === 'private' && parentRow.author_id !== user.id)) {
-      parentId = rawParent;
-      await c.env.DB.prepare('UPDATE posts SET chains_count = chains_count + 1 WHERE id = ?').bind(parentId).run();
+  if (validParent) {
+    const parentRow: any = await c.env.DB.prepare("SELECT author_id, visibility FROM posts WHERE id = ? AND moderation_status = 'visible'").bind(rawParent).first();
+    if (!parentRow || (parentRow.visibility === 'private' && parentRow.author_id !== user.id)) {
+      return c.json({ error: 'Warkah tidak ditemukan' }, 404);
     }
+    parentId = rawParent;
   }
 
-  await c.env.DB.prepare(
-    'INSERT INTO posts (id, author_id, title, content, parent_id, visibility) VALUES (?, ?, ?, ?, ?, ?)'
-  ).bind(postId, user.id, cleanTitle, cleanContent, parentId, cleanVisibility).run();
-  // Audit D-08: sinkron index FTS (hanya teks bersih yang masuk).
-  await ftsUpsert(c.env.DB, postId, cleanTitle, cleanContent);
-
-  // Notif chain dibuat SETELAH post ada (bug fungsional GLM: dulu INSERT sebelum
-  // post → FK melanggar, tiap reply lintas-penulis 500 + flood jadi mungkin).
-  if (parentId) {
-    const parentRow: any = await c.env.DB.prepare('SELECT author_id FROM posts WHERE id = ?').bind(parentId).first();
-    if (parentRow && parentRow.author_id !== user.id) {
-      const notifId = crypto.randomUUID();
-      await c.env.DB.prepare('INSERT INTO notifications (id, user_id, actor_id, type, post_id) VALUES (?, ?, ?, ?, ?)').bind(notifId, parentRow.author_id, user.id, 'chain', postId).run();
-    }
+  const contentText = stripTags(cleanContent);
+  if (!parentId) {
+    await c.env.DB.batch([
+      c.env.DB.prepare('INSERT INTO posts (id, author_id, title, content, parent_id, visibility) VALUES (?, ?, ?, ?, NULL, ?)').bind(postId, user.id, cleanTitle, cleanContent, cleanVisibility),
+      c.env.DB.prepare('INSERT INTO posts_fts (id, title, content_text) VALUES (?, ?, ?)').bind(postId, cleanTitle || '', contentText),
+    ]);
+  } else {
+    const result: any[] = await c.env.DB.batch([
+      c.env.DB.prepare(`INSERT INTO posts (id, author_id, title, content, parent_id, visibility)
+        SELECT ?, ?, ?, ?, parent.id, ? FROM posts parent
+        WHERE parent.id = ? AND parent.moderation_status = 'visible'
+          AND (parent.visibility != 'private' OR parent.author_id = ?)`)
+        .bind(postId, user.id, cleanTitle, cleanContent, cleanVisibility, parentId, user.id),
+      c.env.DB.prepare(`INSERT INTO posts_fts (id, title, content_text)
+        SELECT id, ?, ? FROM posts WHERE id = ? AND author_id = ?`)
+        .bind(cleanTitle || '', contentText, postId, user.id),
+      c.env.DB.prepare(`UPDATE posts SET chains_count = chains_count + 1
+        WHERE id = ? AND moderation_status = 'visible'
+          AND EXISTS (SELECT 1 FROM posts child WHERE child.id = ? AND child.parent_id = posts.id AND child.author_id = ?)`)
+        .bind(parentId, postId, user.id),
+      c.env.DB.prepare(`INSERT INTO notifications (id, user_id, actor_id, type, post_id)
+        SELECT ?, parent.author_id, ?, 'chain', child.id FROM posts parent JOIN posts child ON child.parent_id = parent.id
+        WHERE parent.id = ? AND child.id = ? AND child.author_id = ?
+          AND parent.moderation_status = 'visible' AND parent.author_id != ?`)
+        .bind(crypto.randomUUID(), user.id, parentId, postId, user.id, user.id),
+    ]);
+    if (!result[0]?.meta?.changes) return c.json({ error: 'Status warkah sudah berubah. Coba lagi.' }, 409);
   }
 
   return c.json({ ok: true, post: { id: postId, author_pen_name: user.pen_name } }, 201);
@@ -390,23 +409,23 @@ app.delete('/api/posts/:id', async (c: any) => {
     return c.json({ error: 'Terlalu banyak operasi. Tunggu sebentar.' }, 429);
   }
 
-  const post: any = await c.env.DB.prepare('SELECT author_id, parent_id FROM posts WHERE id = ?').bind(postId).first();
+  const post: any = await c.env.DB.prepare("SELECT author_id, parent_id, COALESCE(moderation_action_id,'') AS moderation_marker FROM posts WHERE id = ? AND moderation_status = 'visible'").bind(postId).first();
   if (!post) return c.json({ error: 'Postingan tidak ditemukan' }, 404);
   if (post.author_id !== user.id) return c.json({ error: 'Anda tidak memiliki akses untuk menghapus postingan ini' }, 403);
 
-  // Hapus interaksi terkait & postingan
-  await c.env.DB.batch([
-    c.env.DB.prepare('DELETE FROM likes WHERE post_id = ?').bind(postId),
-    c.env.DB.prepare('DELETE FROM bookmarks WHERE post_id = ?').bind(postId),
-    c.env.DB.prepare('DELETE FROM notifications WHERE post_id = ?').bind(postId),
-    c.env.DB.prepare('DELETE FROM posts WHERE id = ?').bind(postId),
+  const guard = `EXISTS (SELECT 1 FROM posts target WHERE target.id = ? AND target.author_id = ?
+    AND target.moderation_status = 'visible' AND COALESCE(target.moderation_action_id,'') = ?)`;
+  const result: any[] = await c.env.DB.batch([
+    c.env.DB.prepare(`DELETE FROM likes WHERE post_id = ? AND ${guard}`).bind(postId, postId, user.id, post.moderation_marker),
+    c.env.DB.prepare(`DELETE FROM bookmarks WHERE post_id = ? AND ${guard}`).bind(postId, postId, user.id, post.moderation_marker),
+    c.env.DB.prepare(`DELETE FROM notifications WHERE post_id = ? AND ${guard}`).bind(postId, postId, user.id, post.moderation_marker),
+    c.env.DB.prepare(`DELETE FROM posts_fts WHERE id = ? AND ${guard}`).bind(postId, postId, user.id, post.moderation_marker),
+    c.env.DB.prepare(`UPDATE posts SET chains_count = MAX(0, chains_count - 1) WHERE id = ? AND ? IS NOT NULL AND ${guard}`)
+      .bind(post.parent_id, post.parent_id, postId, user.id, post.moderation_marker),
+    c.env.DB.prepare("DELETE FROM posts WHERE id = ? AND author_id = ? AND moderation_status = 'visible' AND COALESCE(moderation_action_id,'') = ?")
+      .bind(postId, user.id, post.moderation_marker),
   ]);
-  await ftsDelete(c.env.DB, postId);
-
-  if (post.parent_id) {
-    await c.env.DB.prepare('UPDATE posts SET chains_count = MAX(0, chains_count - 1) WHERE id = ?').bind(post.parent_id).run();
-  }
-
+  if (!result[5]?.meta?.changes) return c.json({ error: 'Status warkah sudah berubah. Coba lagi.' }, 409);
   return c.json({ ok: true });
 });
 
@@ -420,37 +439,44 @@ app.post('/api/posts/:id/like', async (c: any) => {
     return c.json({ error: 'Terlalu banyak interaksi. Tunggu sebentar.' }, 429);
   }
 
-  const post: any = await c.env.DB.prepare("SELECT author_id, visibility FROM posts WHERE id = ?").bind(postId).first();
-  if (!post || (post.visibility === 'private' && post.author_id !== user.id)) return c.json({ error: 'Warkah tidak ditemukan' }, 404);
+  const post: any = await c.env.DB.prepare("SELECT author_id, visibility, moderation_status, COALESCE(moderation_action_id,'') AS moderation_marker FROM posts WHERE id = ?").bind(postId).first();
+  if (!post || post.moderation_status !== 'visible' || (post.visibility === 'private' && post.author_id !== user.id)) return c.json({ error: 'Warkah tidak ditemukan' }, 404);
 
   const existing = await c.env.DB.prepare('SELECT 1 FROM likes WHERE user_id = ? AND post_id = ?').bind(user.id, postId).first();
-  if (existing) {
-    await c.env.DB.prepare('DELETE FROM likes WHERE user_id = ? AND post_id = ?').bind(user.id, postId).run();
-    await c.env.DB.prepare('UPDATE posts SET likes_count = (SELECT COUNT(*) FROM likes WHERE post_id = ?) WHERE id = ?').bind(postId, postId).run();
-    // Tarik notifikasi "suka" yang sudah terlanjur terkirim (stale notification).
-    await c.env.DB.prepare("DELETE FROM notifications WHERE user_id = ? AND actor_id = ? AND type = 'like' AND post_id = ?").bind(post.author_id, user.id, postId).run();
-    const count = await c.env.DB.prepare('SELECT likes_count FROM posts WHERE id = ?').bind(postId).first('likes_count') || 0;
-    return c.json({ liked: false, likes_count: count });
-  } else {
-    // INSERT OR IGNORE (vuln-0005 putaran-4): like konkuren dulu meledak 500
-    // (UNIQUE constraint). Kalau kalah race → perlakukan sebagai already-liked.
-    const ins = await c.env.DB.prepare('INSERT OR IGNORE INTO likes (user_id, post_id) VALUES (?, ?)').bind(user.id, postId).run();
-    if (!ins.meta.changes) {
-      const count = await c.env.DB.prepare('SELECT likes_count FROM posts WHERE id = ?').bind(postId).first('likes_count') || 0;
-      return c.json({ liked: true, likes_count: count });
-    }
-    await c.env.DB.prepare('UPDATE posts SET likes_count = (SELECT COUNT(*) FROM likes WHERE post_id = ?) WHERE id = ?').bind(postId, postId).run();
-
-    // Dedup: satu notifikasi per (penerima, pelaku, jenis, pos) — toggle berulang tidak menumpuk.
-    const dup = await c.env.DB.prepare('SELECT 1 FROM notifications WHERE user_id = ? AND actor_id = ? AND type = ? AND post_id = ? LIMIT 1').bind(post.author_id, user.id, 'like', postId).first();
-    if (!dup && post.author_id !== user.id) {
-      const notifId = crypto.randomUUID();
-      await c.env.DB.prepare('INSERT INTO notifications (id, user_id, actor_id, type, post_id) VALUES (?, ?, ?, ?, ?)').bind(notifId, post.author_id, user.id, 'like', postId).run();
-    }
-
-    const count = await c.env.DB.prepare('SELECT likes_count FROM posts WHERE id = ?').bind(postId).first('likes_count') || 0;
-    return c.json({ liked: true, likes_count: count });
+  const intended = !existing;
+  const relation = intended
+    ? c.env.DB.prepare(`INSERT OR IGNORE INTO likes (user_id, post_id)
+        SELECT ?, p.id FROM posts p WHERE p.id = ? AND p.moderation_status = 'visible'
+          AND COALESCE(p.moderation_action_id,'') = ?`).bind(user.id, postId, post.moderation_marker)
+    : c.env.DB.prepare(`DELETE FROM likes WHERE user_id = ? AND post_id = ? AND EXISTS
+        (SELECT 1 FROM posts p WHERE p.id = ? AND p.moderation_status = 'visible'
+          AND COALESCE(p.moderation_action_id,'') = ?)`).bind(user.id, postId, postId, post.moderation_marker);
+  const notification = intended
+    ? c.env.DB.prepare(`INSERT INTO notifications (id, user_id, actor_id, type, post_id)
+        SELECT ?, p.author_id, ?, 'like', p.id FROM posts p
+        WHERE p.id = ? AND p.author_id != ? AND p.moderation_status = 'visible'
+          AND COALESCE(p.moderation_action_id,'') = ?
+          AND EXISTS (SELECT 1 FROM likes WHERE user_id = ? AND post_id = p.id)
+          AND NOT EXISTS (SELECT 1 FROM notifications WHERE user_id = p.author_id AND actor_id = ? AND type = 'like' AND post_id = p.id)`
+        )
+        .bind(crypto.randomUUID(), user.id, postId, user.id, post.moderation_marker, user.id, user.id)
+    : c.env.DB.prepare(`DELETE FROM notifications WHERE user_id = ? AND actor_id = ? AND type = 'like' AND post_id = ?
+        AND EXISTS (SELECT 1 FROM posts p WHERE p.id = ? AND p.moderation_status = 'visible'
+          AND COALESCE(p.moderation_action_id,'') = ?)`).bind(post.author_id, user.id, postId, postId, post.moderation_marker);
+  const result: any[] = await c.env.DB.batch([
+    relation,
+    c.env.DB.prepare(`UPDATE posts SET likes_count = (SELECT COUNT(*) FROM likes WHERE post_id = ?)
+      WHERE id = ? AND moderation_status = 'visible' AND COALESCE(moderation_action_id,'') = ?`).bind(postId, postId, post.moderation_marker),
+    notification,
+    c.env.DB.prepare(`SELECT moderation_status, COALESCE(moderation_action_id,'') AS moderation_marker,
+      EXISTS(SELECT 1 FROM likes WHERE user_id = ? AND post_id = posts.id) AS intended_state, likes_count
+      FROM posts WHERE id = ?`).bind(user.id, postId),
+  ]);
+  const state: any = result[3]?.results?.[0];
+  if (!state || state.moderation_status !== 'visible' || state.moderation_marker !== post.moderation_marker) {
+    return c.json({ error: 'Status warkah sudah berubah. Coba lagi.' }, 409);
   }
+  return c.json({ liked: Number(state.intended_state) === 1, likes_count: Number(state.likes_count || 0) });
 });
 
 app.post('/api/posts/:id/bookmark', async (c: any) => {
@@ -462,35 +488,44 @@ app.post('/api/posts/:id/bookmark', async (c: any) => {
     return c.json({ error: 'Terlalu banyak interaksi. Tunggu sebentar.' }, 429);
   }
 
-  const post: any = await c.env.DB.prepare("SELECT author_id, visibility FROM posts WHERE id = ?").bind(postId).first();
-  if (!post || (post.visibility === 'private' && post.author_id !== user.id)) return c.json({ error: 'Warkah tidak ditemukan' }, 404);
+  const post: any = await c.env.DB.prepare("SELECT author_id, visibility, moderation_status, COALESCE(moderation_action_id,'') AS moderation_marker FROM posts WHERE id = ?").bind(postId).first();
+  if (!post || post.moderation_status !== 'visible' || (post.visibility === 'private' && post.author_id !== user.id)) return c.json({ error: 'Warkah tidak ditemukan' }, 404);
 
   const existing = await c.env.DB.prepare('SELECT 1 FROM bookmarks WHERE user_id = ? AND post_id = ?').bind(user.id, postId).first();
-  if (existing) {
-    await c.env.DB.prepare('DELETE FROM bookmarks WHERE user_id = ? AND post_id = ?').bind(user.id, postId).run();
-    await c.env.DB.prepare('UPDATE posts SET saves_count = (SELECT COUNT(*) FROM bookmarks WHERE post_id = ?) WHERE id = ?').bind(postId, postId).run();
-    await c.env.DB.prepare("DELETE FROM notifications WHERE user_id = ? AND actor_id = ? AND type = 'save' AND post_id = ?").bind(post.author_id, user.id, postId).run();
-    const count = await c.env.DB.prepare('SELECT saves_count FROM posts WHERE id = ?').bind(postId).first('saves_count') || 0;
-    return c.json({ bookmarked: false, saves_count: count });
-  } else {
-    // INSERT OR IGNORE (vuln-0005 putaran-4): pola sama dengan like — kalah race
-    // konkuren bukan 500, melainkan already-bookmarked.
-    const ins = await c.env.DB.prepare('INSERT OR IGNORE INTO bookmarks (user_id, post_id) VALUES (?, ?)').bind(user.id, postId).run();
-    if (!ins.meta.changes) {
-      const count = await c.env.DB.prepare('SELECT saves_count FROM posts WHERE id = ?').bind(postId).first('saves_count') || 0;
-      return c.json({ bookmarked: true, saves_count: count });
-    }
-    await c.env.DB.prepare('UPDATE posts SET saves_count = (SELECT COUNT(*) FROM bookmarks WHERE post_id = ?) WHERE id = ?').bind(postId, postId).run();
-
-    const dup = await c.env.DB.prepare('SELECT 1 FROM notifications WHERE user_id = ? AND actor_id = ? AND type = ? AND post_id = ? LIMIT 1').bind(post.author_id, user.id, 'save', postId).first();
-    if (!dup && post.author_id !== user.id) {
-      const notifId = crypto.randomUUID();
-      await c.env.DB.prepare('INSERT INTO notifications (id, user_id, actor_id, type, post_id) VALUES (?, ?, ?, ?, ?)').bind(notifId, post.author_id, user.id, 'save', postId).run();
-    }
-
-    const count = await c.env.DB.prepare('SELECT saves_count FROM posts WHERE id = ?').bind(postId).first('saves_count') || 0;
-    return c.json({ bookmarked: true, saves_count: count });
+  const intended = !existing;
+  const relation = intended
+    ? c.env.DB.prepare(`INSERT OR IGNORE INTO bookmarks (user_id, post_id)
+        SELECT ?, p.id FROM posts p WHERE p.id = ? AND p.moderation_status = 'visible'
+          AND COALESCE(p.moderation_action_id,'') = ?`).bind(user.id, postId, post.moderation_marker)
+    : c.env.DB.prepare(`DELETE FROM bookmarks WHERE user_id = ? AND post_id = ? AND EXISTS
+        (SELECT 1 FROM posts p WHERE p.id = ? AND p.moderation_status = 'visible'
+          AND COALESCE(p.moderation_action_id,'') = ?)`).bind(user.id, postId, postId, post.moderation_marker);
+  const notification = intended
+    ? c.env.DB.prepare(`INSERT INTO notifications (id, user_id, actor_id, type, post_id)
+        SELECT ?, p.author_id, ?, 'save', p.id FROM posts p
+        WHERE p.id = ? AND p.author_id != ? AND p.moderation_status = 'visible'
+          AND COALESCE(p.moderation_action_id,'') = ?
+          AND EXISTS (SELECT 1 FROM bookmarks WHERE user_id = ? AND post_id = p.id)
+          AND NOT EXISTS (SELECT 1 FROM notifications WHERE user_id = p.author_id AND actor_id = ? AND type = 'save' AND post_id = p.id)`
+        )
+        .bind(crypto.randomUUID(), user.id, postId, user.id, post.moderation_marker, user.id, user.id)
+    : c.env.DB.prepare(`DELETE FROM notifications WHERE user_id = ? AND actor_id = ? AND type = 'save' AND post_id = ?
+        AND EXISTS (SELECT 1 FROM posts p WHERE p.id = ? AND p.moderation_status = 'visible'
+          AND COALESCE(p.moderation_action_id,'') = ?)`).bind(post.author_id, user.id, postId, postId, post.moderation_marker);
+  const result: any[] = await c.env.DB.batch([
+    relation,
+    c.env.DB.prepare(`UPDATE posts SET saves_count = (SELECT COUNT(*) FROM bookmarks WHERE post_id = ?)
+      WHERE id = ? AND moderation_status = 'visible' AND COALESCE(moderation_action_id,'') = ?`).bind(postId, postId, post.moderation_marker),
+    notification,
+    c.env.DB.prepare(`SELECT moderation_status, COALESCE(moderation_action_id,'') AS moderation_marker,
+      EXISTS(SELECT 1 FROM bookmarks WHERE user_id = ? AND post_id = posts.id) AS intended_state, saves_count
+      FROM posts WHERE id = ?`).bind(user.id, postId),
+  ]);
+  const state: any = result[3]?.results?.[0];
+  if (!state || state.moderation_status !== 'visible' || state.moderation_marker !== post.moderation_marker) {
+    return c.json({ error: 'Status warkah sudah berubah. Coba lagi.' }, 409);
   }
+  return c.json({ bookmarked: Number(state.intended_state) === 1, saves_count: Number(state.saves_count || 0) });
 });
 
 app.post('/api/users/:pen_name/follow', async (c: any) => {

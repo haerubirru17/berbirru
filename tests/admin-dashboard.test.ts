@@ -19,7 +19,7 @@ const firstQueue: any[] = [
   { active_writers_30d: 4 },
   { total_posts: 20, new_posts_7d: 3, original_posts: 15, chain_posts: 5 },
   { likes_7d: 8, bookmarks_7d: 3, follows_7d: 2, chains_7d: 1 },
-  { unverified_users: 1, users_without_posts: 3, indexed_posts: 20, orphan_index_rows: 0 },
+  { unverified_users: 1, users_without_posts: 3, indexed_posts: 19, orphan_index_rows: 1, quarantined_posts: 1 },
 ];
 const db: any = {
   prepare(sql: string) {
@@ -34,7 +34,8 @@ const before = JSON.stringify(rows);
 const model = await adminLib.loadAdminDashboard(db);
 assert.equal(model.kpis.totalUsers, 10);
 assert.equal(model.kpis.interactions7d.total, 14);
-assert.equal(model.attention.orphanIndexRows, 0);
+assert.equal(model.attention.orphanIndexRows, 1);
+assert.equal(model.attention.quarantinedPosts, 1);
 assert.equal(model.latestUsers[0].emailMasked, 'se***@example.com');
 assert(!('email' in model.latestUsers[0]), 'email mentah tidak boleh masuk view model');
 assert.equal(JSON.stringify(rows), before, 'loader tidak boleh memutasi hasil DB');
@@ -55,9 +56,10 @@ assert.match(html, /Total warkah/);
 assert.match(html, /Interaksi/);
 assert.match(html, /15 asli · 5 estafet/);
 assert.match(html, /READ ONLY/);
+assert.match(html, /1 warkah dikarantina/);
 assert.match(html, /se\*\*\*@example\.com/);
 assert.doesNotMatch(html, /senja@example\.com/);
-assert.doesNotMatch(html, /\b(hapus|suspend|ban|karantina)\b/i);
+assert.doesNotMatch(html, /\b(hapus|suspend|ban)\b/i);
 
 const route = readFileSync(new URL('../src/routes/admin.ts', import.meta.url), 'utf8');
 assert(route.includes("app.get('/admin'"), 'route /admin wajib terpisah');

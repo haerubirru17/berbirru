@@ -19,11 +19,10 @@ assert.doesNotMatch(social, /SELECT\s+p\.\*/i, 'route sosial dilarang SELECT p.*
 assert.doesNotMatch(index, /SELECT\s+p\.\*/i, 'SSR chain dilarang SELECT p.*');
 assert.doesNotMatch(notifications, /SELECT\s+n\.\*/i, 'notifikasi dilarang SELECT n.*');
 for (const field of ['n.id AS id', 'n.user_id AS user_id', 'n.actor_id AS actor_id', 'n.type AS type',
-  'n.post_id AS post_id', 'n.order_id AS order_id', 'n.is_read AS is_read', 'n.created_at AS created_at']) {
+  "CASE WHEN p.moderation_status = 'visible' THEN n.post_id ELSE NULL END AS post_id",
+  'n.order_id AS order_id', 'n.is_read AS is_read', 'n.created_at AS created_at']) {
   assert(notifications.includes(field), `projection notifikasi kehilangan ${field}`);
 }
-for (const src of [social, index, notifications]) {
-  assert.doesNotMatch(src, /moderation_status|moderation_reason|moderated_at|moderated_by|moderation_action_id/,
-    'R1 harus tetap bisa berjalan pada schema lama tanpa kolom moderasi');
-}
+assert.doesNotMatch(shared.PUBLIC_POST_COLUMNS, /moderation_status|moderation_reason|moderated_at|moderated_by|moderation_action_id/,
+  'kolom moderasi tidak boleh masuk proyeksi post publik');
 console.log('OK — R1 memakai proyeksi eksplisit dan tetap kompatibel dengan schema lama');
