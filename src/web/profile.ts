@@ -376,9 +376,9 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
                 <span>Informasi Akun</span>
               </div>
               ${isOwnerUser ? `
-              <a class="settings-item" href="/admin/posts" onclick="toggleSettingsMenu(false)" title="Moderasi warkah">
+              <a class="settings-item" href="/admin" onclick="toggleSettingsMenu(false)" title="Bilik admin: sosial dan rekber">
                 <svg style="width:14px;height:14px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                <span>Moderasi Warkah</span>
+                <span>Bilik Admin</span>
               </a>` : ''}
               <div class="settings-divider"></div>
               <div class="settings-item danger" onclick="handleLogout()">
