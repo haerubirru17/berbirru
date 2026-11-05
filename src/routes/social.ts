@@ -1,4 +1,4 @@
-import { getAuthUser, hardenPost, withAdmin, visibilityClause, hitRate } from '../lib/shared';
+import { getAuthUser, hardenPost, withAdmin, visibilityClause, hitRate, PUBLIC_POST_COLUMNS } from '../lib/shared';
 import { sanitizeRich, escapeHtml, stripTags } from '../lib/sanitize';
 import { ftsQuery, ftsUpsert, ftsDelete, ensureFtsFilled } from '../lib/fts';
 
@@ -136,7 +136,7 @@ app.get('/api/users/:pen_name/posts', async (c: any) => {
 
   if (tab === 'likes') {
     query = `
-      SELECT p.*, u.pen_name, u.city, u.avatar_key, u.email AS author_email
+      SELECT ${PUBLIC_POST_COLUMNS}, u.pen_name, u.city, u.avatar_key, u.email AS author_email
       FROM likes l
       JOIN posts p ON l.post_id = p.id
       JOIN users u ON p.author_id = u.id
@@ -146,7 +146,7 @@ app.get('/api/users/:pen_name/posts', async (c: any) => {
     binds.push(targetUser.id, targetUser.id);
   } else if (tab === 'saved') {
     query = `
-      SELECT p.*, u.pen_name, u.city, u.avatar_key, u.email AS author_email
+      SELECT ${PUBLIC_POST_COLUMNS}, u.pen_name, u.city, u.avatar_key, u.email AS author_email
       FROM bookmarks b
       JOIN posts p ON b.post_id = p.id
       JOIN users u ON p.author_id = u.id
@@ -157,7 +157,7 @@ app.get('/api/users/:pen_name/posts', async (c: any) => {
   } else if (tab === 'chains') {
     const vis = visibilityClause(await getAuthUser(c));
     query = `
-      SELECT p.*, u.pen_name, u.city, u.avatar_key, u.email AS author_email 
+      SELECT ${PUBLIC_POST_COLUMNS}, u.pen_name, u.city, u.avatar_key, u.email AS author_email
       FROM posts p 
       JOIN users u ON p.author_id = u.id 
       WHERE p.author_id = ? AND p.parent_id IS NOT NULL AND ${vis.sql}
@@ -168,7 +168,7 @@ app.get('/api/users/:pen_name/posts', async (c: any) => {
     // tab === 'original'
     const vis = visibilityClause(await getAuthUser(c));
     query = `
-      SELECT p.*, u.pen_name, u.city, u.avatar_key, u.email AS author_email 
+      SELECT ${PUBLIC_POST_COLUMNS}, u.pen_name, u.city, u.avatar_key, u.email AS author_email
       FROM posts p 
       JOIN users u ON p.author_id = u.id 
       WHERE p.author_id = ? AND p.parent_id IS NULL AND ${vis.sql}
@@ -201,7 +201,7 @@ app.get('/api/posts', async (c: any) => {
   // Audit C-04: parent privat hanya dibocorkan ke pemiliknya/viewer-nya sendiri
   // (kondisional CASE pada subquery parent_content; bind pertama = viewer id).
   let query = `
-    SELECT p.*, u.pen_name, u.city, u.avatar_key, u.email AS author_email,
+    SELECT ${PUBLIC_POST_COLUMNS}, u.pen_name, u.city, u.avatar_key, u.email AS author_email,
       (SELECT CASE WHEN prnt.visibility != 'private' OR prnt.author_id = ? THEN prnt.content ELSE NULL END
          FROM posts prnt WHERE prnt.id = p.parent_id) as parent_content,
       (SELECT CASE WHEN prnt.visibility != 'private' OR prnt.author_id = ? THEN u2.pen_name ELSE NULL END FROM posts prnt JOIN users u2 ON prnt.author_id = u2.id WHERE prnt.id = p.parent_id) as parent_author,

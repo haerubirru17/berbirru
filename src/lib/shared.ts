@@ -3,6 +3,12 @@ import { getCookie } from 'hono/cookie';
 import { sanitizeRich } from './sanitize';
 import { Env } from '../env';
 
+// Proyeksi publik eksplisit: aman saat schema posts mendapat kolom internal baru.
+export const PUBLIC_POST_COLUMNS = `p.id AS id, p.author_id AS author_id, p.title AS title,
+  p.content AS content, p.parent_id AS parent_id, p.visibility AS visibility,
+  p.likes_count AS likes_count, p.saves_count AS saves_count,
+  p.chains_count AS chains_count, p.created_at AS created_at`;
+
 export async function sha256hex(s: string): Promise<string> {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
