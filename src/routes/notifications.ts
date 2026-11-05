@@ -48,7 +48,8 @@ app.post('/api/notifications/read-all', async (c: any) => {
 
   const scope = c.req.query('scope') === 'pasar' ? 'pasar' : 'sosial';
   const cond = scope === 'pasar' ? "AND type LIKE 'order_%'" : "AND (type IS NULL OR type NOT LIKE 'order_%')";
-  await c.env.DB.prepare(`UPDATE notifications SET is_read = 1 WHERE user_id = ? ${cond}`).bind(user.id).run();
+  await c.env.DB.prepare(`UPDATE notifications SET is_read = 1 WHERE user_id = ? ${cond}
+    AND EXISTS (SELECT 1 FROM users WHERE id = ? AND account_status = 'active')`).bind(user.id, user.id).run();
   return c.json({ ok: true });
 });
 
@@ -56,7 +57,7 @@ app.post('/api/notifications/:id/read', async (c: any) => {
   const user = await getAuthUser(c);
   if (!user) return c.json({ error: 'Unauthorized' }, 401);
 
-  await c.env.DB.prepare('UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?').bind(c.req.param('id'), user.id).run();
+  await c.env.DB.prepare("UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ? AND EXISTS (SELECT 1 FROM users WHERE id = ? AND account_status = 'active')").bind(c.req.param('id'), user.id, user.id).run();
   return c.json({ ok: true });
 });
 }

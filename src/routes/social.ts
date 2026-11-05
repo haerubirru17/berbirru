@@ -481,12 +481,15 @@ app.post('/api/posts/:id/like', async (c: any) => {
         )
         .bind(crypto.randomUUID(), user.id, postId, user.id, post.moderation_marker, user.id, user.id)
     : c.env.DB.prepare(`DELETE FROM notifications WHERE user_id = ? AND actor_id = ? AND type = 'like' AND post_id = ?
+        AND EXISTS (SELECT 1 FROM users au WHERE au.id = ? AND au.account_status = 'active')
+        AND NOT EXISTS (SELECT 1 FROM likes WHERE user_id = ? AND post_id = ?)
         AND EXISTS (SELECT 1 FROM posts p WHERE p.id = ? AND p.moderation_status = 'visible'
-          AND COALESCE(p.moderation_action_id,'') = ?)`).bind(post.author_id, user.id, postId, postId, post.moderation_marker);
+          AND COALESCE(p.moderation_action_id,'') = ?)`).bind(post.author_id, user.id, postId, user.id, user.id, postId, postId, post.moderation_marker);
   const result: any[] = await c.env.DB.batch([
     relation,
     c.env.DB.prepare(`UPDATE posts SET likes_count = (SELECT COUNT(*) FROM likes WHERE post_id = ?)
-      WHERE id = ? AND moderation_status = 'visible' AND COALESCE(moderation_action_id,'') = ?`).bind(postId, postId, post.moderation_marker),
+      WHERE id = ? AND moderation_status = 'visible' AND COALESCE(moderation_action_id,'') = ?
+        AND EXISTS (SELECT 1 FROM users au WHERE au.id = ? AND au.account_status = 'active')`).bind(postId, postId, post.moderation_marker, user.id),
     notification,
     c.env.DB.prepare(`SELECT moderation_status, COALESCE(moderation_action_id,'') AS moderation_marker,
       EXISTS(SELECT 1 FROM likes WHERE user_id = ? AND post_id = posts.id) AS intended_state, likes_count,
@@ -535,12 +538,15 @@ app.post('/api/posts/:id/bookmark', async (c: any) => {
         )
         .bind(crypto.randomUUID(), user.id, postId, user.id, post.moderation_marker, user.id, user.id)
     : c.env.DB.prepare(`DELETE FROM notifications WHERE user_id = ? AND actor_id = ? AND type = 'save' AND post_id = ?
+        AND EXISTS (SELECT 1 FROM users au WHERE au.id = ? AND au.account_status = 'active')
+        AND NOT EXISTS (SELECT 1 FROM bookmarks WHERE user_id = ? AND post_id = ?)
         AND EXISTS (SELECT 1 FROM posts p WHERE p.id = ? AND p.moderation_status = 'visible'
-          AND COALESCE(p.moderation_action_id,'') = ?)`).bind(post.author_id, user.id, postId, postId, post.moderation_marker);
+          AND COALESCE(p.moderation_action_id,'') = ?)`).bind(post.author_id, user.id, postId, user.id, user.id, postId, postId, post.moderation_marker);
   const result: any[] = await c.env.DB.batch([
     relation,
     c.env.DB.prepare(`UPDATE posts SET saves_count = (SELECT COUNT(*) FROM bookmarks WHERE post_id = ?)
-      WHERE id = ? AND moderation_status = 'visible' AND COALESCE(moderation_action_id,'') = ?`).bind(postId, postId, post.moderation_marker),
+      WHERE id = ? AND moderation_status = 'visible' AND COALESCE(moderation_action_id,'') = ?
+        AND EXISTS (SELECT 1 FROM users au WHERE au.id = ? AND au.account_status = 'active')`).bind(postId, postId, post.moderation_marker, user.id),
     notification,
     c.env.DB.prepare(`SELECT moderation_status, COALESCE(moderation_action_id,'') AS moderation_marker,
       EXISTS(SELECT 1 FROM bookmarks WHERE user_id = ? AND post_id = posts.id) AS intended_state, saves_count,

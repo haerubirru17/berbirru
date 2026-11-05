@@ -44,6 +44,21 @@ for (const t of ['likes', 'bookmarks']) {
     `hakim insert ${t} wajib active`);
 }
 assert.equal((social.match(/actor_active/g) || []).length, 4, 'like+bookmark state probe actor_active 2 lokasi tiap route (SELECT + #error)');
+// Unlike/unbookmark dependent cleanup must retain the same active-account authority.
+for (const [type, relation] of [['like', 'likes'], ['save', 'bookmarks']] as const) {
+  assert.match(social, new RegExp(`DELETE FROM notifications[\\s\\S]{0,420}type = '${type}'[\\s\\S]{0,420}account_status = 'active'[\\s\\S]{0,220}NOT EXISTS \\(SELECT 1 FROM ${relation}`),
+    `cleanup notification ${type} wajib menunggu relation hilang dan actor active`);
+}
+for (const counter of ['likes_count', 'saves_count']) {
+  assert.match(social, new RegExp(`UPDATE posts SET ${counter}[\\s\\S]{0,260}account_status = 'active'`),
+    `counter ${counter} wajib active-conditioned`);
+}
+// notification read-state must re-check active account at the UPDATE authority.
+const notifications = read('../src/routes/notifications.ts');
+assert.equal((notifications.match(/UPDATE notifications SET is_read = 1/g) || []).length, 2,
+  'dua jalur notification read-state wajib tetap ada');
+assert.equal((notifications.match(/account_status = 'active'/g) || []).length, 2,
+  'dua UPDATE notification wajib active-conditioned');
 // follow: hakim insert/unfollow + notif cleanup ter-guard
 assert.match(social, /INSERT OR IGNORE INTO follows[\s\S]{0,200}account_status = 'active'/, 'follow insert wajib active');
 assert.match(social, /DELETE FROM follows WHERE follower_id = \? AND following_id = \?[\s\S]{0,220}account_status = 'active'/,
