@@ -35,6 +35,11 @@ export type AdminPost = {
   penName: string;
 };
 
+export type AdminAuditModel = {
+  warkah: Array<{ createdAt: string; action: string; reason: string; title: string; author: string; status: string }>;
+  akun: Array<{ createdAt: string; action: string; reason: string; targetPen: string; actorPen: string }>;
+};
+
 const n = (value: unknown) => Number(value || 0);
 
 export function maskEmail(value: string): string {
@@ -58,6 +63,43 @@ export async function loadAdminPosts(db: D1Database, status: 'visible' | 'quaran
     moderatedAt: String(p.moderated_at || ''), moderatedBy: String(p.moderated_by || ''),
     moderationActionId: String(p.moderation_action_id || ''), penName: String(p.pen_name || ''),
   }));
+}
+
+export async function loadAdminAudit(db: D1Database): Promise<AdminAuditModel> {
+  const posts: any = await db.prepare(`SELECT a.created_at, a.action, a.reason,
+    p.title AS post_title, u.pen_name AS author_pen, p.moderation_status AS status
+    FROM social_admin_actions a
+    JOIN posts p ON p.id = a.target_post_id
+    JOIN users u ON u.id = p.author_id
+    ORDER BY a.created_at DESC, a.id DESC
+    LIMIT 20`).all();
+  // Toleran lintas lingkungan: 0034 belum tentu applied; section akun menyala sendiri begitu tabel ada.
+  const hasAcct: any = await db.prepare(
+    "SELECT COUNT(*) AS n FROM sqlite_master WHERE name='social_account_actions' AND type='table'"
+  ).first();
+  let akun: any[] = [];
+  if (n(hasAcct?.n) > 0) {
+    const rows: any = await db.prepare(`SELECT x.created_at, x.action, x.reason,
+      tu.pen_name AS target_pen, au.pen_name AS actor_pen
+      FROM social_account_actions x
+      JOIN users tu ON tu.id = x.target_user_id
+      JOIN users au ON au.id = x.actor_user_id
+      ORDER BY x.created_at DESC
+      LIMIT 20`).all();
+    akun = rows?.results || [];
+  }
+  return {
+    warkah: (posts?.results || []).map((a: any) => ({
+      createdAt: String(a.created_at || ''), action: String(a.action || ''),
+      reason: String(a.reason || ''), title: String(a.post_title || 'Tanpa judul'),
+      author: String(a.author_pen || ''), status: String(a.status || ''),
+    })),
+    akun: akun.map((a: any) => ({
+      createdAt: String(a.created_at || ''), action: String(a.action || ''),
+      reason: String(a.reason || ''), targetPen: String(a.target_pen || ''),
+      actorPen: String(a.actor_pen || ''),
+    })),
+  };
 }
 
 export async function loadAdminDashboard(db: D1Database): Promise<AdminDashboard> {

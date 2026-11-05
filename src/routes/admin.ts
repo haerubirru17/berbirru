@@ -1,8 +1,9 @@
 import { getAuthUser, hitRate, isOwner } from '../lib/shared';
-import { loadAdminDashboard, loadAdminPosts } from '../lib/admin-social';
+import { loadAdminDashboard, loadAdminPosts, loadAdminAudit } from '../lib/admin-social';
 import { quarantinePost, restorePost } from '../lib/admin-moderation';
 import { renderAdminPage } from '../web/admin';
 import { renderAdminPostsPage } from '../web/admin-posts';
+import { renderAdminAuditPage } from '../web/admin-audit';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -26,6 +27,14 @@ export function mountAdmin(app: any) {
     const posts = await loadAdminPosts(c.env.DB, status);
     c.header('Cache-Control', 'no-store');
     return c.html(renderAdminPostsPage(posts, status));
+  });
+
+  app.get('/admin/audit', async (c: any) => {
+    const me = await getAuthUser(c);
+    if (!isOwner(c.env, me)) return c.notFound();
+    const model = await loadAdminAudit(c.env.DB);
+    c.header('Cache-Control', 'no-store');
+    return c.html(renderAdminAuditPage(model));
   });
 
   const mutate = async (c: any, action: 'quarantine' | 'restore') => {
