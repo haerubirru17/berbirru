@@ -5,6 +5,15 @@ dist/
 .dev.vars
 review-v2/
 .hermes/
+!.hermes/
+.hermes/*
+!.hermes/audits/
+.hermes/audits/*
+!.hermes/audits/2026-11-06-suspend-account-full/
+.hermes/audits/2026-11-06-suspend-account-full/*
+!.hermes/audits/2026-11-06-suspend-account-full/REPORT.md
+!.hermes/audits/2026-11-06-suspend-account-full/findings.json
+!.hermes/audits/2026-11-06-suspend-account-full/coverage-ledger.json
 
 # Audit D-01/D-11: backup DB & snapshot lokal tidak boleh masuk repo (dari findings run-1).
 backups/

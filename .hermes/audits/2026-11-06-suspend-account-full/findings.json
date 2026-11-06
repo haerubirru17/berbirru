@@ -1,0 +1,228 @@
+[
+  {
+    "verdict": "closed",
+    "fingerprint": "berbirru.r2.cross-environment-shared-bucket",
+    "title": "Sandbox dapat menulis media yang disajikan origin produksi",
+    "description": "Temuan historis: konfigurasi sandbox dan produksi pernah mengikat bucket R2 yang sama. Setelah remediasi, sandbox memakai bucket dedicated dan production tetap memakai bucket produksi.",
+    "root_cause": "Binding MEDIA sandbox tidak diisolasi dari bucket produksi dan pembaca /media/* mempercayai key bucket tanpa linkage environment/D1.",
+    "intended_behavior": "Sandbox harus memiliki bucket terpisah sehingga principal dan lifecycle uji tidak dapat menulis resource produksi.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "wrangler.uji.toml",
+        "line": 14,
+        "scope": "R2 binding sandbox",
+        "description": "MEDIA sandbox diarahkan ke berbirru-media yang sama dengan produksi."
+      },
+      {
+        "kind": "propagation",
+        "file": "src/routes/pasar.ts",
+        "line": 130,
+        "scope": "POST /api/pasar/upload",
+        "description": "Pengguna sandbox aktif dapat menulis gambar dan menerima exact key."
+      },
+      {
+        "kind": "sink",
+        "file": "src/routes/media.ts",
+        "line": 71,
+        "scope": "GET /media/*",
+        "description": "Origin produksi membaca exact key dari bucket yang sama tanpa autentikasi atau linkage D1."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "wrangler.toml",
+        "line": 17,
+        "description": "Produksi mengikat MEDIA ke berbirru-media."
+      },
+      {
+        "file": "wrangler.uji.toml",
+        "line": 14,
+        "description": "Sandbox mengikat MEDIA ke berbirru-media; dry-run mengonfirmasi binding."
+      },
+      {
+        "file": "src/routes/media.ts",
+        "line": 75,
+        "description": "Pembaca publik memanggil MEDIA.get(key) langsung."
+      }
+    ],
+    "conditions": [
+      {
+        "kind": "authentication_level",
+        "description": "Pelaku memiliki akun aktif sandbox."
+      },
+      {
+        "kind": "system_configuration",
+        "description": "Deployment memakai binding konfigurasi yang direview dan dikonfirmasi dry-run."
+      },
+      {
+        "kind": "data_state",
+        "description": "Pelaku mengetahui exact key yang dikembalikan endpoint upload."
+      }
+    ],
+    "execution": {
+      "attacker_perspective": "Pengguna sandbox mengunggah gambar valid dan menggunakan key yang dikembalikan pada origin produksi.",
+      "payloads": [
+        "Gambar JPEG/PNG/WebP dummy yang lolos magic-byte dan ukuran."
+      ],
+      "instructions": [
+        "Render konfigurasi deployment sandbox dan produksi dengan dry-run lokal.",
+        "Konfirmasi keduanya mengikat bucket yang sama.",
+        "Trace key upload ke pembaca publik produksi tanpa menulis object live."
+      ],
+      "observed_result": "Kedua dry-run mengikat MEDIA ke berbirru-media; source menunjukkan key upload sandbox dapat dibaca langsung oleh /media/* produksi."
+    },
+    "remediation": {
+      "strategy": "Remediasi selesai: bucket berbirru-media-uji dibuat dan hanya binding MEDIA sandbox diubah; read-back binding serta fixture R2 membuktikan bucket sandbox berbeda dari produksi."
+    },
+    "closure": {
+      "closed_at_commit": "f951e73",
+      "status": "closed",
+      "post_fix_evidence": [
+        "wrangler.uji.toml MEDIA = berbirru-media-uji",
+        "wrangler.toml MEDIA = berbirru-media",
+        "tests/r2-environment-isolation.test.ts PASS",
+        "sandbox deploy version 3ccc0aa0-a7c4-45c3-9f6c-a1c00a76781f",
+        "R2 fixture upload/read/delete PASS with zero residual read-back"
+      ]
+    },
+    "severity": {
+      "likelihood": {
+        "score": "medium",
+        "reason": "Memerlukan akun sandbox aktif, tetapi endpoint upload dan exact key tersedia langsung."
+      },
+      "impact": {
+        "score": "medium",
+        "reason": "Melewati batas environment: konten gambar pilihan pelaku disimpan di resource produksi, disajikan origin produksi, dan memakai kuota/biaya produksi; overwrite/data rahasia tidak terbukti."
+      },
+      "overall_severity": "medium"
+    },
+    "confidence": {
+      "score": "high",
+      "reason": "Config produksi/sandbox, dry-run binding, dan route put/get membentuk trace lengkap."
+    }
+  },
+  {
+    "verdict": "closed",
+    "fingerprint": "berbirru.social.stale-unlike-notification-delete",
+    "title": "Request stale dapat menghapus notifikasi pihak lain setelah suspend",
+    "description": "Temuan historis: pada unlike/unbookmark, hakim relasi pernah menolak akun suspended sementara DELETE notifikasi dependen masih dapat menang. Setelah remediasi, relation judge mendahului dependent mutations dan cleanup memerlukan relation sudah tidak ada.",
+    "root_cause": "Statement dependen tidak terikat pada kemenangan hakim relasi dan active-account predicate.",
+    "intended_behavior": "Ketika akun kehilangan otoritas, seluruh mutasi domain dalam request harus nol, termasuk counter dan notifikasi pihak lain.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "src/lib/shared.ts",
+        "line": 58,
+        "scope": "getAuthUser",
+        "description": "Request mendapat snapshot user aktif sebelum suspend."
+      },
+      {
+        "kind": "propagation",
+        "file": "src/lib/admin-accounts.ts",
+        "line": 15,
+        "scope": "suspendAccount",
+        "description": "Admin menyuspend akun dan mencabut sesi saat request lama masih berjalan."
+      },
+      {
+        "kind": "sink",
+        "file": "src/routes/social.ts",
+        "line": 483,
+        "scope": "unlike/unbookmark batch",
+        "description": "DELETE notifikasi tidak bergantung pada hakim relasi aktif dan dapat mengubah row pihak lain."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "src/routes/social.ts",
+        "line": 471,
+        "description": "DELETE relation membawa predicate actor active."
+      },
+      {
+        "file": "src/routes/social.ts",
+        "line": 483,
+        "description": "DELETE notifikasi unlike tidak membawa predicate actor active atau marker kemenangan."
+      },
+      {
+        "file": "src/routes/social.ts",
+        "line": 537,
+        "description": "Cabang unbookmark memiliki bentuk dependen yang sama."
+      }
+    ],
+    "conditions": [
+      {
+        "kind": "authentication_level",
+        "description": "Pelaku memiliki like/bookmark existing dan request dimulai ketika akun aktif."
+      },
+      {
+        "kind": "timing_dependency",
+        "description": "Admin menyuspend akun setelah pre-read tetapi sebelum batch sosial."
+      }
+    ],
+    "execution": {
+      "attacker_perspective": "Pengguna mengirim unlike/unbookmark saat admin melakukan suspend bersamaan.",
+      "payloads": [
+        "Fixture satu relation dan satu notifikasi terdeduplikasi."
+      ],
+      "instructions": [
+        "Seed actor aktif, relation, post, dan notification dummy.",
+        "Ubah actor menjadi suspended sebelum batch.",
+        "Jalankan bentuk statement hakim dan dependen."
+      ],
+      "observed_result": "Probe lokal menghasilkan relation_delete_changes=0, notification_delete_changes=1, relation tetap ada, actor_active=0, dan jalur respons 401."
+    },
+    "remediation": {
+      "strategy": "Remediasi selesai: counter dan DELETE notifikasi kini terikat pada actor aktif, relation judge, dan relation absence setelah deletion; regression zero-domain-mutation untuk unlike/unbookmark lulus."
+    },
+    "closure": {
+      "closed_at_commit": "eee2a8c",
+      "status": "closed",
+      "post_fix_evidence": [
+        "src/routes/social.ts relation-first batch ordering",
+        "active-account predicates on relation, counter, and notification statements",
+        "NOT EXISTS relation check after deletion",
+        "tests/account-status-write-gate.test.ts PASS",
+        "independent review passed"
+      ]
+    },
+    "severity": {
+      "likelihood": {
+        "score": "low",
+        "reason": "Memerlukan race sempit dengan suspend admin yang tidak dapat dipicu mandiri oleh pengguna."
+      },
+      "impact": {
+        "score": "low",
+        "reason": "Efek terbatas pada penghapusan satu notifikasi interaksi milik penulis; tidak menyentuh konten, akun, uang, atau audit."
+      },
+      "overall_severity": "low"
+    },
+    "confidence": {
+      "score": "high",
+      "reason": "Kedua cabang memiliki pola sumber yang sama dan probe lokal mereproduksi judge zero/dependent one."
+    }
+  },
+  {
+    "verdict": "closed",
+    "fingerprint": "berbirru.auth.password-rotation-non-atomic",
+    "title": "Rotasi password dan pencabutan sesi tidak atomik",
+    "description": "Temuan historis: update password dan revoke sesi lain sebelumnya berjalan sebagai dua write terpisah. Setelah remediasi, keduanya berada dalam satu D1.batch dan artefak autentikasi rst_/otpf_ tetap dipertahankan.",
+    "root_cause": "Password update dapat berhasil sebelum revoke sesi dijalankan.",
+    "intended_behavior": "Password update dan revoke sesi lain harus satu batch; sesi aktif pemanggil tetap dipertahankan dan artefak rst_/otpf_ tidak ikut dihapus.",
+    "remediation": {
+      "strategy": "Remediasi selesai: password update dan revoke sesi lain berada dalam satu D1.batch; authority result berasal dari password statement, sesi aktif dipertahankan, dan artefak rst_/otpf_ dikecualikan."
+    },
+    "closure": {
+      "closed_at_commit": "2389174",
+      "status": "closed",
+      "post_fix_evidence": [
+        "src/routes/auth.ts uses one D1.batch for password update and session revoke",
+        "passwordBatch[0].meta.changes is the authority result",
+        "current session is excluded; rst_ and otpf_ artifacts are excluded",
+        "tests/account-status-write-gate.test.ts and tests/account-status-auth.test.ts PASS",
+        "npm test, tsc, git diff --check, and independent review PASS"
+      ]
+    },
+    "scope": "Release C auth/session",
+    "production_status": "not deployed; production remains HOLD"
+  }
+]

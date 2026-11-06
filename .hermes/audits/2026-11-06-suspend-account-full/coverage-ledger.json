@@ -1,0 +1,381 @@
+[
+  {
+    "coverage_id": "package-lock.json%23resolved%20artifacts::package-lock.json%23integrity::supply-chain::dependency%2Bbundle-reachability",
+    "canonical_refs": {
+      "surface": "package-lock.json#resolved artifacts",
+      "boundary": "package-lock.json#integrity",
+      "subsystem": "supply-chain",
+      "attack_class": "dependency+bundle-reachability"
+    },
+    "surface": "package-lock.json#resolved artifacts",
+    "boundary": "package-lock.json#integrity",
+    "subsystem": "supply-chain",
+    "attack_class": "dependency+bundle-reachability",
+    "starting_paths": [
+      "package.json",
+      "package-lock.json"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "final-audit",
+    "reviewed_paths": [
+      "package.json",
+      "package-lock.json"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "final-audit",
+        "reviewed_paths": [
+          "package.json",
+          "package-lock.json"
+        ],
+        "invariant": "Kontrol dan jalur ditinjau terhadap source serta pemeriksaan lokal yang relevan.",
+        "method": "source",
+        "result": "Kontrol dan jalur ditinjau terhadap source serta pemeriksaan lokal yang relevan.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "src%2Findex.ts%23response%20middleware::src%2Findex.ts%23origin%20and%20headers::browser-security::web%2Bheaders-cors-csrf",
+    "canonical_refs": {
+      "surface": "src/index.ts#response middleware",
+      "boundary": "src/index.ts#origin and headers",
+      "subsystem": "browser-security",
+      "attack_class": "web+headers-cors-csrf"
+    },
+    "surface": "src/index.ts#response middleware",
+    "boundary": "src/index.ts#origin and headers",
+    "subsystem": "browser-security",
+    "attack_class": "web+headers-cors-csrf",
+    "starting_paths": [
+      "src/index.ts",
+      "src/routes/admin.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "final-audit",
+    "reviewed_paths": [
+      "src/index.ts",
+      "src/routes/admin.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "final-audit",
+        "reviewed_paths": [
+          "src/index.ts",
+          "src/routes/admin.ts"
+        ],
+        "invariant": "Kontrol dan jalur ditinjau terhadap source serta pemeriksaan lokal yang relevan.",
+        "method": "source",
+        "result": "Kontrol dan jalur ditinjau terhadap source serta pemeriksaan lokal yang relevan.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "src%2Froutes%2Fadmin.ts%23account%20transitions::src%2Flib%2Fadmin-accounts.ts%23action%20marker::admin-account-status::logic%2Batomic-transition",
+    "canonical_refs": {
+      "surface": "src/routes/admin.ts#account transitions",
+      "boundary": "src/lib/admin-accounts.ts#action marker",
+      "subsystem": "admin-account-status",
+      "attack_class": "logic+atomic-transition"
+    },
+    "surface": "src/routes/admin.ts#account transitions",
+    "boundary": "src/lib/admin-accounts.ts#action marker",
+    "subsystem": "admin-account-status",
+    "attack_class": "logic+atomic-transition",
+    "starting_paths": [
+      "src/routes/admin.ts",
+      "src/lib/admin-accounts.ts",
+      "tests/account-status-real-d1.sh"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "final-audit",
+    "reviewed_paths": [
+      "src/routes/admin.ts",
+      "src/lib/admin-accounts.ts",
+      "tests/account-status-real-d1.sh"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "final-audit",
+        "reviewed_paths": [
+          "src/routes/admin.ts",
+          "src/lib/admin-accounts.ts",
+          "tests/account-status-real-d1.sh"
+        ],
+        "invariant": "Kontrol dan jalur ditinjau terhadap source serta pemeriksaan lokal yang relevan.",
+        "method": "source",
+        "result": "Kontrol dan jalur ditinjau terhadap source serta pemeriksaan lokal yang relevan.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "src%2Froutes%2Fauth.ts%23authentication%20flows::src%2Flib%2Fshared.ts%23getAuthUser::auth-session-otp-reset::logic%2Bsession-lifecycle",
+    "canonical_refs": {
+      "surface": "src/routes/auth.ts#authentication flows",
+      "boundary": "src/lib/shared.ts#getAuthUser",
+      "subsystem": "auth-session-otp-reset",
+      "attack_class": "logic+session-lifecycle"
+    },
+    "surface": "src/routes/auth.ts#authentication flows",
+    "boundary": "src/lib/shared.ts#getAuthUser",
+    "subsystem": "auth-session-otp-reset",
+    "attack_class": "logic+session-lifecycle",
+    "starting_paths": [
+      "src/routes/auth.ts",
+      "src/lib/shared.ts",
+      "src/lib/auth-session.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "final-audit",
+    "reviewed_paths": [
+      "src/routes/auth.ts",
+      "src/lib/shared.ts",
+      "src/lib/auth-session.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "final-audit",
+        "reviewed_paths": [
+          "src/routes/auth.ts",
+          "src/lib/shared.ts",
+          "src/lib/auth-session.ts"
+        ],
+        "invariant": "Kontrol dan jalur ditinjau terhadap source serta pemeriksaan lokal yang relevan.",
+        "method": "source",
+        "result": "Kontrol dan jalur ditinjau terhadap source serta pemeriksaan lokal yang relevan.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "berbirru.auth.password-rotation-non-atomic"
+    ],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "src%2Froutes%2Fmedia.ts%23R2%20mutations::src%2Flib%2Fshared.ts%23getAuthUser::media-lifecycle::logic%2Bobject-lifecycle",
+    "canonical_refs": {
+      "surface": "src/routes/media.ts#R2 mutations",
+      "boundary": "src/lib/shared.ts#getAuthUser",
+      "subsystem": "media-lifecycle",
+      "attack_class": "logic+object-lifecycle"
+    },
+    "surface": "src/routes/media.ts#R2 mutations",
+    "boundary": "src/lib/shared.ts#getAuthUser",
+    "subsystem": "media-lifecycle",
+    "attack_class": "logic+object-lifecycle",
+    "starting_paths": [
+      "src/routes/media.ts",
+      "src/routes/pasar.ts",
+      "src/lib/berkas.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "final-audit",
+    "reviewed_paths": [
+      "src/routes/media.ts",
+      "src/routes/pasar.ts",
+      "src/lib/berkas.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "final-audit",
+        "reviewed_paths": [
+          "src/routes/media.ts",
+          "src/routes/pasar.ts",
+          "src/lib/berkas.ts"
+        ],
+        "invariant": "Kontrol dan jalur ditinjau terhadap source serta pemeriksaan lokal yang relevan.",
+        "method": "source",
+        "result": "Kontrol dan jalur ditinjau terhadap source serta pemeriksaan lokal yang relevan.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "src%2Froutes%2Fsocial.ts%23unlike-unbookmark::src%2Flib%2Fadmin-accounts.ts%23suspend::social-notifications::logic%2Bdependent-mutation",
+    "canonical_refs": {
+      "surface": "src/routes/social.ts#unlike-unbookmark",
+      "boundary": "src/lib/admin-accounts.ts#suspend",
+      "subsystem": "social-notifications",
+      "attack_class": "logic+dependent-mutation"
+    },
+    "surface": "src/routes/social.ts#unlike-unbookmark",
+    "boundary": "src/lib/admin-accounts.ts#suspend",
+    "subsystem": "social-notifications",
+    "attack_class": "logic+dependent-mutation",
+    "starting_paths": [
+      "src/routes/social.ts",
+      "src/lib/admin-accounts.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "final-audit",
+    "reviewed_paths": [
+      "src/routes/social.ts",
+      "src/lib/admin-accounts.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "final-audit",
+        "reviewed_paths": [
+          "src/routes/social.ts",
+          "src/lib/admin-accounts.ts"
+        ],
+        "invariant": "Kontrol dan jalur ditinjau terhadap source serta pemeriksaan lokal yang relevan.",
+        "method": "source",
+        "result": "Kontrol dan jalur ditinjau terhadap source serta pemeriksaan lokal yang relevan.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "berbirru.social.stale-unlike-notification-delete"
+    ],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "src%2Fweb%23renderers::src%2Flib%2Fsanitize.ts%23escapeHtml::server-rendered-ui::injection%2Bhtml-context",
+    "canonical_refs": {
+      "surface": "src/web#renderers",
+      "boundary": "src/lib/sanitize.ts#escapeHtml",
+      "subsystem": "server-rendered-ui",
+      "attack_class": "injection+html-context"
+    },
+    "surface": "src/web#renderers",
+    "boundary": "src/lib/sanitize.ts#escapeHtml",
+    "subsystem": "server-rendered-ui",
+    "attack_class": "injection+html-context",
+    "starting_paths": [
+      "src/web/order.ts",
+      "src/web/nota.ts",
+      "src/web/pencairan.ts",
+      "src/lib/sanitize.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "final-audit",
+    "reviewed_paths": [
+      "src/web/order.ts",
+      "src/web/nota.ts",
+      "src/web/pencairan.ts",
+      "src/lib/sanitize.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "final-audit",
+        "reviewed_paths": [
+          "src/web/order.ts",
+          "src/web/nota.ts",
+          "src/web/pencairan.ts",
+          "src/lib/sanitize.ts"
+        ],
+        "invariant": "Kontrol dan jalur ditinjau terhadap source serta pemeriksaan lokal yang relevan.",
+        "method": "source",
+        "result": "Kontrol dan jalur ditinjau terhadap source serta pemeriksaan lokal yang relevan.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "wrangler.uji.toml%23MEDIA::wrangler.toml%23MEDIA::cloudflare-r2::isolation%2Bcross-environment",
+    "canonical_refs": {
+      "surface": "wrangler.uji.toml#MEDIA",
+      "boundary": "wrangler.toml#MEDIA",
+      "subsystem": "cloudflare-r2",
+      "attack_class": "isolation+cross-environment"
+    },
+    "surface": "wrangler.uji.toml#MEDIA",
+    "boundary": "wrangler.toml#MEDIA",
+    "subsystem": "cloudflare-r2",
+    "attack_class": "isolation+cross-environment",
+    "starting_paths": [
+      "wrangler.toml",
+      "wrangler.uji.toml",
+      "src/routes/media.ts",
+      "src/routes/pasar.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "final-audit",
+    "reviewed_paths": [
+      "wrangler.toml",
+      "wrangler.uji.toml",
+      "src/routes/media.ts",
+      "src/routes/pasar.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "final-audit",
+        "reviewed_paths": [
+          "wrangler.toml",
+          "wrangler.uji.toml",
+          "src/routes/media.ts",
+          "src/routes/pasar.ts"
+        ],
+        "invariant": "Kontrol dan jalur ditinjau terhadap source serta pemeriksaan lokal yang relevan.",
+        "method": "source",
+        "result": "Kontrol dan jalur ditinjau terhadap source serta pemeriksaan lokal yang relevan.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "berbirru.r2.cross-environment-shared-bucket"
+    ],
+    "unresolved": []
+  }
+]
