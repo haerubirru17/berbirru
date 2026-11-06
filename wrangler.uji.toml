@@ -10,10 +10,10 @@ binding = "DB"
 database_name = "berbirru-db-uji"
 database_id = "743f739f-e59b-492a-baa2-5eb3ea33968d"
 
-# ponytail: nimpa bucket media prod (key UUID acak, blob foto saja) — bucket terpisah butuh izin R2 create yg belum ada di token.
+# Dedicated sandbox bucket; production binding remains berbirru-media.
 [[r2_buckets]]
 binding = "MEDIA"
-bucket_name = "berbirru-media"
+bucket_name = "berbirru-media-uji"
 
 [vars]
 # Satu-satunya akun yang boleh membuka /owner (putus sengketa + cairkan saldo).
@@ -35,9 +35,7 @@ directory = "./public"
 enabled = true
 
 # Audit D-03: cron uji NONAKTIF (sebelumnya sweep per jam sandbox ikut menghapus objek dari
-# bucket media produksi — jalur hapus terbesar). Pembagian bucket penuh DITUNDA karena token
-# API tidak boleh membuat R2 bucket (auth error) — buat 'berbirru-media-uji' di dashboard,
-# lalu ganti bucket_name di atas menjadi bucket itu. Sampai itu: upload foto dari deployment uji
-# masih mendarat di bucket produksi (hanya tulis, tidak hapus).
+# bucket media produksi — jalur hapus terbesar). Sandbox kini memakai bucket dedicated
+# berbirru-media-uji; production tetap memakai berbirru-media secara terpisah.
 # [triggers]
 # crons = ["0 * * * *"]
