@@ -210,7 +210,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
         + '</div>'
         + '<div style="padding:12px 14px;">'
         + (p.title ? '<div style="font-family:\\'Newsreader\\',serif;font-size:17px;font-weight:600;margin-bottom:6px;">' + escapeHtml(p.title) + '</div>' : '')
-        + '<div style="font-size:14px;line-height:1.6;color:#334155;">' + String(p.content || '') + '</div>'
+        + '<div style="font-size:14px;line-height:1.6;color:#334155;">' + escapeHtml(String(p.content || '')) + '</div>'
         + '</div>'
         + '<div class="thread-footer"><span style="font-size:11.5px;font-weight:800;color:var(--blue);">'
         + (p.likes_count || 0) + ' Terpaut · ' + (p.saves_count || 0) + ' Simpan · ' + (p.chains_count || 0) + ' Sambungan</span>'
