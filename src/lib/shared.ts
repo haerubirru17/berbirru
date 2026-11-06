@@ -41,6 +41,21 @@ export function hardenPost(p: any): any {
   return p;
 }
 
+export function publicPost(p: any): any {
+  if (!p) return p;
+  const { author_id, author_email, avatar_key, cover_key, is_admin, ...publicFields } = p as any;
+  if (avatar_key) publicFields.avatar_url = `/media/${String(avatar_key).split('?')[0]}${String(avatar_key).includes('?') ? `?${String(avatar_key).split('?')[1]}` : ''}`;
+  return publicFields;
+}
+
+export function publicUser(u: any): any {
+  if (!u) return u;
+  const { id, email, avatar_key, cover_key, is_admin, ...publicFields } = u as any;
+  if (avatar_key) publicFields.avatar_url = `/media/${String(avatar_key).split('?')[0]}${String(avatar_key).includes('?') ? `?${String(avatar_key).split('?')[1]}` : ''}`;
+  if (cover_key) publicFields.cover_url = `/media/${String(cover_key).split('?')[0]}${String(cover_key).includes('?') ? `?${String(cover_key).split('?')[1]}` : ''}`;
+  return publicFields;
+}
+
 export function withAdmin<T extends any>(p: T, ownerEmail: string): T {
   if (!p) return p;
   const { author_email, ...rest } = p as any;

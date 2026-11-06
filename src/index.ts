@@ -42,7 +42,7 @@ import { sendOtpEmail, sendPasswordChangedEmail } from './mail';
 import { OG_IMAGE_BASE64 } from './assets';
 import { VENDOR_SWEETALERT2_JS, VENDOR_SWEETALERT2_CSS } from './vendor';
 import { Env } from './env';
-import { sha256hex, hitRate, hardenPost, withAdmin, visibilityClause, getAuthUser, PUBLIC_POST_COLUMNS } from './lib/shared';
+import { sha256hex, hitRate, hardenPost, publicPost, visibilityClause, getAuthUser, PUBLIC_POST_COLUMNS } from './lib/shared';
 import { mountNotifications } from './routes/notifications';
 import { mountKurir } from './routes/kurir';
 import { mountMedia } from './routes/media';
@@ -362,7 +362,8 @@ app.get('/chain/:id', async (c) => {
      WHERE p.parent_id = ? AND ${vis.sql} ORDER BY p.created_at ASC LIMIT 50`
   ).bind(ownerEmail, orphans ? target.parent_id : root.id, ...vis.binds).all();
 
-  return c.html(renderChainPage({ user, root: hardenPost(root), rootAuthor, rootAvatarKey: root.avatar_key, rootIsAdmin: !!root.is_admin, orphans, children: (results || []).map(hardenPost) }));
+  const safeRoot = publicPost(hardenPost(root));
+  return c.html(renderChainPage({ user, root: safeRoot, rootAuthor, rootAvatarUrl: safeRoot.avatar_url, orphans, children: (results || []).map((p: any) => publicPost(hardenPost(p))) }));
 });
 
 mountKurir(app);

@@ -704,9 +704,8 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
           currentUserData = data.user;
           document.getElementById('penNameDisplay').textContent = '@' + data.user.pen_name;
           document.getElementById('displayNameDisplay').textContent = data.user.display_name || data.user.pen_name;
-          if (data.user.is_admin) document.getElementById('adminBadge').hidden = false;
-          applyAvatar(data.user.avatar_key, data.user.pen_name);
-          applyCover(data.user.cover_key);
+          applyAvatar(data.user.avatar_url, data.user.pen_name);
+          applyCover(data.user.cover_url);
           document.getElementById('cityDisplay').textContent = data.user.city || 'Nusantara';
           document.getElementById('bioDisplay').textContent = '"' + (data.user.bio || 'Goresan perenungan rasa dan bait kata di Berbirru.') + '"';
           document.getElementById('countPosts').textContent = data.user.posts_count || 0;
@@ -730,22 +729,19 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
 
 
     // ---- MEDIA PROFIL (avatar & cover) ----
-    function avatarKeyValid(key) {
-      return new RegExp('^[a-z0-9_-]+/[a-z0-9_-]+[.](jpg|png|webp)([?]v=[0-9]+)?$', 'i').test(String(key || ''));
+    function avatarUrl(value) {
+      const s = String(value || '');
+      if (/^\/media\//.test(s)) return s;
+      if (/^[a-z0-9_-]+\/[a-z0-9_-]+[.](jpg|png|webp)([?]v=[0-9]+)?$/i.test(s)) return '/media/' + s;
+      return '';
     }
-    // versi unik per-load: bikin URL gambar selaluFresh lintas sesi/halaman
-    const MEDIA_V = Date.now() + '' + Math.floor(Math.random() * 1e6);
-    function freshKey(key) {
-      const s = String(key || '');
-      if (s.includes('?v=')) return s; // sudah bawa versi anti-cache sendiri (mis. dari server saat upload)
-      return s ? s + '?v=' + MEDIA_V : s;
-    }
+    function avatarUrlValid(value) { return !!avatarUrl(value); }
     function applyAvatar(key, penName) {
       const box = document.getElementById('avatarLetter');
       if (!box) return;
-      if (avatarKeyValid(key)) {
+      if (avatarUrlValid(key)) {
         box.textContent = '';
-        box.style.backgroundImage = 'url(/media/' + freshKey(key) + ')';
+        box.style.backgroundImage = 'url(' + avatarUrl(key) + ')';
         box.style.backgroundSize = 'cover';
         box.style.backgroundPosition = 'center';
         box.style.color = 'transparent';
@@ -758,12 +754,12 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
       const kernCover = document.getElementById('profileCoverPhoto');
       if (!el) return;
       if (kernCover) {
-        kernCover.classList.toggle('has-cover', avatarKeyValid(key));
-        kernCover.style.backgroundImage = avatarKeyValid(key) ? 'url(/media/' + freshKey(key) + ')' : '';
+        kernCover.classList.toggle('has-cover', avatarUrlValid(key));
+        kernCover.style.backgroundImage = avatarUrlValid(key) ? 'url(' + avatarUrl(key) + ')' : '';
       }
-      if (avatarKeyValid(key)) {
+      if (avatarUrlValid(key)) {
         // foto + ramp gradient: gelap tipis di atas (kontras nav), fade warna kartu di bawah (nyatu kartu)
-        el.style.background = 'linear-gradient(180deg, rgba(11,25,44,0.30) 0%, rgba(11,25,44,0.05) 30%, rgba(255,255,255,0) 55%, #FFFFFF 100%), url(/media/' + freshKey(key) + ')';
+        el.style.background = 'linear-gradient(180deg, rgba(11,25,44,0.30) 0%, rgba(11,25,44,0.05) 30%, rgba(255,255,255,0) 55%, #FFFFFF 100%), url(' + avatarUrl(key) + ')';
         el.style.backgroundSize = 'cover';
         el.style.backgroundPosition = 'center';
       }
@@ -902,7 +898,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
         if (!res.ok) { bbToast(data.error || 'Gagal menyimpan gambar.', 'error'); return; }
         // tampil instan dengan URL anti-cache (?v=) dari server
         const k = String((data && data.url) || '').split('/media/')[1] || '';
-        if (k && avatarKeyValid(k)) {
+        if (k && avatarUrlValid(k)) {
           if (kind === 'avatar') applyAvatar(k, currentPenName);
           else applyCover(k);
         }
@@ -950,7 +946,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
     const FOLLOW_LIST_POLL_MS = 12000;
     const PROFILE_COUNTS_POLL_MS = 12000;
     function followAvatarStyle(name, key) {
-      if (avatarKeyValid(key)) return 'background-image:url(/media/' + freshKey(key) + ');background-size:cover;background-position:center;color:transparent;';
+      if (avatarUrlValid(key)) return 'background-image:url(' + avatarUrl(key) + ');background-size:cover;background-position:center;color:transparent;';
       return 'background:' + getAvatarColor(name) + ';';
     }
     function renderFollowRows(users) {
@@ -961,8 +957,8 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
       }
       list.innerHTML = users.map(u => \`
         <div class="follow-row" data-pen="\${escapeHtml(u.pen_name)}">
-          <div class="follow-avatar" style="\${followAvatarStyle(u.pen_name, u.avatar_key)}">\${escapeHtml((u.pen_name || 'D')[0].toUpperCase())}</div>
-          <div class="follow-info"><div class="follow-name">@\${escapeHtml(u.pen_name)}\${u.is_admin ? '<svg class="follow-verified" viewBox="0 0 24 24" fill="none" aria-label="Akun admin" role="img"><circle cx="12" cy="12" r="10" fill="#1D61E7"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div><div class="follow-meta">\${escapeHtml(u.display_name || u.pen_name)}\${u.city ? ' · ' + escapeHtml(u.city) : ''}</div></div>
+          <div class="follow-avatar" style="\${followAvatarStyle(u.pen_name, u.avatar_url)}">\${escapeHtml((u.pen_name || 'D')[0].toUpperCase())}</div>
+          <div class="follow-info"><div class="follow-name">@\${escapeHtml(u.pen_name)}</div><div class="follow-meta">\${escapeHtml(u.display_name || u.pen_name)}\${u.city ? ' · ' + escapeHtml(u.city) : ''}</div></div>
           \${u.pen_name !== currentPenName ? \`<button class="follow-action" data-pen="\${escapeHtml(u.pen_name)}" data-on="\${u.is_following ? '1' : '0'}">\${u.is_following ? 'Mengikuti' : 'Ikuti'}</button>\` + (followSheetType === 'followers' ? \`<button class="follow-action follow-remove" data-pen="\${escapeHtml(u.pen_name)}">Hapus</button>\` : '') : ''}
         </div>\`).join('');
       list.querySelectorAll('.follow-row').forEach(row => row.addEventListener('click', (ev) => {
@@ -1097,13 +1093,13 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
         container.innerHTML = data.posts.map(p => \`
           <div class="thread-card">
             <div class="thread-header-soft">
-              <div class="thread-avatar-clip" style="background:\${getAvatarColor(p.pen_name)};\${p.avatar_key ? \`background-image:url(/media/\${freshKey(p.avatar_key)});background-size:cover;background-position:center;color:transparent;\` : ''}">
+              <div class="thread-avatar-clip" style="background:\${getAvatarColor(p.pen_name)};\${p.avatar_url ? \`background-image:url(\${p.avatar_url});background-size:cover;background-position:center;color:transparent;\` : ''}">
                 \${(p.pen_name[0] || 'D').toUpperCase()}
                 <svg class="paperclip-svg" viewBox="0 0 24 24" fill="none" stroke="var(--line-soft)" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
               </div>
               <div class="thread-author-wrap">
                 <div class="thread-author-info">
-                  <span class="thread-name-row"><span class="thread-pen-name">@\${escapeHtml(p.pen_name)}</span>\${p.is_admin ? '<svg class="vcheck" viewBox="0 0 24 24" fill="none" aria-label="Akun admin" role="img"><circle cx="12" cy="12" r="10" fill="#1D61E7"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</span></span>
+                  <div class="thread-name-row"><span class="thread-pen-name">@\${escapeHtml(p.pen_name)}</span></div>
                 </div>
                 \${p.visibility === 'private' ? '<span class="vis-private"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Privat</span>' : ''}
               </div>

@@ -50,7 +50,7 @@ assert(last === 429, 'call ke-21 harus 429, dapat ' + last);
 // ---------- 2. Wiring assertions (pola auth-wiring repo) ----------
 const indexSrc = readFileSync(new URL('../src/index.ts', import.meta.url), 'utf8');
 assert(indexSrc.includes('hardenPost(root)'), 'chain route harus memakai hardenPost(root) (R2-12 wiring)');
-assert(indexSrc.includes('.map(hardenPost)'), 'children chain harus di-hardening');
+assert(indexSrc.includes('.map((p: any) => publicPost(hardenPost(p)))'), 'children chain harus di-hardening');
 
 const authSrc = readFileSync(new URL('../src/routes/auth.ts', import.meta.url), 'utf8');
 assert(authSrc.includes("startsWith('pbkdf2$')") && authSrc.includes('DUMMY_PBKDF2_HASH'), 'login jalur non-pbkdf2 harus melewati dummy PBKDF2 (R2-15 wiring)');

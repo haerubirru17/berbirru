@@ -545,13 +545,13 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
       return \`
         <div class="thread-card" id="post-\${p.id}">
           <div class="thread-header-soft">
-            <div class="thread-avatar-clip" style="background:\${getAvatarColor(p.pen_name)};\${p.avatar_key ? \`background-image:url(/media/\${p.avatar_key});background-size:cover;background-position:center;color:transparent;\` : ''}">
+            <div class="thread-avatar-clip" style="background:\${getAvatarColor(p.pen_name)};\${p.avatar_url ? \`background-image:url(\${p.avatar_url});background-size:cover;background-position:center;color:transparent;\` : ''}">
               \${(p.pen_name[0] || 'D').toUpperCase()}
               <svg class="paperclip-svg" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
             </div>
             <div class="thread-author-wrap">
               <div class="thread-author-info">
-                <span class="thread-name-row"><a href="/u/\${p.pen_name}" class="thread-pen-name">@\${escapeHtml(p.pen_name)}</a>\${p.is_admin ? '<svg class="vcheck" viewBox="0 0 24 24" fill="none" aria-label="Akun admin" role="img"><circle cx="12" cy="12" r="10" fill="#1D61E7"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</span>
+                <span class="thread-name-row"><a href="/u/\${p.pen_name}" class="thread-pen-name">@\${escapeHtml(p.pen_name)}</a></span>
                 <span class="thread-city">\${escapeHtml(p.city || 'Nusantara')}</span>
                 \${p.visibility === 'private' ? '<span class="vis-private"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Privat</span>' : ''}
               </div>

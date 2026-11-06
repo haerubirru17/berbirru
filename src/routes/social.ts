@@ -1,4 +1,4 @@
-import { getAuthUser, hardenPost, withAdmin, visibilityClause, hitRate, PUBLIC_POST_COLUMNS } from '../lib/shared';
+import { getAuthUser, hardenPost, publicPost, publicUser, visibilityClause, hitRate, PUBLIC_POST_COLUMNS } from '../lib/shared';
 import { sanitizeRich, escapeHtml, stripTags } from '../lib/sanitize';
 import { ftsQuery, ensureFtsFilled } from '../lib/fts';
 
@@ -83,15 +83,14 @@ app.get('/api/users/:pen_name', async (c: any) => {
   const { email: _email, ...publik } = user;
   return c.json({
     user: {
-      ...publik,
+      ...publicUser(publik),
       posts_count: postsCount,
       likes_count: likesCount,
       saves_count: savesCount,
       followers_count: followersCount,
       following_count: followingCount,
       is_following: isFollowing,
-      // Penanda akun admin (owner) — diverifikasi dari email, bukan dari input klien.
-      is_admin: String(_email || '').toLowerCase() === String(c.env.OWNER_EMAIL || '').toLowerCase()
+
     }
   });
 });
@@ -116,7 +115,7 @@ app.get('/api/users/:pen_name/follows', async (c: any) => {
     ORDER BY lower(COALESCE(u.display_name, u.pen_name)), u.pen_name
     LIMIT 100
   `).bind(c.env.OWNER_EMAIL || '', viewer?.id || '', viewer?.id || '', target.id).all();
-  return c.json({ type, pen_name: target.pen_name, users: rows.results || [], has_more: (rows.results || []).length === 100 });
+  return c.json({ type, pen_name: target.pen_name, users: (rows.results || []).map(publicUser), has_more: (rows.results || []).length === 100 });
 });
 
 app.get('/api/users/:pen_name/posts', async (c: any) => {
@@ -190,7 +189,7 @@ app.get('/api/users/:pen_name/posts', async (c: any) => {
   const countQuery = query.replace(/ORDER BY [\w.]+ DESC LIMIT 30\s*$/, '');
   const total = await c.env.DB.prepare(`SELECT COUNT(*) AS n FROM (${countQuery})`).bind(...binds).first('n') || 0;
   const posts = await c.env.DB.prepare(query).bind(...binds).all().then((r: any) => r.results);
-  return c.json({ tab, total, posts: posts.map((p: any) => withAdmin(hardenPost(p), c.env.OWNER_EMAIL as string)) });
+  return c.json({ tab, total, posts: posts.map((p: any) => publicPost(hardenPost(p))) });
 });
 
 app.get('/api/posts', async (c: any) => {
@@ -297,7 +296,7 @@ app.get('/api/posts', async (c: any) => {
     const safe = { ...p };
     if (safe.parent_visibility == null || (safe.parent_visibility === 'private' && (!user || String(safe.parent_author || '') !== String(user.pen_name || '')))) safe.parent_id = null;
     delete safe.parent_visibility;
-    return withAdmin(hardenPost(safe), c.env.OWNER_EMAIL as string);
+    return publicPost(hardenPost(safe));
   }) });
 });
 
@@ -311,7 +310,7 @@ app.get('/api/posts/:id/chains', async (c: any) => {
      FROM posts p JOIN users u ON p.author_id = u.id
      WHERE p.parent_id = ? AND ${vis.sql} ORDER BY p.created_at ASC LIMIT 20`
   ).bind(c.req.param('id'), ...vis.binds).all();
-  return c.json({ chains: (results || []).map((p: any) => withAdmin(hardenPost(p), c.env.OWNER_EMAIL as string)) });
+  return c.json({ chains: (results || []).map((p: any) => publicPost(hardenPost(p))) });
 });
 
 app.post('/api/posts', async (c: any) => {
