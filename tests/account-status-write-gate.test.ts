@@ -17,7 +17,19 @@ assert.match(auth, /UPDATE users SET pen_name = \?, city = \? WHERE id = \? AND 
   'register existing-user claim wajib active');
 assert.match(auth, /UPDATE users SET password_hash = \? WHERE id = \? AND account_status = 'active'/,
   'login pw-upgrade wajib active');
-assert.match(auth, /DELETE FROM sessions WHERE user_id = \? AND token_hash IS NOT NULL AND token_hash <> \?[\s\S]{0,120}account_status = 'active'/,
+assert(auth.includes('D1 batch untuk change-password wajib atomik: UPDATE password dan revoke sesi berada dalam satu batch'),
+  'change-password wajib mendokumentasikan atomisitas');
+assert.match(auth, /const passwordBatch = await c\.env\.DB\.batch\(\[[\s\S]{0,900}UPDATE users SET password_hash = \?[\s\S]{0,900}DELETE FROM sessions WHERE user_id = \?/,
+  'change-password wajib menggabungkan password update + revoke dalam satu batch');
+assert.match(auth, /if \(!passwordBatch\[0\]\?\.meta\?\.changes\)/,
+  'change-password hanya menghakimi statement password sebagai authority');
+assert.match(auth, /DELETE FROM sessions WHERE user_id = \? AND token_hash IS NOT NULL AND token_hash <> \?/,
+  'change-password revoke wajib membatasi sesi lain');
+assert(auth.includes("token_hash NOT LIKE 'rst\\\\_%' ESCAPE '\\\\'"),
+  'change-password revoke wajib mempertahankan artefak rst_');
+assert(auth.includes("token_hash NOT LIKE 'otpf\\\\_%' ESCAPE '\\\\'"),
+  'change-password revoke wajib mempertahankan artefak otpf_');
+assert.match(auth, /EXISTS \(SELECT 1 FROM users cu WHERE cu\.id = \? AND cu\.account_status = 'active'\)/,
   'change-password revoke wajib active');
 assert.match(auth, /DELETE FROM sessions WHERE user_id = \? AND \(token_hash IS NULL OR token_hash != \?\)[\s\S]{0,120}account_status = 'active'/,
   'logout-all wajib active');

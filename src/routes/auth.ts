@@ -308,14 +308,15 @@ app.post('/api/auth/change-password', async (c: any) => {
 
   // Task 4: guard active pada statement hakim — suspend in-flight tidak boleh
   // mengganti sandi maupun mencabut sesi (zero mutation), respons generik.
-  const pwdUp = await c.env.DB.prepare("UPDATE users SET password_hash = ? WHERE id = ? AND account_status = 'active'").bind(await hashPassword(password), user.id).run();
-  if (!pwdUp.meta.changes) return c.json({ error: 'Sesi tidak valid. Muat ulang halaman.' }, 401);
-
-  // Cabut semua sesi LAIN (vuln-0001): rotasi sandi mengakhiri sesi curian;
-  // sesi yang melakukan rotasi tetap hidup. token_hash IS NOT NULL menjaga baris OTP pending.
-  await c.env.DB.prepare(
-    "DELETE FROM sessions WHERE user_id = ? AND token_hash IS NOT NULL AND token_hash <> ? AND EXISTS (SELECT 1 FROM users cu WHERE cu.id = ? AND cu.account_status = 'active')"
-  ).bind(user.id, await sha256hex(getCookie(c, 'berbirru_session') || ''), user.id).run();
+  // D1 batch untuk change-password wajib atomik: UPDATE password dan revoke sesi berada dalam satu batch.
+  const passwordBatch = await c.env.DB.batch([
+    c.env.DB.prepare("UPDATE users SET password_hash = ? WHERE id = ? AND account_status = 'active'").bind(await hashPassword(password), user.id),
+    // Cabut semua sesi LAIN; token_hash IS NOT NULL menjaga baris OTP pending.
+    c.env.DB.prepare(
+      "DELETE FROM sessions WHERE user_id = ? AND token_hash IS NOT NULL AND token_hash <> ? AND token_hash NOT LIKE 'rst\\_%' ESCAPE '\\' AND token_hash NOT LIKE 'otpf\\_%' ESCAPE '\\' AND EXISTS (SELECT 1 FROM users cu WHERE cu.id = ? AND cu.account_status = 'active')"
+    ).bind(user.id, await sha256hex(getCookie(c, 'berbirru_session') || ''), user.id),
+  ]);
+  if (!passwordBatch[0]?.meta?.changes) return c.json({ error: 'Sesi tidak valid. Muat ulang halaman.' }, 401);
 
   return c.json({ ok: true });
 });

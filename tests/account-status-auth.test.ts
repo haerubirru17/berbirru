@@ -39,8 +39,8 @@ assert.match(auth, /const inserted = await insertActiveLoginSession\(c\.env\.DB,
 assert.equal((auth.match(/setCookie\(\s*c,\s*'berbirru_session'/g) || []).length, 2, 'cookie login hanya dari dua jalur resmi');
 assert.doesNotMatch(auth, /account_status\s*=\s*'suspended'/, 'login tidak boleh bocorkan status (respons generik)');
 
-// 4. Task 3: tiga finalizer = tiga batch claim-marker.
-assert.equal((auth.match(/c\.env\.DB\.batch\(/g) || []).length, 3, 'tepat tiga batch: verify-otp, reset/verify, reset/finish');
+// 4. Task 3: tiga finalizer + change-password atomik = empat batch.
+assert.equal((auth.match(/c\.env\.DB\.batch\(/g) || []).length, 4, 'tepat empat batch: verify-otp, reset/verify, reset/finish, change-password');
 for (const m of ["'otp_claim_'", "'rsto_claim_'", "'rst_claim_'"]) {
   assert.equal((auth.match(new RegExp(m, 'g')) || []).length, 1, `marker ${m} tepat sekali`);
 }
