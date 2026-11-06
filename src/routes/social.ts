@@ -192,8 +192,11 @@ app.get('/api/users/:pen_name/posts', async (c: any) => {
   return c.json({ tab, total, posts: posts.map((p: any) => publicPost(hardenPost(p))) });
 });
 
+const POST_MODES = new Set(['viral', 'latest', 'following']);
+
 app.get('/api/posts', async (c: any) => {
   const mode = c.req.query('mode') || 'viral';
+  if (!POST_MODES.has(mode)) return c.json({ error: 'Mode feed tidak valid.' }, 400);
   // vuln-0001 R3: `%` literal (hasil double percent-encoding) melewati guard lama,
   // lalu di-escape `\%` untuk LIKE pen_name — pola dengan banyak `\%` melampaui batas
   // kompleksitas LIKE SQLite → D1_ERROR: LIKE or GLOB pattern too complex → 500.
