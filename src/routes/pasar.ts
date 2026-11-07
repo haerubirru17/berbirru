@@ -984,8 +984,13 @@ app.post('/api/pasar/order/:id/cancel', async (c: any) => {
     // agar race cancel ganda tetap tepat-sekali (pola batch cancel 'created' di atas).
     const res = await c.env.DB.batch([
       c.env.DB.prepare(
-        "UPDATE listings SET stock = MIN(stock + 1, 999) WHERE id = ? AND status != 'deleted' AND EXISTS (SELECT 1 FROM orders WHERE id = ? AND status = 'paid' AND paid_with = 'saldo')"
-      ).bind(o.listing_id, o.id),
+        `UPDATE listings SET stock = MIN(stock + 1, 999) WHERE id = ? AND status != 'deleted'
+         AND EXISTS (
+           SELECT 1 FROM orders co JOIN users au ON au.id = co.buyer_id
+           WHERE co.id = ? AND co.status = 'paid' AND co.paid_with = 'saldo'
+             AND co.buyer_id = ? AND au.account_status = 'active'
+         )`
+      ).bind(o.listing_id, o.id, me.id),
       c.env.DB.prepare(
         `UPDATE orders SET status = 'cancelled', resolution_note = ?, updated_at = datetime('now') WHERE id = ? AND status = 'paid' AND paid_with = 'saldo' AND EXISTS (SELECT 1 FROM users au WHERE au.id = ? AND au.account_status = 'active')`
       ).bind('Dibatalkan pembeli sebelum dikirim — saldo dikembalikan', o.id, me.id),

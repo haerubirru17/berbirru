@@ -23,8 +23,10 @@ assert.match(auth, /const passwordBatch = await c\.env\.DB\.batch\(\[[\s\S]{0,90
   'change-password wajib menggabungkan password update + revoke dalam satu batch');
 assert.match(auth, /if \(!passwordBatch\[0\]\?\.meta\?\.changes\)/,
   'change-password hanya menghakimi statement password sebagai authority');
-assert.match(auth, /DELETE FROM sessions WHERE user_id = \? AND token_hash IS NOT NULL AND token_hash <> \?/,
+assert(auth.includes('DELETE FROM sessions WHERE user_id = ? AND ((token_hash IS NOT NULL AND token_hash <> ?'),
   'change-password revoke wajib membatasi sesi lain');
+assert(auth.includes("OR (token LIKE 'otp\\\\_%' ESCAPE '\\\\'))"),
+  'change-password revoke wajib mencabut OTP pending (Strix run-2 #3)');
 assert(auth.includes("token_hash NOT LIKE 'rst\\\\_%' ESCAPE '\\\\'"),
   'change-password revoke wajib mempertahankan artefak rst_');
 assert(auth.includes("token_hash NOT LIKE 'otpf\\\\_%' ESCAPE '\\\\'"),

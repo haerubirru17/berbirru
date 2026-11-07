@@ -311,9 +311,11 @@ app.post('/api/auth/change-password', async (c: any) => {
   // D1 batch untuk change-password wajib atomik: UPDATE password dan revoke sesi berada dalam satu batch.
   const passwordBatch = await c.env.DB.batch([
     c.env.DB.prepare("UPDATE users SET password_hash = ? WHERE id = ? AND account_status = 'active'").bind(await hashPassword(password), user.id),
-    // Cabut semua sesi LAIN; token_hash IS NOT NULL menjaga baris OTP pending.
+    // Cabut semua sesi LAIN + OTP pending (Strix run-2 #3): pemegang OTP lama tidak boleh
+    // bisa mint sesi 30 hari pasca ganti sandi. rst_ (tiket reset) & otpf_ (artefak flow)
+    // tetap kecualikan; underscore di-escape agar 'otpX_' tidak tertukar.
     c.env.DB.prepare(
-      "DELETE FROM sessions WHERE user_id = ? AND token_hash IS NOT NULL AND token_hash <> ? AND token_hash NOT LIKE 'rst\\_%' ESCAPE '\\' AND token_hash NOT LIKE 'otpf\\_%' ESCAPE '\\' AND EXISTS (SELECT 1 FROM users cu WHERE cu.id = ? AND cu.account_status = 'active')"
+      "DELETE FROM sessions WHERE user_id = ? AND ((token_hash IS NOT NULL AND token_hash <> ? AND token_hash NOT LIKE 'rst\\_%' ESCAPE '\\' AND token_hash NOT LIKE 'otpf\\_%' ESCAPE '\\' AND EXISTS (SELECT 1 FROM users cu WHERE cu.id = ? AND cu.account_status = 'active')) OR (token LIKE 'otp\\_%' ESCAPE '\\'))"
     ).bind(user.id, await sha256hex(getCookie(c, 'berbirru_session') || ''), user.id),
   ]);
   if (!passwordBatch[0]?.meta?.changes) return c.json({ error: 'Sesi tidak valid. Muat ulang halaman.' }, 401);

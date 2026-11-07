@@ -1,0 +1,1 @@
+This folder contains the built output assets for the worker "berbirru" generated at 2026-11-07T15:13:52.448Z.
