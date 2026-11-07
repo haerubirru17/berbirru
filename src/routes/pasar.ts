@@ -788,11 +788,12 @@ app.post('/api/pasar/orders', async (c: any) => {
     orderId: qrisOrderId, amount: total, description: `Pasar Buku: ${p.title.slice(0, 60)}`,
   });
   if (!qris.ok) {
-    // Audit B-03: restore stok hanya bila flip status benar-benar untuk order masih-created
-    // (mimik guard EXISTS di cancel created — menutup race cancel-vs-fail-QRIS).
+    // Audit B-03 + Strix F23: restore stok TERLEBIH DAHULU selama order masih 'created',
+    // baru flip ke cancelled — invarian sama dengan cancel/expiry. Cancel konkuren yang
+    // menang balapan membuat restore no-op (guard created false) → tetap tepat-sekali.
     await c.env.DB.batch([
-      c.env.DB.prepare("UPDATE orders SET status = 'cancelled', updated_at = datetime('now') WHERE id = ? AND status = 'created'").bind(id),
       c.env.DB.prepare("UPDATE listings SET stock = MIN(stock + 1, 999) WHERE id = ? AND status != 'deleted' AND EXISTS (SELECT 1 FROM orders WHERE id = ? AND status = 'created')").bind(p.id, id),
+      c.env.DB.prepare("UPDATE orders SET status = 'cancelled', updated_at = datetime('now') WHERE id = ? AND status = 'created'").bind(id),
     ]);
     return c.json({ error: qris.error || 'Gagal menyiapkan pembayaran' }, 502);
   }
