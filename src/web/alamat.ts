@@ -91,7 +91,7 @@ export function renderAlamatFormPage(user: any, a: any = null, err = ''): string
   <form method="post" action="${ada ? '/akun/alamat/' + escapeHtml(a.id) : '/akun/alamat'}">
     <div class="al-f">
       <label>Label alamat</label>
-      <input name="label" id="fLabel" maxlength="20" value="${label}" placeholder="Rumah / Kantor / Kos">
+      <input name="label" id="fLabel" maxlength="20" value="${escapeHtml(label)}" placeholder="Rumah / Kantor / Kos">
       <div class="al-chips" style="margin-top:7px;">
         ${['Rumah', 'Kantor', 'Kos', 'Orang tua'].map((c) => `<button type="button" class="al-chip" onclick="document.getElementById('fLabel').value='${c}'">${c}</button>`).join('')}
       </div>
