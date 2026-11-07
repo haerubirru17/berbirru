@@ -894,6 +894,10 @@ app.get('/api/pasar/orders/:id/status', async (c: any) => {
   const o: any = await c.env.DB.prepare('SELECT * FROM orders WHERE id = ?').bind(c.req.param('id')).first();
   if (!o || (o.buyer_id !== me.id && o.seller_id !== me.id)) return c.json({ error: 'Tidak ditemukan' }, 404);
   if (o.status === 'created') {
+    // Strix F25: tiap poll status = satu panggilan KlikQRIS berbayar. Limiter per-user
+    // SEBELUM reconcile — 20/menit kosong untuk polling UI normal, membakar amplifikasi.
+    if (await hitRate(c.env.DB, `qris-status:${me.id}`, 20, 60))
+      return c.json({ ok: false, error: 'Terlalu sering. Coba sebentar lagi.' }, 429);
     const r = await reconcileQris(c.env.DB, c.env, o);
     if (!r.ok) return c.json({ ok: false, status: o.status, error: r.error }, 502);
     if (r.paid) o.status = 'paid';
