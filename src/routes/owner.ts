@@ -306,13 +306,18 @@ app.post('/api/owner/withdrawals/:id/settle', async (c: any) => {
     ).bind(status, note, ref || null, id, me!.id),
   ];
   if (decision === 'pay') {
+    // Strix F17: INSERT ledger kondisional pada transisi riil ke 'paid' — batang pay basi
+    // setelah rev-1 konkuren menghasilkan NOL baris (bukan debit hantu). Indeks unik
+    // (order_id, kind) tetap menegakkan at-most-once untuk pay sukses & retry.
     rows.push(
-      c.env.DB.prepare("INSERT INTO ledger (user_id, order_id, delta, kind) VALUES (?, ?, ?, 'withdraw')")
-        .bind(w.user_id, 'wd:' + w.id, -Number(w.amount)),
+      c.env.DB.prepare(
+        "INSERT INTO ledger (user_id, order_id, delta, kind) SELECT user_id, ?, ?, 'withdraw' FROM withdrawals WHERE id = ? AND status = 'paid'"
+      ).bind('wd:' + w.id, -Number(w.amount), id),
     );
     if (Number(w.fee) > 0) {
-      rows.push(c.env.DB.prepare("INSERT INTO ledger (user_id, order_id, delta, kind) VALUES (?, ?, ?, 'withdraw_fee')")
-        .bind(w.user_id, 'wd:' + w.id, -Number(w.fee)));
+      rows.push(c.env.DB.prepare(
+        "INSERT INTO ledger (user_id, order_id, delta, kind) SELECT user_id, ?, ?, 'withdraw_fee' FROM withdrawals WHERE id = ? AND status = 'paid'"
+      ).bind('wd:' + w.id, -Number(w.fee), id));
     }
   }
   let res: any[];
