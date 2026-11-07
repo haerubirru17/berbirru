@@ -907,17 +907,22 @@ app.get('/api/pasar/orders/:id/status', async (c: any) => {
 
 // Webhook hanya trigger; status API provider tetap sumber kebenaran.
 app.post('/api/klikqris/webhook', async (c: any) => {
-  // Audit B-04: webhook tanpa nonce/replay-table — pelindung defensif rate limit.
-  if (await hitRate(c.env.DB, 'klikqris:webhook', 30, 60)) return c.json({ ok: false }, 429);
+  // Strix F20: budget dipisah dua lapis — flood tak lagi menyandera callback sah.
+  // Lapis 1: banjir per-IP (callback provider datang dari IP provider, blokir penyerang tak mengganggu).
+  const ip = c.req.header('cf-connecting-ip') || 'tanpa-ip';
+  if (await hitRate(c.env.DB, `klikqris:wh-ip:${ip}`, 120, 60)) return c.json({ ok: false }, 429);
   const body: any = await c.req.json().catch(() => null);
   if (!body) return c.json({ ok: false }, 400);
   const o: any = await c.env.DB.prepare('SELECT * FROM orders WHERE qris_order_id = ?').bind(String(body.order_id || '')).first();
   if (!o) return c.json({ ok: false, error: 'order tak dikenal' }, 404);
-  // Audit R2-04: webhook pada order expired tetap memverifikasi; provider paid →
+  const v = verifyWebhook(body, { qris_order_id: o.qris_order_id, qris_signature: o.qris_signature, final_amount: Number(o.qris_final_amount || Number(o.price) + Number(o.shipping)) });
+  if (!v.ok) return c.json({ ok: false, error: v.error }, 400);
+  // Lapis 2: budget per-order SETELAH signature valid — replay/sampah sah-bentuk
+  // terbatas tanpa bisa membekukan callback asli (10/menit cukup utk retry provider).
+  if (await hitRate(c.env.DB, `klikqris:wh-order:${o.id}`, 10, 60)) return c.json({ ok: false }, 429);
+  // Audit R2-04: webhook pada order expired tetap diproses; provider paid →
   // masuk sengketa (bukan diabaikan), stok TIDAK dikembalikan lagi.
   if (o.status === 'expired') {
-    const v = verifyWebhook(body, { qris_order_id: o.qris_order_id, qris_signature: o.qris_signature, final_amount: Number(o.qris_final_amount || Number(o.price) + Number(o.shipping)) });
-    if (!v.ok) return c.json({ ok: false, error: v.error }, 400);
     const st = await getQrisStatus(c.env, o.qris_order_id);
     if (!st.ok) return c.json({ ok: false, error: st.error }, 502);
     if (!st.paid) return c.json({ ok: true, note: 'expired tanpa pembayaran' });
@@ -925,8 +930,6 @@ app.post('/api/klikqris/webhook', async (c: any) => {
     return c.json(r.ok ? { ok: true, note: 'late payment → disputed' } : { ok: false }, r.ok ? 200 : 409);
   }
   if (o.status !== 'created') return c.json({ ok: true, note: 'sudah diproses' });
-  const v = verifyWebhook(body, { qris_order_id: o.qris_order_id, qris_signature: o.qris_signature, final_amount: Number(o.qris_final_amount || Number(o.price) + Number(o.shipping)) });
-  if (!v.ok) return c.json({ ok: false, error: v.error }, 400);
   const r = await reconcileQris(c.env.DB, c.env, o);
   if (!r.ok) return c.json({ ok: false, error: r.error }, 409);
   if (!r.paid) return c.json({ ok: false, error: 'Pembayaran belum terkonfirmasi provider' }, 409);
