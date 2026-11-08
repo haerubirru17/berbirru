@@ -22,12 +22,15 @@ assert.ok(tomlUji.includes('PASAR_TUTUP = "1"'), 'uji wrangler.uji.toml menutup 
 assert.match(idx, /if \(user && isOwner\(c.env, user\)\) return next\(\);/, 'owner tetap bisa inspeksi');
 assert.match(idx, /if \(c\.req\.path\.startsWith\('\/api\/pasar'\)\) return c\.json\(\{ ok: false \}, 404\)/, 'API ditutup netral 404');
 assert.match(idx, /return c\.json\(\{ ok: false \}, 404\)/, 'API ditutup netral 404');
-assert.match(idx, /return c\.html\(renderPasarTutupPage\(\), 200, \{ 'Cache-Control': 'no-store' \}\)/, 'halaman HTML info dipakai, no-store');
+assert.match(idx, /return c\.html\(renderPasarTutupPage\(user\), 200, \{ 'Cache-Control': 'no-store' \}\)/, 'halaman info dipakai (dgn user utk navbar) + no-store');
+// pakai shell asli: CSS pasar + navbar bawah komponen app — bukan halaman statis mockup
+const pt = readFileSync(new URL('../src/web/pasarTutup.ts', import.meta.url), 'utf8');
+assert.match(pt, /PASAR_BASE_CSS/, 'halaman info memakai CSS dari halaman Pasar asli');
+assert.match(pt, /renderBottomNav\('pasar', user\)/, 'navbar bawah = komponen app asli');
 assert.ok(!idx.includes("'/api/kurir"), 'gate TIDAK menyentuh kurir (alamat tetap jalan)');
 
-// 4. Halaman info
-const pt = readFileSync(new URL('../src/web/pasarTutup.ts', import.meta.url), 'utf8');
-assert.match(pt, /Sedang dipersiapkan/);
+// 4. Copy halaman info
+assert.match(pt, /sedang dipersiapkan/i);
 assert.match(pt, /jual-beli buku/);
 assert.ok(pt.includes('href="/feed"'), 'tombol kembali ke beranda');
 

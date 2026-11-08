@@ -1,57 +1,41 @@
 // Halaman info: Pasar Buku sedang dipersiapkan (gate PASAR_TUTUP — Strix run-4 followup).
-// Desain: varian mockup #1 (krem editorial) yang dipilih owner.
-export function renderPasarTutupPage(): string {
+// WAJIB pakai shell & komponen yang sama dengan halaman Pasar asli (BASE_CSS/PASAR_BASE_CSS
+// + renderBottomNav) — bukan halaman statis mandiri — supaya style selalu sinkron dgn app.
+import { renderBottomNav } from './layout';
+import { PASAR_BASE_CSS } from './pasar';
+
+export function renderPasarTutupPage(user: any = null): string {
   return `<!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pasar Buku — BERBIRRU</title>
-<link rel="icon" type="image/svg+xml" href="/favicon.ico">
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,600;6..72,700&family=Roboto+Mono:wght@600&family=DM+Sans:wght@500;700&display=swap" rel="stylesheet">
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', sans-serif; background: #F6F3EB; color: #0B192C;
-         min-height: 100vh; display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; }
-  .topbar { display: flex; justify-content: center; padding: 14px 0 6px; }
-  .brand { font-family: 'Newsreader', serif; font-size: 23px; font-weight: 700; }
-  .brand .com { font-family: 'DM Sans', sans-serif; font-size: 12px; color: #E8641C; font-weight: 700; vertical-align: super; }
-  main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-         text-align: center; padding: 30px 26px 90px; }
-  .ikon { width: 64px; height: 64px; border: 1px solid #CED8C8; background: #FFFEF8; border-radius: 16px;
-          display: grid; place-items: center; margin-bottom: 20px; }
-  .ikon svg { width: 30px; height: 30px; stroke: #1D61E7; stroke-width: 1.8; fill: none; }
-  .label { font-family: 'Roboto Mono', monospace; font-size: 10px; letter-spacing: .18em;
-           text-transform: uppercase; color: #8A8578; margin-bottom: 10px; }
-  h1 { font-family: 'Newsreader', serif; font-size: 27px; font-weight: 700; margin-bottom: 12px; }
-  p { font-size: 14.5px; line-height: 1.65; color: #4D473C; max-width: 290px; margin-bottom: 28px; }
-  p b { color: #0B192C; }
-  a.kembali { font-family: 'Roboto Mono', monospace; font-size: 11.5px; letter-spacing: .08em;
-              color: #1D61E7; text-decoration: none; border: 1px solid #1D61E7; padding: 10px 22px; }
-  a.kembali:hover { background: #1D61E7; color: #fff; }
-  .bnav { position: fixed; bottom: 0; left: 0; right: 0; background: #FFFDF6;
-          border-top: 1px solid #DED9C8; display: flex; justify-content: space-around; padding: 10px 8px 14px; }
-  .bnav a { font-family: 'Roboto Mono', monospace; font-size: 9.5px; letter-spacing: .06em;
-            color: #8A8578; text-decoration: none; text-transform: uppercase; }
-  .bnav a.on { color: #0B192C; border-bottom: 2px solid #1D61E7; padding-bottom: 3px; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pasar Buku — BERBIRRU.COM</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.ico">
+  ${PASAR_BASE_CSS}
+  <style>
+    .tutup-wrap{max-width:560px;margin:26px auto 0;display:flex;flex-direction:column;align-items:center;text-align:center}
+    .tutup-badge{font:700 10px 'Roboto Mono';letter-spacing:.14em;background:var(--yellow);border:2px solid var(--ink);padding:4px 10px;margin:0 0 14px;text-transform:uppercase}
+    .tutup-icon{width:72px;height:72px;display:grid;place-items:center;border:var(--line);background:#fff;box-shadow:var(--small-shadow);margin:0 0 18px}
+    .tutup-icon svg{width:34px;height:34px;stroke:var(--blue);stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
+    .tutup-title{font:700 clamp(34px,7vw,52px)/1 'Newsreader',serif;letter-spacing:-.04em;margin:0 0 12px}
+    .tutup-desc{max-width:320px;margin:0 0 24px;font-size:13.5px;font-weight:700;color:var(--muted);line-height:1.6}
+    .tutup-desc b{color:var(--ink)}
+    .btn-kembali{display:inline-flex;align-items:center;gap:8px;min-height:46px;padding:11px 22px;background:var(--blue);color:#fff;border:var(--line);box-shadow:var(--small-shadow);font-weight:900;text-decoration:none}
+    .btn-kembali:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink-soft)}
+  </style>
 </head>
 <body>
-  <div class="topbar"><div class="brand">BERBIRRU<span class="com">.COM</span></div></div>
-  <main>
-    <div class="ikon"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4a2 2 0 0 0-2-2H6.5A2.5 2.5 0 0 0 4 4.5v15z"/><path d="M20 17v5H6.5A2.5 2.5 0 0 1 4 19.5"/><path d="M9 7h7M9 10h5"/></svg></div>
-    <div class="label">Pasar Buku</div>
-    <h1>Sedang dipersiapkan</h1>
-    <p>Fitur <b>jual-beli buku</b> sedang disempurnakan agar transaksi lebih aman dan nyaman. Halaman ini akan dibuka segera.</p>
-    <a class="kembali" href="/feed">Kembali ke Beranda</a>
-  </main>
-  <nav class="bnav">
-    <a href="/feed">Beranda</a>
-    <a class="on" href="/pasar">Pasar</a>
-    <a href="/pasar/jual">+</a>
-    <a href="/notifications">Notifikasi</a>
-    <a href="/akun">Profil</a>
-  </nav>
+  <div class="container">
+    <div class="tutup-wrap">
+      <span class="tutup-badge">Segera</span>
+      <div class="tutup-icon"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4a2 2 0 0 0-2-2H6.5A2.5 2.5 0 0 0 4 4.5v15z"/><path d="M20 17v5H6.5A2.5 2.5 0 0 1 4 19.5"/><path d="M9 7h7M9 10h5"/></svg></div>
+      <h1 class="tutup-title">Pasar Buku sedang dipersiapkan</h1>
+      <p class="tutup-desc">Fitur <b>jual-beli buku</b> sedang disempurnakan agar transaksi lebih aman dan nyaman. Halaman ini akan dibuka segera.</p>
+      <a class="btn-kembali" href="/feed">Kembali ke Beranda</a>
+    </div>
+  </div>
+  ${renderBottomNav('pasar', user)}
 </body>
 </html>`;
 }

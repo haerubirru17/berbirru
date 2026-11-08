@@ -85,7 +85,7 @@ app.on(['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], ['/pasar', '/pasar/*', '/api/p
   const user = await getAuthUser(c);
   if (user && isOwner(c.env, user)) return next();
   if (c.req.path.startsWith('/api/pasar')) return c.json({ ok: false }, 404);
-  return c.html(renderPasarTutupPage(), 200, { 'Cache-Control': 'no-store' });
+  return c.html(renderPasarTutupPage(user), 200, { 'Cache-Control': 'no-store' });
 });
 
 // Proteksi CSRF server-side (temuan vuln-0009). Catatan: `csrf()` bawaan Hono HANYA
