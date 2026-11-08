@@ -15,14 +15,16 @@ const GUEST = ['/', '/login', '/feed', '/sitemap.xml', '/robots.txt',
   '/api/posts?mode=latest&q=kijangemas10', '/api/posts?mode=latest&q=%25',
   '/api/users/suggest?q=snap', '/api/auth/me',
   '/api/notifications', '/api/notifications/unread-count', '/api/notifications?scope=pasar',
-  '/pasar', '/api/kurir/wilayah?parent=31.01'];
+  '/pasar'];
+// Strix run-3: /api/kurir/wilayah kini wajib sesi (proxy provider berbayar) — pindah ke AUTHED.
 
 const AUTHED = ['/api/auth/me', '/api/users/snap1',
   '/api/users/snap1/follows?type=followers', '/api/users/snap1/follows?type=following',
   '/api/users/snap1/follows?type=xxx', '/api/users/snap1/posts?tab=original', '/api/users/snap1/posts?tab=liked', '/api/users/snap1/posts?tab=saved',
   '/feed', '/u/snap1', '/notifications', '/api/notifications', '/api/notifications/unread-count', '/api/notifications?scope=pasar',
   '/api/posts?mode=following',
-  '/pasar', '/pasar/saya', '/akun', '/saldo', '/pesanan', '/toko'];
+  '/pasar', '/pasar/saya', '/akun', '/saldo', '/pesanan', '/toko',
+  '/api/kurir/wilayah?parent=31.01'];
 
 function norm(x) {
   if (typeof x === 'string') {
