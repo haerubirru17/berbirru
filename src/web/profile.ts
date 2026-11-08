@@ -731,8 +731,8 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
     // ---- MEDIA PROFIL (avatar & cover) ----
     function avatarUrl(value) {
       const s = String(value || '');
-      if (/^\/media\//.test(s)) return s;
-      if (/^[a-z0-9_-]+\/[a-z0-9_-]+[.](jpg|png|webp)([?]v=[0-9]+)?$/i.test(s)) return '/media/' + s;
+      if (/^\\/media\\//.test(s)) return s;
+      if (/^[a-z0-9_-]+\\/[a-z0-9_-]+[.](jpg|png|webp)([?]v=[0-9]+)?$/i.test(s)) return '/media/' + s;
       return '';
     }
     function avatarUrlValid(value) { return !!avatarUrl(value); }

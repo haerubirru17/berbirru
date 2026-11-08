@@ -1,0 +1,11 @@
+import { chromium } from '/home/ubuntu/.npm/_npx/d537ee5ee2a13f03/node_modules/playwright/index.mjs';
+import fs from 'fs';
+const br = await chromium.launch();
+const ctx = await br.newContext({ storageState: '/tmp/golden-state-snap1.json' });
+const page = await ctx.newPage();
+await page.goto(process.env.BASE + '/u/snap1', { waitUntil: 'domcontentloaded', timeout: 30000 });
+const html = await page.content();
+const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+fs.writeFileSync('/tmp/profil-script-0.js', scripts[0]);
+console.log('script-0 chars:', scripts[0].length, '→ /tmp/profil-script-0.js');
+await br.close();
