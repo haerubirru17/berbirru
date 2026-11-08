@@ -66,7 +66,7 @@ export function renderBottomNav(
       })()
       + item('/akun', 'Akun', icoUser, mon('akun'))
     : item('/feed', 'Beranda', icoHome, on('feed'))
-      + item('/pasar', 'Pasar', icoPasar, '')
+      + item('/pasar', 'Pasar', icoPasar, on('pasar'))
       + `
       <a href="/feed?action=compose" class="bnav-plus" data-mode="sosial" onclick="if(typeof openStudioModal==='function'){event.preventDefault();openStudioModal()}">
         <span class="p"><svg viewBox="0 0 24 24">${icoTulis}</svg></span>

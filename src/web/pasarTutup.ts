@@ -32,7 +32,7 @@ export function renderPasarTutupPage(user: any = null): string {
       <p class="tutup-desc">Fitur <b>jual-beli buku</b> sedang disempurnakan agar transaksi lebih aman dan nyaman. Halaman ini akan dibuka segera.</p>
     </div>
   </div>
-  ${renderBottomNav('', user)}
+  ${renderBottomNav('pasar', user, false, { mode: 'sosial' })}
 </body>
 </html>`;
 }

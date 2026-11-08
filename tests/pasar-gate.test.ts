@@ -26,7 +26,7 @@ assert.match(idx, /return c\.html\(renderPasarTutupPage\(user\), 200, \{ 'Cache-
 // pakai shell asli: CSS pasar + navbar bawah komponen app — bukan halaman statis mockup
 const pt = readFileSync(new URL('../src/web/pasarTutup.ts', import.meta.url), 'utf8');
 assert.match(pt, /PASAR_BASE_CSS/, 'halaman info memakai CSS dari halaman Pasar asli');
-assert.match(pt, /renderBottomNav\('', user\)/, 'navbar mode SOSIAL (komponen app asli)');
+assert.match(pt, /renderBottomNav\('pasar', user, false, \{ mode: 'sosial' \}\)/, 'navbar SOSIAL dengan Pasar terpilih (is-on)');
 assert.ok(!pt.includes('Kembali ke Beranda'), 'tanpa tombol kembali');
 assert.ok(!idx.includes("'/api/kurir"), 'gate TIDAK menyentuh kurir (alamat tetap jalan)');
 
