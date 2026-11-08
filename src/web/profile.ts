@@ -39,7 +39,9 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     /* Profile Card with Integrated Cover Banner (Zero Dead Space) */
     .profile-card {
       background: var(--bg-card); border: var(--border-thick); border-radius: var(--radius);
-      box-shadow: var(--shadow-hard-lg); overflow: hidden; margin-bottom: 18px; position: relative;
+      box-shadow: var(--shadow-hard-lg); margin-bottom: 18px; position: relative;
+      /* overflow:hidden dihapus (Strix run-4 lanjutan): memotong settings-popover
+         di layar sempit saat daftar skin membumbung; radius-0 tak butuh clipping */
     }
 
     /* Banner Gradasi Transparan Halus ke Bawah */
@@ -52,7 +54,9 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     /* Floating Navigation di dalam banner */
     .banner-floating-nav {
       position: absolute; top: 10px; left: 10px; right: 10px;
-      display: flex; justify-content: space-between; align-items: center; z-index: 10;
+      display: flex; justify-content: space-between; align-items: center; z-index: 960;
+      /* Strix run-4 lanjutan: 10 → 960 — z10 membuat seluruh menu+popover kalah
+         oleh nav-bar bawah (z75) saat popover membumbung melewati band nav. */
     }
     .nav-btn-glass {
       background:#fff;
@@ -71,7 +75,7 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     .settings-popover {
       display: none; position: absolute; top: 48px; right: 10px; width: 190px;
       background: #FFFFFF; border: var(--border-thick); border-radius: var(--radius-sm);
-      box-shadow: var(--shadow-hard); z-index: 100; padding: 6px; flex-direction: column; gap: 2px;
+      box-shadow: var(--shadow-hard); z-index: 950; padding: 6px; flex-direction: column; gap: 2px;
     }
     .settings-item {
       padding: 8px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 800;
