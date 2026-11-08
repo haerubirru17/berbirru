@@ -1,4 +1,5 @@
 import { getAuthUser, hitRate } from '../lib/shared';
+import { SU_AKTIF } from '../lib/pasar-core';
 import { ambilWilayah, cekTarifOngkir, KURIR_DIDUKUNG, KURIR_LABEL } from '../kurir';
 
 // Handlers kurir dipindah verbatim dari index.ts.
@@ -29,7 +30,7 @@ app.post('/api/pasar/ongkir', async (c: any) => {
   const body: any = await c.req.json().catch(() => null);
   const destId = String(body?.dest_id || '').trim();
   const destName = String(body?.dest_name || '').trim().slice(0, 120);
-  const p: any = await c.env.DB.prepare("SELECT id, seller_id, weight_g, couriers FROM listings WHERE id = ? AND status = 'active' AND stock > 0")
+  const p: any = await c.env.DB.prepare("SELECT id, seller_id, weight_g, couriers FROM listings WHERE id = ? AND status = 'active' AND stock > 0" + SU_AKTIF)
     .bind(String(body?.listing_id || '')).first();
   if (!p) return c.json({ error: 'Listing tidak tersedia' }, 404);
   if (!destId) return c.json({ error: 'Pilih kecamatan tujuan dulu' }, 400);

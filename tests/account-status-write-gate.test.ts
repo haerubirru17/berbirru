@@ -27,8 +27,8 @@ assert(auth.includes('DELETE FROM sessions WHERE user_id = ? AND ((token_hash IS
   'change-password revoke wajib membatasi sesi lain');
 assert(auth.includes("OR (token LIKE 'otp\\\\_%' ESCAPE '\\\\'))"),
   'change-password revoke wajib mencabut OTP pending (Strix run-2 #3)');
-assert(auth.includes("token_hash NOT LIKE 'rst\\\\_%' ESCAPE '\\\\'"),
-  'change-password revoke wajib mempertahankan artefak rst_');
+assert.ok(!auth.includes("token_hash NOT LIKE 'rst\\\\_%' ESCAPE '\\\\'"),
+  'change-password revoke wajib MENCABUT tiket reset rst_ (Strix run-4 #2)');
 assert(auth.includes("token_hash NOT LIKE 'otpf\\\\_%' ESCAPE '\\\\'"),
   'change-password revoke wajib mempertahankan artefak otpf_');
 assert.match(auth, /EXISTS \(SELECT 1 FROM users cu WHERE cu\.id = \? AND cu\.account_status = 'active'\)/,

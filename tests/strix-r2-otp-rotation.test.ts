@@ -16,12 +16,12 @@ assert.ok(src.includes("DELETE FROM sessions WHERE user_id = ? AND ((token_hash 
   'cabang lama revoke sesi token_hash tetap ada');
 assert.ok(src.includes("OR (token LIKE 'otp\\\\_%' ESCAPE '\\\\'))"),
   'revoke wajib mencakup baris OTP pending (token LIKE otp_) selain cabang token_hash');
-assert.ok(src.includes("token_hash NOT LIKE 'rst\\\\_%' ESCAPE '\\\\'"), 'tiket reset rst_ tetap dikecualikan');
+assert.ok(!src.includes("token_hash NOT LIKE 'rst\\\\_%' ESCAPE '\\\\'"), 'tiket reset rst_ kini IKUT dicabut (Strix run-4 #2)');
 assert.ok(src.includes("token_hash NOT LIKE 'otpf\\\\_%' ESCAPE '\\\\'"), 'artefak flow otpf_ tetap dikecualikan');
 
 // 2. Probe: OTP pending TERHAPUS; sesi sekarang, rst_, otpf_ UTUH.
 const REVOKE = `DELETE FROM sessions WHERE user_id = ? AND (
-  (token_hash IS NOT NULL AND token_hash <> ? AND token_hash NOT LIKE 'rst\\_%' ESCAPE '\\' AND token_hash NOT LIKE 'otpf\\_%' ESCAPE '\\'
+  (token_hash IS NOT NULL AND token_hash <> ? AND token_hash NOT LIKE 'otpf\\_%' ESCAPE '\\'
    AND EXISTS (SELECT 1 FROM users cu WHERE cu.id = ? AND cu.account_status = 'active'))
   OR (token LIKE 'otp\\_%' ESCAPE '\\'))`;
 
@@ -37,14 +37,14 @@ INSERT INTO sessions (id, user_id, token, token_hash, expires_at) VALUES
  ('flow-artefak','u', NULL, 'otpf_flow',      datetime('now', '+10 minutes'));`);
 
 const changes = db.prepare(REVOKE).run('u', 'hash-sesi-now', 'u').changes;
-assert.equal(Number(changes), 2, 'terhapus: sesi-lain + otp-pending (bukan sekadar 1)');
+assert.equal(Number(changes), 3, 'terhapus: sesi-lain + otp-pending + tiket-reset (bukan sekadar 1)');
 const rows = new Set(
   (db.prepare(`SELECT id FROM sessions`).all() as any[]).map((r) => r.id)
 );
 assert.ok(!rows.has('otp-pending'), 'OTP pending wajib tercabut');
 assert.ok(rows.has('sesi-now'), 'sesi sekarang tetap hidup');
 assert.ok(rows.has('sesi-lain') === false, 'sesi lain tetap dicabut (perilaku lama)');
-assert.ok(rows.has('tiket-reset'), 'tiket reset rst_ tidak boleh ikut terhapus');
+assert.ok(!rows.has('tiket-reset'), 'tiket reset PENDING wajib tercabut saat ganti sandi (Strix run-4 #2)');
 assert.ok(rows.has('flow-artefak'), 'artefak otpf_ tidak boleh ikut terhapus');
 
 // 3. anti-tertukar: token 'otpX_dummy' bukan prefix otp_ (underscore di-escape, bukan wildcard)

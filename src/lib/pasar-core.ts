@@ -4,6 +4,10 @@
 export const ORDER_EXPIRE_MIN = 48 * 60;      // created tanpa bayar 48 jam → expired (cron)
 export const AUTO_COMPLETE_DAYS = 5;          // handed + diam D+5 → auto completed (cron)
 
+// Strix run-4 #5: seller suspended tidak boleh menjual — dipasang di semua query
+// listing buyer-facing dan kedua authority INSERT order (pasar.ts + kurir.ts).
+export const SU_AKTIF = " AND EXISTS (SELECT 1 FROM users su WHERE su.id = listings.seller_id AND su.account_status = 'active')";
+
 // Notifikasi order: satu helper, dipanggil dari semua transisi status.
 export async function notifyOrder(db: any, opts: { userId: string; actorId: string; type: string; orderId: string | null }) {
   if (!opts.userId || !opts.actorId || opts.userId === opts.actorId) return; // jangan notif diri sendiri
