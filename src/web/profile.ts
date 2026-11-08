@@ -210,6 +210,26 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
     }
     .feed-list { display: flex; flex-direction: column; gap: 16px; }
     .profile-empty{background:#FFF;padding:24px;border:3px solid var(--ink);border-radius:16px;text-align:center;font-weight:700;box-shadow:4px 4px 0 #1E293B}
+    /* Skeleton shimmer saat pindah tab — disamakan dengan beranda/feed */
+    .skeleton-card { background: var(--bg-card); border: var(--border-med); box-shadow: var(--shadow-hard-sm);
+      position: relative; margin: 0 0 14px; overflow: hidden; }
+    .sk-row { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: transparent;
+      border-top: 0; border-bottom: 2px solid #E2E8F0; }
+    .sk-avatar { width: 40px; height: 40px; background: var(--blue); flex-shrink: 0; border-radius: 0; }
+    .sk-lines { flex: 1; }
+    .sk-line { height: 8px; background: #E2E8F0; margin: 6px 0; border-radius: 0; }
+    .sk-line.w60 { width: 60%; } .sk-line.w40 { width: 40%; }
+    .sk-body { padding: 12px; }
+    .sk-line.tall { height: 12px; width: 45%; margin-bottom: 10px; }
+    .sk-line.full { width: 100%; } .sk-line.w90 { width: 90%; } .sk-line.w75 { width: 75%; }
+    .sk-footer { display: flex; justify-content: space-between; padding: 10px 12px; border-top: 2px solid #E2E8F0; }
+    .sk-pill { width: 52px; height: 8px; background: #E2E8F0; border: 0; border-radius: 0; }
+    .sk-pill.yellow { background: var(--yellow); width: 72px; }
+    @keyframes editorial-shimmer { 0% { opacity: .45; } 50% { opacity: 1; } 100% { opacity: .45; } }
+    .sk-line, .sk-avatar, .sk-pill { animation: editorial-shimmer 1.6s ease-in-out infinite; }
+    .skeleton-card:nth-of-type(even) .sk-line, .skeleton-card:nth-of-type(even) .sk-avatar,
+    .skeleton-card:nth-of-type(even) .sk-pill { animation-delay: .3s; }
+    @media (prefers-reduced-motion: reduce) { .sk-line, .sk-avatar, .sk-pill { animation: none; } }
 
     /* Unified Threads Card Style in Profile with Paperclip Badge */
     .feed-list { display: flex; flex-direction: column; gap: 20px; }
@@ -1079,15 +1099,29 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
 
     let activeProfileTab = 'original';
     async function loadProfilePosts(tab = 'original') {
+      const container = document.getElementById('profileFeed');
+      // Strix run-4 lanjutan: shimmer skeleton sama seperti beranda saat pindah tab
+      container.innerHTML = \`
+        <div class="skeleton-card">
+          <div class="sk-row"><div class="sk-avatar"></div>
+            <div class="sk-lines"><div class="sk-line w40"></div><div class="sk-line w60"></div></div></div>
+          <div class="sk-body"><div class="sk-line tall"></div><div class="sk-line full"></div><div class="sk-line w90"></div><div class="sk-line w75"></div></div>
+          <div class="sk-footer"><div style="display:flex;gap:6px"><div class="sk-pill"></div><div class="sk-pill"></div></div><div class="sk-pill yellow"></div></div>
+        </div>
+        <div class="skeleton-card">
+          <div class="sk-row"><div class="sk-avatar"></div>
+            <div class="sk-lines"><div class="sk-line w40"></div><div class="sk-line w60"></div></div></div>
+          <div class="sk-body"><div class="sk-line tall"></div><div class="sk-line full"></div><div class="sk-line w90"></div></div>
+          <div class="sk-footer"><div style="display:flex;gap:6px"><div class="sk-pill"></div><div class="sk-pill"></div></div><div class="sk-pill yellow"></div></div>
+        </div>\`;
       try {
         const res = await fetch('/api/users/' + encodeURIComponent(currentPenName) + '/posts?tab=' + tab);
-        if (!res.ok) return;
+        if (!res.ok) { container.innerHTML = '<div class="profile-empty">Gagal memuat. Coba tarik ke bawah / muat ulang.</div>'; return; }
         const data = await res.json();
         if (tab !== activeProfileTab) return;
         const total = document.getElementById('profileTabTotal');
         const labels = { original:'karya', likes:'disukai', saved:'tersimpan', chains:'estafet' };
         total.textContent = (data.total ?? data.posts?.length ?? 0) + ' ' + labels[tab];
-        const container = document.getElementById('profileFeed');
         if (!data.posts || !data.posts.length) {
           container.innerHTML = '<div class="profile-empty">Belum ada warkah di kategori ini.</div>';
           return;
