@@ -16,7 +16,7 @@ import { validasiPenerima, normalisasiHp } from '../lib/alamat';
 import { slugToko, slugUnik } from '../lib/toko';
 import { cekResi, validasiFormatResi, ambilWilayah, cekTarifOngkir, KURIR_DIDUKUNG, KURIR_LABEL } from '../kurir';
 import { validStock } from '../lib/pasar-inventory';
-import { notifyOrder, logOrderEvent, sellerBalance, KURIR_MAP } from '../lib/pasar-core';
+import { notifyOrder, logOrderEvent, sellerBalance, KURIR_MAP, SU_AKTIF } from '../lib/pasar-core';
 import { Env } from '../env';
 
 // Seluruh handler, helper, konstanta, dan middleware pasar dipindah verbatim dari index.ts. (reconcileQris bertingkat top-level supaya bisa di-import owner.ts — audit B-05)
@@ -307,7 +307,7 @@ app.get('/pasar', async (c: any) => {
 
   const perPage = 24;
   const hal = Math.max(1, Math.min(99, Number.parseInt(String(c.req.query('hal') || '1'), 10) || 1));
-  let where = " FROM listings WHERE status = 'active' AND stock > 0";
+  let where = " FROM listings WHERE status = 'active' AND stock > 0" + SU_AKTIF;
   const binds: any[] = [];
   if (q) {
     const pola = '%' + q.replace(/[\\%_]/g, '\\$&') + '%';
@@ -524,11 +524,11 @@ app.get('/toko/:slug', async (c: any) => {
   const perPage = 24;
   const hal = Math.max(1, Math.min(99, Number.parseInt(String(c.req.query('hal') || '1'), 10) || 1));
   const jumlah: any = await c.env.DB.prepare(
-    "SELECT COUNT(*) AS n FROM listings WHERE seller_id = ? AND status = 'active' AND stock > 0"
+    "SELECT COUNT(*) AS n FROM listings WHERE seller_id = ? AND status = 'active' AND stock > 0" + SU_AKTIF
   ).bind(toko.id).first();
   const rows = await c.env.DB.prepare(
     `SELECT id, title, price, cond, photos, stock FROM listings
-      WHERE seller_id = ? AND status = 'active' AND stock > 0 ORDER BY created_at DESC LIMIT ? OFFSET ?`
+      WHERE seller_id = ? AND status = 'active' AND stock > 0${SU_AKTIF} ORDER BY created_at DESC LIMIT ? OFFSET ?`
   ).bind(toko.id, perPage, (hal - 1) * perPage).all();
   const done: any = await c.env.DB.prepare(
     "SELECT COUNT(*) AS n FROM orders WHERE seller_id = ? AND status = 'completed'"
@@ -626,7 +626,7 @@ app.get('/pasar/:id', async (c: any) => {
   const user = await getAuthUser(c);
   const owner = isOwner(c.env, user);
   const p: any = await c.env.DB.prepare(
-    owner ? 'SELECT * FROM listings WHERE id = ?' : "SELECT * FROM listings WHERE id = ? AND status NOT IN ('hidden','deleted')"
+    owner ? 'SELECT * FROM listings WHERE id = ?' : "SELECT * FROM listings WHERE id = ? AND status NOT IN ('hidden','deleted')" + SU_AKTIF
   ).bind(c.req.param('id')).first();
   if (!p) return c.notFound();
   const seller: any = await c.env.DB.prepare(
@@ -648,7 +648,7 @@ app.get('/pasar/:id', async (c: any) => {
 app.get('/pasar/:id/beli', async (c: any) => {
   const user = await getAuthUser(c);
   if (!user) return c.redirect('/login');
-  const p: any = await c.env.DB.prepare("SELECT * FROM listings WHERE id = ? AND status = 'active' AND stock > 0")
+  const p: any = await c.env.DB.prepare("SELECT * FROM listings WHERE id = ? AND status = 'active' AND stock > 0" + SU_AKTIF)
     .bind(c.req.param('id')).first();
   if (!p) return c.notFound();
   if (p.seller_id === user.id) return c.redirect(`/pasar/${p.id}`);
@@ -677,7 +677,7 @@ app.post('/api/pasar/orders', async (c: any) => {
   const kesepakatan = String(body.kesepakatan || '').trim().slice(0, 500);
   if (kesepakatan.length < 10) return c.json({ error: 'Tuliskan kesepakatan minimal 10 karakter' }, 400);
 
-  const p: any = await c.env.DB.prepare("SELECT * FROM listings WHERE id = ? AND status = 'active' AND stock > 0")
+  const p: any = await c.env.DB.prepare("SELECT * FROM listings WHERE id = ? AND status = 'active' AND stock > 0" + SU_AKTIF)
     .bind(String(body.listing_id || '')).first();
   if (!p) return c.json({ error: 'Listing tidak tersedia' }, 404);
   if (p.seller_id === me.id) return c.json({ error: 'Tidak bisa membeli barang sendiri' }, 400);
@@ -746,7 +746,7 @@ app.post('/api/pasar/orders', async (c: any) => {
          WHERE id = ? AND status = 'active' AND stock > 0
            AND ? <= (SELECT COALESCE(SUM(delta),0) FROM ledger WHERE user_id = ?)
                   - (SELECT COALESCE(SUM(amount + fee),0) FROM withdrawals WHERE user_id = ? AND status = 'requested')
-           AND EXISTS (SELECT 1 FROM users au WHERE au.id = ? AND au.account_status = 'active')`
+           AND EXISTS (SELECT 1 FROM users au WHERE au.id = ? AND au.account_status = 'active')${SU_AKTIF}`
       ).bind(id, p.id, me.id, p.seller_id, p.price, shipping, kesepakatan, total,
         picked.courier, picked.courierName, picked.service, picked.eta, destId, destName || null, destAddress,
         receiverName, receiverPhone, postalCode, p.id, total, me.id, me.id, me.id),
@@ -776,7 +776,7 @@ app.post('/api/pasar/orders', async (c: any) => {
          dest_district_id, dest_district_name, dest_address, receiver_name, receiver_phone, postal_code)
        SELECT ?,?,?,?,?,?,'created',?,?,?,?,?,?,?,?,?,?,?,?,? FROM listings
         WHERE id = ? AND status = 'active' AND stock > 0
-         AND EXISTS (SELECT 1 FROM users au WHERE au.id = ? AND au.account_status = 'active')`
+         AND EXISTS (SELECT 1 FROM users au WHERE au.id = ? AND au.account_status = 'active')${SU_AKTIF}`
     ).bind(id, p.id, me.id, p.seller_id, p.price, shipping, kesepakatan, qrisOrderId, total,
       picked.courier, picked.courierName, picked.service, picked.eta, destId, destName || null, destAddress,
       receiverName, receiverPhone, postalCode, p.id, me.id),
@@ -1148,14 +1148,15 @@ app.post('/pasar/order/:id/dispute', async (c: any) => {
   const note = String(body?.note || '').trim().slice(0, 500);
   if (note.length < 10) return c.json({ error: 'Ceritakan masalah minimal 10 karakter' }, 400);
   const o: any = await c.env.DB.prepare('SELECT * FROM orders WHERE id = ?').bind(c.req.param('id')).first();
-  if (!o || (o.buyer_id !== me.id && o.seller_id !== me.id)) return c.json({ error: 'Tidak ditemukan' }, 404);
+  // Strix run-4 #3: alur sengketa buyer-only — seller tak boleh membekukan order buyer.
+  if (!o || o.buyer_id !== me.id) return c.json({ error: 'Tidak ditemukan' }, 404);
   if (!['paid', 'handed'].includes(o.status)) return c.json({ error: 'Status tidak bisa disengketakan' }, 409);
 
   const res = await c.env.DB.prepare(
     `UPDATE orders SET status = 'disputed', updated_at = datetime('now') WHERE id = ? AND status = ? AND EXISTS (SELECT 1 FROM users au WHERE au.id = ? AND au.account_status = 'active')`
   ).bind(o.id, o.status, me.id).run();
   if ((res.meta?.changes || 0) === 0) return c.json({ ok: true });
-  await logOrderEvent(c.env.DB, o.id, me.id === o.buyer_id ? 'buyer' : 'seller', o.status, 'disputed', note);
+  await logOrderEvent(c.env.DB, o.id, 'buyer', o.status, 'disputed', note);
   await notifyOrder(c.env.DB, {
     userId: me.id === o.buyer_id ? o.seller_id : o.buyer_id,
     actorId: me.id, type: 'order_dispute', orderId: o.id,
@@ -1273,9 +1274,19 @@ app.patch('/api/pasar/listings/:id', async (c: any) => {
   ).bind(l.id).first();
   if (live) return c.json({ error: 'Ada pesanan berjalan — stok belum bisa diubah' }, 409);
 
-  const upd = await c.env.DB.prepare(`UPDATE listings SET title = ?, price = ?, cond = ?, stock = ? WHERE id = ? AND EXISTS (SELECT 1 FROM users au WHERE au.id = ? AND au.account_status = 'active')`)
-    .bind(title, Math.round(price), cond, stock, l.id, me.id).run();
-  if (!upd.meta?.changes) return c.json({ error: 'Sesi tidak valid. Muat ulang halaman.' }, 401);
+  const upd = await c.env.DB.prepare(`UPDATE listings SET title = ?, price = ?, cond = ?, stock = ?
+    WHERE id = ? AND EXISTS (SELECT 1 FROM users au WHERE au.id = ? AND au.account_status = 'active')
+    AND NOT EXISTS (SELECT 1 FROM orders WHERE listing_id = ? AND status IN ('created','paid','handed','disputed'))`)
+    .bind(title, Math.round(price), cond, stock, l.id, me.id, l.id).run();
+  if (!upd.meta?.changes) {
+    // Strix run-4 #1: zero-changes dibedakan — akun nonaktif = 401; order live lahir
+    // di antara pre-check dan UPDATE (TOCTOU) = 409. Statement = hakim tunggal.
+    const live: any = await c.env.DB.prepare(
+      "SELECT 1 FROM orders WHERE listing_id = ? AND status IN ('created','paid','handed','disputed') LIMIT 1"
+    ).bind(l.id).first();
+    if (live) return c.json({ error: 'Ada pesanan berjalan — stok belum bisa diubah' }, 409);
+    return c.json({ error: 'Sesi tidak valid. Muat ulang halaman.' }, 401);
+  }
   return c.json({ ok: true });
 });
 
