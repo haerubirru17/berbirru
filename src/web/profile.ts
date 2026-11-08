@@ -344,7 +344,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
 
     .ico { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 
-    .kern-profile-brand,.profile-eyebrow,.profile-since,.profile-liked-count{display:none}
+    .kern-profile-brand,.profile-eyebrow,.profile-since{display:none}
   </style>
 </head>
 <body>
@@ -466,7 +466,6 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
             <b id="countFollowing">0</b>
           </button>
         </div>
-        <div class="profile-liked-count" id="profileLikedCount"></div>
       </div>
     </div>
 
@@ -717,7 +716,6 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
           document.getElementById('countFollowing').textContent = data.user.following_count || 0;
           const joined = data.user.created_at && new Date(data.user.created_at).getFullYear();
           document.getElementById('profileSince').textContent = Number.isFinite(joined) ? 'Sejak ' + joined : '';
-          document.getElementById('profileLikedCount').textContent = (data.user.likes_count || 0) + ' disukai';
           setFollowBtn(!!data.user.is_following);
         }
       } catch (err) { console.error(err); }
