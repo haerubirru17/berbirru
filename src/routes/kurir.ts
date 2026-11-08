@@ -4,7 +4,11 @@ import { ambilWilayah, cekTarifOngkir, KURIR_DIDUKUNG, KURIR_LABEL } from '../ku
 // Handlers kurir dipindah verbatim dari index.ts.
 export function mountKurir(app: any) {
 app.get('/api/kurir/wilayah', async (c: any) => {
-  // Audit D-05: tamu boleh membaca, tapi upstream berbayar — batasi per-IP.
+  // Strix run-3 #2: upstream berbayar wajib sesi aktif — cek SEBELUM limiter & provider,
+  // jadi tamu tidak makan budget limiter maupun kuota BinderByte.
+  const me = await getAuthUser(c);
+  if (!me) return c.json({ ok: false, error: 'Harus masuk dulu' }, 401);
+  // Audit D-05: tetap dibatasi per-IP sebagai kontrol sekunder untuk sesi yang sah.
   const ip = c.req.header('cf-connecting-ip') || 'unknown';
   if (await hitRate(c.env.DB, `kurir:wil:${ip}`, 30, 60)) return c.json({ ok: false, error: 'Terlalu banyak. Coba sebentar lagi.' }, 429);
   const parent = (c.req.query('parent') || '').trim();
@@ -15,7 +19,11 @@ app.get('/api/kurir/wilayah', async (c: any) => {
 
 // Tarif ongkir live untuk satu listing (pembeli pilih kecamatan tujuan).
 app.post('/api/pasar/ongkir', async (c: any) => {
-  // Audit D-05: hit provider berbayar per request — batasi per-IP.
+  // Strix run-3 #3: hit provider berbayar wajib sesi aktif — cek SEBELUM limiter,
+  // parsing body, DB lookup, dan provider (tamu = 401, nol panggilan upstream).
+  const me = await getAuthUser(c);
+  if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
+  // Audit D-05: limiter per-IP tetap sebagai kontrol sekunder.
   const ip = c.req.header('cf-connecting-ip') || 'unknown';
   if (await hitRate(c.env.DB, `kurir:ongkir:${ip}`, 12, 60)) return c.json({ error: 'Terlalu banyak. Coba sebentar lagi.' }, 429);
   const body: any = await c.req.json().catch(() => null);
