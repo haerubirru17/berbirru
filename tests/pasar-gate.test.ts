@@ -26,12 +26,12 @@ assert.match(idx, /return c\.html\(renderPasarTutupPage\(user\), 200, \{ 'Cache-
 // pakai shell asli: CSS pasar + navbar bawah komponen app — bukan halaman statis mockup
 const pt = readFileSync(new URL('../src/web/pasarTutup.ts', import.meta.url), 'utf8');
 assert.match(pt, /PASAR_BASE_CSS/, 'halaman info memakai CSS dari halaman Pasar asli');
-assert.match(pt, /renderBottomNav\('pasar', user\)/, 'navbar bawah = komponen app asli');
+assert.match(pt, /renderBottomNav\('', user\)/, 'navbar mode SOSIAL (komponen app asli)');
+assert.ok(!pt.includes('Kembali ke Beranda'), 'tanpa tombol kembali');
 assert.ok(!idx.includes("'/api/kurir"), 'gate TIDAK menyentuh kurir (alamat tetap jalan)');
 
 // 4. Copy halaman info
 assert.match(pt, /sedang dipersiapkan/i);
 assert.match(pt, /jual-beli buku/);
-assert.ok(pt.includes('href="/feed"'), 'tombol kembali ke beranda');
 
 console.log('OK — pasar-gate: PASAR_TUTUP satu titik, owner bypass, kurir bebas');
