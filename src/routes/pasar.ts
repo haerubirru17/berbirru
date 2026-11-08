@@ -192,8 +192,10 @@ app.post('/api/pasar/order/:id/evidence', async (c: any) => {
      SELECT ?, ?, ?, ?, ?, ? WHERE (
        SELECT COUNT(*) FROM order_evidence WHERE order_id = ? AND uploader_id = ?
 ) < ${MAKS_BUKTI_PER_PIHAK}
-       AND EXISTS (SELECT 1 FROM users au WHERE au.id = ? AND au.account_status = 'active')`
-  ).bind(crypto.randomUUID(), o.id, me.id, me.id === o.buyer_id ? 'buyer' : 'seller', r.key, note || null, o.id, me.id, me.id).run();
+       AND EXISTS (SELECT 1 FROM users au WHERE au.id = ? AND au.account_status = 'active')
+       AND EXISTS (SELECT 1 FROM orders co WHERE co.id = ? AND co.status = 'disputed'
+         AND (co.buyer_id = ? OR co.seller_id = ?))`
+  ).bind(crypto.randomUUID(), o.id, me.id, me.id === o.buyer_id ? 'buyer' : 'seller', r.key, note || null, o.id, me.id, me.id, o.id, me.id, me.id).run();
   if (!ins.meta.changes) {
     // W3 review B: INSERT gagal = key baru jangan jadi orphan tanpa jejak.
     await c.env.MEDIA.delete(r.key).catch(() => console.warn('evidence: orphan key setelah guard tolak:', r.key));
