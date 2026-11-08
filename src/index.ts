@@ -28,6 +28,7 @@ import { renderNotaPengiriman, renderNotaPembelian } from './web/nota';
 import { renderVerifikasiPage } from './web/verifikasi';
 import { renderPasarSaya } from './web/pasarSaya';
 import { renderTokoPublikPage } from './web/tokoPublik';
+import { renderPasarTutupPage } from './web/pasarTutup';
 import { renderOwnerPage } from './web/owner';
 import { renderAkunAdminPage } from './web/akunAdmin';
 import { renderBuktiPencairan } from './web/pencairan';
@@ -75,6 +76,17 @@ app.use('*', cors({
   origin: (origin: string) => (ALLOWED_ORIGINS.includes(origin) ? origin : null),
   credentials: true,
 }));
+
+// Pasar Buku ditutup sementara (Strix run-1..4 + pemolesan alur) — satu titik gate.
+// Buka kembali: hapus/kosongkan var PASAR_TUTUP di [vars] wrangler (prod & uji) → deploy.
+// Owner tetap bisa inspeksi. Cron sweep & webhook QRIS tidak lewat gate ini (tetap hidup).
+app.on(['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], ['/pasar', '/pasar/*', '/api/pasar/*'], async (c, next) => {
+  if (c.env.PASAR_TUTUP !== '1') return next();
+  const user = await getAuthUser(c);
+  if (user && isOwner(c.env, user)) return next();
+  if (c.req.path.startsWith('/api/pasar')) return c.json({ ok: false }, 404);
+  return c.html(renderPasarTutupPage(), 200, { 'Cache-Control': 'no-store' });
+});
 
 // Proteksi CSRF server-side (temuan vuln-0009). Catatan: `csrf()` bawaan Hono HANYA
 // memeriksa content-type form (x-www-form-urlencoded|multipart|text/plain), sehingga

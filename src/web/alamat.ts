@@ -1,5 +1,5 @@
 import { THEME } from './theme';
-import { escapeHtml } from '../lib/sanitize';
+import { escapeHtml, jsonScript } from '../lib/sanitize';
 import { PASAR_BASE_CSS } from './pasar';
 import { renderBottomNav } from './layout';
 
@@ -141,7 +141,7 @@ export function renderAlamatFormPage(user: any, a: any = null, err = ''): string
   K.onchange=function(){C.innerHTML='<option value="">Kecamatan</option>';sync();if(K.value)isiWilayah(C,K.value,'Kecamatan')};
   C.onchange=sync;
   (async function(){
-    var P0='${v('province_id')}',K0='${v('city_id')}',C0='${v('district_id')}';
+    var P0=${jsonScript(String(d.province_id ?? ''))},K0=${jsonScript(String(d.city_id ?? ''))},C0=${jsonScript(String(d.district_id ?? ''))};
     await isiWilayah(P,null,'Provinsi');
     if(!P0) return;
     P.value=P0; await isiWilayah(K,P0,'Kota/Kabupaten'); K.value=K0;

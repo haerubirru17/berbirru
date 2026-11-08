@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pasar Buku — BERBIRRU</title>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,700;1,6..72,500&family=Roboto+Mono:wght@600&family=DM+Sans:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: #FFFDF6; color: #0B192C;
+         min-height: 100vh; display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; }
+  .topbar { display: flex; justify-content: center; padding: 14px 0 4px; }
+  .brand { font-family: 'Newsreader', serif; font-size: 22px; font-weight: 700; }
+  .brand .com { font-size: 11px; color: #E8641C; font-weight: 700; vertical-align: super; }
+  main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 30px 24px 100px; }
+  .leaf { width: 100%; max-width: 320px; border: 1px solid #D8D2BE; background: #FFFEF8;
+          padding: 34px 26px 30px; position: relative;
+          box-shadow: 0 1px 0 #D8D2BE, 0 10px 24px -18px rgba(11,25,44,.35); }
+  .leaf::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+                  background: repeating-linear-gradient(90deg, #1D61E7 0 18px, #F5C518 18px 36px, #EF735F 36px 54px, #88E6BD 54px 72px); }
+  .label { font-family: 'Roboto Mono', monospace; font-size: 9.5px; letter-spacing: .2em;
+           text-transform: uppercase; color: #9A947F; margin-bottom: 14px; }
+  h1 { font-family: 'Newsreader', serif; font-weight: 500; font-size: 25px; line-height: 1.25; margin-bottom: 14px; }
+  h1 em { color: #1D61E7; }
+  p { font-size: 13.5px; line-height: 1.65; color: #6B6553; margin-bottom: 24px; }
+  .meta { font-family: 'Roboto Mono', monospace; font-size: 9px; color: #B4AD97;
+          letter-spacing: .1em; text-transform: uppercase; display: flex; justify-content: space-between;
+          border-top: 1px dashed #D8D2BE; padding-top: 12px; }
+  .bnav { position: fixed; bottom: 0; left: 0; right: 0; background: #FFFEF8;
+          border-top: 1px solid #DED9C8; display: flex; justify-content: space-around; padding: 10px 8px 14px; }
+  .bnav a { font-size: 10px; font-weight: 700; color: #B4AD97; text-decoration: none; }
+  .bnav a.on { color: #0B192C; }
+</style>
+</head>
+<body>
+  <div class="topbar"><div class="brand">BERBIRRU<span class="com">.COM</span></div></div>
+  <main>
+    <div class="leaf">
+      <div class="label">Catatan dari rak</div>
+      <h1>Halaman ini sedang <em>tinta-tintanya kering</em>.</h1>
+      <p>Pasar Buku sedang kami siapkan — agar setiap puisi punya kesempatan menjadi buku yang berpindah tangan. Nantikan pembukaannya.</p>
+      <div class="meta"><span>Pasar Buku</span><span>Segera</span></div>
+    </div>
+  </main>
+  <nav class="bnav">
+    <a href="#">Beranda</a>
+    <a class="on" href="#">Pasar</a>
+    <a href="#">+</a>
+    <a href="#">Notifikasi</a>
+    <a href="#">Profil</a>
+  </nav>
+</body>
+</html>
