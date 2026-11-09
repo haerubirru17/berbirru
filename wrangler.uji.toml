@@ -24,6 +24,9 @@ KERN_THEME_PRESET = "kern"
 # Mode scan Strix R6 (±): gate sandbox DIBUKA sementara utk pentest. Kembalikan ke "1" segera
 # setelah scan selesai. Prod (wrangler.toml) tetap PASAR_TUTUP="1".
 PASAR_TUTUP = "0"
+# QRIS sandbox memakai provider MOCK (tanda tangan deterministik mock-sig-<orderId>,
+# tanpa uang nyata). JANGAN pernah set ini di wrangler.toml produksi.
+KLIKQRIS_MOCK = "1"
 # Kunci TEST resmi Cloudflare (auto-pass, khusus staging) — bukan widget prod.
 TURNSTILE_SITE_KEY = "1x00000000000000000000AA"
 TURNSTILE_SECRET_KEY = "1x0000000000000000000000000000000AA"
