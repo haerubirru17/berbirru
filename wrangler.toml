@@ -2,7 +2,9 @@ name = "berbirru"
 main = "src/index.ts"
 compatibility_date = "2025-06-01"
 
-workers_dev = true
+# Strix R5 vuln-0001: worker prod tidak boleh terekspos via workers.dev (parallel host
+# di luar zone berbirru.com). Hanya lewat 2 routes zone di bawah.
+workers_dev = false
 
 routes = [
   { pattern = "berbirru.com/*", zone_name = "berbirru.com" },
