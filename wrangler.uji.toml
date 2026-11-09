@@ -21,8 +21,9 @@ OWNER_EMAIL = "haeru@berbirru.com"
 APP_NAME = "BERBIRRU"
 APP_DOMAIN = "berbirru-uji.haerubirru17.workers.dev"
 KERN_THEME_PRESET = "kern"
-# Strix run-4 followup: Pasar Buku ditutup sementara ("1" = gate aktif). Buka: hapus baris ini → deploy.
-PASAR_TUTUP = "1"
+# Mode scan Strix R6 (±): gate sandbox DIBUKA sementara utk pentest. Kembalikan ke "1" segera
+# setelah scan selesai. Prod (wrangler.toml) tetap PASAR_TUTUP="1".
+PASAR_TUTUP = "0"
 # Kunci TEST resmi Cloudflare (auto-pass, khusus staging) — bukan widget prod.
 TURNSTILE_SITE_KEY = "1x00000000000000000000AA"
 TURNSTILE_SECRET_KEY = "1x0000000000000000000000000000000AA"
