@@ -910,7 +910,9 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
 
     let unreadTimer = null;
     let unreadBusy = false;
-    const UNREAD_POLL_MS = 12000;
+    // 60 s (dulu 12 s): tiap polling = 1 request Worker + 1 kueri notifikasi.
+    // Pada 1000 pengguna, 12 s membuat kuota request tier gratis (100k/hari) terlampaui.
+    const UNREAD_POLL_MS = 60000;
     async function checkUnreadNotifs() {
       if (unreadBusy || document.visibilityState !== 'visible') return;
       unreadBusy = true;

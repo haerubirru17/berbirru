@@ -973,7 +973,8 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
     let profileCountsTimer = null;
     let profileCountsBusy = false;
     const FOLLOW_LIST_POLL_MS = 12000;
-    const PROFILE_COUNTS_POLL_MS = 12000;
+    // 60 s (dulu 12 s): alasan sama seperti polling notifikasi.
+    const PROFILE_COUNTS_POLL_MS = 60000;
     function followAvatarStyle(name, key) {
       if (avatarUrlValid(key)) return 'background-image:url(' + avatarUrl(key) + ');background-size:cover;background-position:center;color:transparent;';
       return 'background:' + getAvatarColor(name) + ';';

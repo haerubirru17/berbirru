@@ -178,7 +178,9 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
     let notificationsBusy = false;
     let notificationsTimer = null;
     let notificationsFingerprint = null;
-    const NOTIFICATIONS_POLL_MS = 12000;
+    // 60 s (dulu 12 s): halaman ini memuat ULANG seluruh daftar tiap polling —
+      // interval rapat = beban request + baris-baca D1 terbesar di aplikasi.
+      const NOTIFICATIONS_POLL_MS = 60000;
 
     function scheduleNotificationsPoll() {
       clearTimeout(notificationsTimer);
