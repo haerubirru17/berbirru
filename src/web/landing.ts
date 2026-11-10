@@ -418,9 +418,9 @@ ${WARKAH_CARD_CSS}
                 </div>
                 <div class="ttitle">Kita tak pulang ke kota yang sama</div>
                 <div class="tbody"><p>Kita tak pulang ke kota yang sama, tapi membawa langit yang serupa. Jakarta masih di punggung, Bandung belum sampai.</p></div>
-                <div class="tfoot-mini">♡ 142 terpaut · ⛓ 12 sambungan</div>
+                <div class="tfoot-mini">♡ 142 terpaut · ⛓ 12 balasan</div>
               </div>
-              <div class="lbl">Sambungan (2)</div>
+              <div class="lbl">Balasan (2)</div>
               <div class="rail">
                 <div class="tcard">
                   <span class="knob"></span>
@@ -429,7 +429,7 @@ ${WARKAH_CARD_CSS}
                     <div><a class="tname" href="/u/langit_biru">@langit_biru</a> <span class="ttime">· 1 jam lalu</span></div>
                   </div>
                   <div class="tbody"><p>Yang kita bawa bukan alamat, tapi cara hujan menyebut nama kita di dua kota berbeda.</p></div>
-                  <div class="tfoot-mini">♡ 96 terpaut · ⛓ 4 sambungan</div>
+                  <div class="tfoot-mini">♡ 96 terpaut · ⛓ 4 balasan</div>
                 </div>
                 <div class="tcard">
                   <span class="knob"></span>
@@ -438,7 +438,7 @@ ${WARKAH_CARD_CSS}
                     <div><a class="tname" href="/u/aksara_hujan">@aksara_hujan</a> <span class="ttime">· 40 menit lalu</span></div>
                   </div>
                   <div class="tbody"><p>Dan di kota ketiga, bait ini masih menyala — siapa pun yang menyambung, dialah rumah berikutnya.</p></div>
-                  <div class="tfoot-mini">♡ 41 terpaut · ⛓ 1 sambungan</div>
+                  <div class="tfoot-mini">♡ 41 terpaut · ⛓ 1 balasan</div>
                 </div>
               </div>
             </div>

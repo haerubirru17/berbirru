@@ -145,11 +145,11 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
       <a class="back" href="/feed">‹ Beranda</a>
     </div>
 
-    ${orphans ? `<div class="notice">🕊️ Bait asli telah dihapus penulisnya. Sambungan di bawah tetap hidup sebagai karya masing-masing penulis.</div>` : ''}
+    ${orphans ? `<div class="notice">🕊️ Bait asli telah dihapus penulisnya. Balasan di bawah tetap hidup sebagai karya masing-masing penulis.</div>` : ''}
 
     <div class="tcard root">
       <div class="root-tag">
-        <span>${orphans ? 'Bait Sambungan Tertua' : 'Bait Asli'}</span>
+        <span>${orphans ? 'Balasan Tertua' : 'Bait Asli'}</span>
       </div>
       <div class="tmini">
         <div class="tava" style="${avaStyle(rootAvatarUrl)}">${(rootAuthor[0] || 'D').toUpperCase()}</div>
@@ -157,21 +157,21 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
       </div>
       ${root.title ? `<div class="ttitle">${esc(root.title)}</div>` : ''}
       <div class="tbody">${root.content}</div>
-      <div class="tfoot-mini">♡ ${root.likes_count || 0} terpaut · ⛓ ${root.chains_count || 0} sambungan</div>
+      <div class="tfoot-mini">♡ ${root.likes_count || 0} terpaut · ⛓ ${root.chains_count || 0} balasan</div>
     </div>
 
-    <div class="lbl">Sambungan (${children.length})</div>
+    <div class="lbl">Balasan (${children.length})</div>
     <div class="rail">
       ${childrenHtml || '<div style="font-size:12.5px;font-weight:600;color:var(--muted);padding:6px 0;">Belum ada yang menyambung bait ini.</div>'}
     </div>
 
     ${user ? `
     <div class="reply-box">
-      <div class="reply-hint">Balas sebagai @${esc(user.pen_name)} — sambunganmu langsung menempel di bait ini</div>
-      <textarea id="quickReply" placeholder="Tulis bait sambunganmu di sini..."></textarea>
+      <div class="reply-hint">Balas sebagai @${esc(user.pen_name)} — balasanmu langsung menempel di bait ini</div>
+      <textarea id="quickReply" placeholder="Tulis balasanmu di sini..."></textarea>
       <div class="reply-foot">
         <span id="replyMsg"></span>
-        <button class="reply-send" onclick="submitReply()">Sambungkan</button>
+        <button class="reply-send" onclick="submitReply()">Balas</button>
       </div>
     </div>
     ` : `<a class="cta" href="/login">Masuk untuk menyambung bait ini</a>`}
@@ -181,7 +181,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
         const ta = document.getElementById('quickReply');
         const msg = document.getElementById('replyMsg');
         const content = (ta.value || '').trim();
-        if (!content) { msg.textContent = 'Tulis dulu bait sambungannya.'; return; }
+        if (!content) { msg.textContent = 'Tulis dulu balasanmu.'; return; }
         const btn = document.querySelector('.reply-send');
         btn.disabled = true; msg.textContent = '';
         try {

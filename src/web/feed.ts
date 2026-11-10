@@ -131,7 +131,9 @@ export function renderFeedPage(user: any = null): string {
     .time-main { font-size: 11px; font-weight: 800; color: var(--ink); }
     .date-sub { font-size: 9.5px; font-weight: 700; color: var(--muted); }
 
-    /* Sambung Bait Connector Line */
+    /* Garis konektor balasan */
+    .reply-gone { color: var(--muted); font-size: 11.5px; font-weight: 700; cursor: default; }
+    .reply-gone span { font-style: italic; }
     .thread-parent-connector {
       background: #F8FAFC; border-left: 4px solid var(--blue-primary); border-bottom: 1.5px dashed var(--line-soft);
       padding: 8px 12px; margin: 0; font-size: 12px; font-weight: 600; color: #475569; cursor: pointer;
@@ -201,7 +203,7 @@ export function renderFeedPage(user: any = null): string {
       border-color: var(--ink);
     }
     .act-btn.saved svg { fill: #FFFFFF; stroke: #FFFFFF; }
-    /* V1 split-button: badan = tulis sambung, segmen panah = buka/tutup daftar */
+    /* V1 split-button: badan = tulis balasan, segmen panah = buka/tutup daftar */
     .chain-split { display: inline-flex; align-items: stretch; background: var(--accent-yellow); border: var(--border-thin); border-radius: var(--radius-sm); box-shadow: 2px 2px 0 #1E293B; overflow: hidden; flex-shrink: 0; }
     .chain-split:active { transform: translate(1px, 1px); box-shadow: none; }
     .chain-btn { background: none; color: var(--ink); border: none; padding: 4px 8px; font-size: 11px; font-weight: 900; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; font-family: inherit; }
@@ -559,12 +561,16 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
             \${formatTimestamp(p.created_at)}
           </div>
 
-          \${/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(String(p.parent_id || '')) && p.parent_author ? \`
+          \${p.parent_state === 'ok' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(String(p.parent_id || '')) ? \`
             <div class="thread-parent-connector" onclick="window.location.href='/chain/\${p.parent_id}'">
               <svg class="ico" style="color:#1D61E7;" viewBox="0 0 24 24"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>
-              <span>Menyambung warkah <b>@\${escapeHtml(p.parent_author)}</b>: <i>"\${escapeHtml(stripHtml(p.parent_content).slice(0, 45) + '...')}"</i></span>
+              <span>Membalas warkah <b>@\${escapeHtml(p.parent_author)}</b>: <i>"\${escapeHtml(stripHtml(p.parent_content).slice(0, 45) + '...')}"</i></span>
             </div>
-          \` : ''}
+          \` : (p.parent_state ? \`
+            <div class="thread-parent-connector reply-gone">
+              <span>\${p.parent_state === 'hidden' ? 'Warkah induk tidak tersedia' : 'Warkah induk telah dihapus'} • balasan ini tetap hidup</span>
+            </div>
+          \` : '')}
 
           <div class="thread-body">
             \${p.title ? \`<h3 class="thread-title">\${escapeHtml(p.title)}</h3>\` : ''}
@@ -593,11 +599,11 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
               </button>\`}
             </div>
             <span class="chain-split">
-              <button class="chain-btn" aria-label="Sambungkan bait" data-title="\${escapeHtml(p.title || p.pen_name)}" onclick="openStudioModal('\${p.id}', this.dataset.title)">
+              <button class="chain-btn" aria-label="Balas warkah ini" data-title="\${escapeHtml(p.title || p.pen_name)}" onclick="openStudioModal('\${p.id}', this.dataset.title)">
                 <svg class="ico" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                <span>\${p.chains_count ? p.chains_count + ' Sambungan' : 'Sambung Bait'}</span>
+                <span>\${p.chains_count ? p.chains_count + ' Balasan' : 'Balas'}</span>
               </button>\${p.chains_count > 0 ? \`
-              <button class="chain-arrow" id="chainlbl-\${p.id}" onclick="toggleChain('\${p.id}')" aria-label="Buka sambungan">\u25be</button>\` : ''}
+              <button class="chain-arrow" id="chainlbl-\${p.id}" onclick="toggleChain('\${p.id}')" aria-label="Buka balasan">\u25be</button>\` : ''}
             </span>
           </div>
           \${p.chains_count > 0 ? \`
@@ -629,7 +635,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
       else bbToast('Warkah induk dimuat di bagian sebelumnya.', 'info');
     }
 
-    // ---- Expand/Collapse Sambungan ala TikTok ----
+    // ---- Expand/Collapse Balasan ala TikTok ----
     const chainState = new Map(); // postId -> 'open'|'closed'
     const chainCache = new Map(); // postId -> html mini-bait
 
@@ -680,7 +686,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
         return;
       }
       currentChainParentId = parentId;
-      document.getElementById('studioModalHeading').textContent = parentId ? 'Sambung Bait (@' + parentName + ')' : 'Bilik Warkah';
+      document.getElementById('studioModalHeading').textContent = parentId ? 'Balas @' + parentName : 'Bilik Warkah';
       document.getElementById('studioModal').style.display = 'flex';
       document.body.style.overflow = 'hidden';
       document.getElementById('editorCanvas').focus();

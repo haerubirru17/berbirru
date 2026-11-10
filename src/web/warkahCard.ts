@@ -100,7 +100,7 @@ export function renderWarkahCard(p: any, opts: { hideStats?: boolean; timeLabel?
                 <label class="act-btn" data-act="like"${p.is_liked ? ' data-on' : ''}><input type="checkbox" class="act-in" aria-label="Sukai warkah"${p.is_liked ? ' checked' : ''}><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>${opts.hideStats ? '' : Number(p.likes_count || 0)}</span></label>
                 <label class="act-btn" data-act="save"${p.is_saved ? ' data-on' : ''}><input type="checkbox" class="act-in" aria-label="Simpan warkah"${p.is_saved ? ' checked' : ''}><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span>${opts.hideStats ? '' : Number(p.saves_count || 0)}</span></label>
               </div>
-              <a class="chain-btn" href="${p.id ? `/chain/${esc(p.id)}` : `/u/${esc(p.pen_name)}`}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width:12px;height:12px;stroke:#0B192C;fill:none;stroke-width:2.4"><path d="M12 5v14M5 12h14"/></svg>${opts.hideStats ? 'Sambung Bait' : `${Number(p.chains_count || 0)} Sambungan`}</a>
+              <a class="chain-btn" href="${p.id ? `/chain/${esc(p.id)}` : `/u/${esc(p.pen_name)}`}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width:12px;height:12px;stroke:#0B192C;fill:none;stroke-width:2.4"><path d="M12 5v14M5 12h14"/></svg>${opts.hideStats ? 'Balas' : `${Number(p.chains_count || 0)} Balasan`}</a>
             </div>
           </div>`;
 }

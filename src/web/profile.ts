@@ -233,6 +233,13 @@ export function renderProfilePage(penName: string, isMe = false, currentUser: an
 
     /* Unified Threads Card Style in Profile with Paperclip Badge */
     .feed-list { display: flex; flex-direction: column; gap: 20px; }
+    .reply-context {
+      font-size: 11.5px; font-weight: 700; color: var(--muted);
+      border-left: 3px solid var(--line-soft); padding: 4px 0 4px 8px; margin-bottom: 8px;
+      line-height: 1.45;
+    }
+    .reply-context b { color: var(--ink); }
+    .reply-context i { font-style: italic; }
     .thread-card {
       background: var(--bg-card); border: var(--border-thick); border-radius: 0px;
       box-shadow: var(--shadow-hard-lg); overflow: visible; position: relative; margin-top: 14px;
@@ -544,7 +551,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
       <div class="tab-reddit-item" onclick="switchProfileTab('likes', this)">Disukai</div>
       <div class="tab-reddit-item" onclick="switchProfileTab('saved', this)">Tersimpan</div>
       ` : ''}
-      <div class="tab-reddit-item" onclick="switchProfileTab('chains', this)">Estafet</div>
+      <div class="tab-reddit-item" onclick="switchProfileTab('chains', this)">Balasan</div>
       <span class="profile-tab-total" id="profileTabTotal" aria-live="polite"></span>
     </div>
 
@@ -1120,7 +1127,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
         const data = await res.json();
         if (tab !== activeProfileTab) return;
         const total = document.getElementById('profileTabTotal');
-        const labels = { original:'karya', likes:'disukai', saved:'tersimpan', chains:'estafet' };
+        const labels = { original:'karya', likes:'disukai', saved:'tersimpan', chains:'balasan' };
         total.textContent = (data.total ?? data.posts?.length ?? 0) + ' ' + labels[tab];
         if (!data.posts || !data.posts.length) {
           container.innerHTML = '<div class="profile-empty">Belum ada warkah di kategori ini.</div>';
@@ -1144,11 +1151,14 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
               </div>
             </div>
             <div class="thread-body">
+              \${p.parent_state ? \`<div class="reply-context">↳ \${p.parent_state === 'ok' && p.parent_author
+                ? 'Membalas warkah <b>@' + escapeHtml(p.parent_author) + '</b>: <i>"' + escapeHtml(String(p.parent_content || '').replace(/<[^>]*>/g, ' ').trim().slice(0, 45)) + '…"</i>'
+                : (p.parent_state === 'hidden' ? 'Warkah induk tidak tersedia' : 'Warkah induk telah dihapus')}</div>\` : ''}
               \${p.title ? \`<h3 class="thread-title">\${escapeHtml(p.title)}</h3>\` : ''}
               <div class="thread-text">\${p.content}</div>
             </div>
             <div class="thread-footer">
-              <span style="font-size:11.5px;font-weight:800;color:var(--blue);">\${p.likes_count || 0} Terpaut · \${p.saves_count || 0} Simpan · \${p.chains_count || 0} Sambungan</span>
+              <span style="font-size:11.5px;font-weight:800;color:var(--blue);">\${p.likes_count || 0} Terpaut · \${p.saves_count || 0} Simpan · \${p.chains_count || 0} Balasan</span>
               ${isMe ? `
                 <span style="display:flex;align-items:center;gap:2px;flex-shrink:0;">
                 <button onclick="editPost('\${p.id}')" title="Sunting Warkah" style="background:transparent;border:none;cursor:pointer;color:var(--blue-primary);display:flex;align-items:center;padding:4px;" aria-label="Sunting Warkah">

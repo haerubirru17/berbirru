@@ -160,6 +160,17 @@ app.get('/api/users/:pen_name/posts', async (c: any) => {
     const vis = visibilityClause(viewer);
     query = `
       SELECT p.id AS id, p.author_id AS author_id, p.title AS title, p.content AS content,
+        (SELECT CASE WHEN prnt.moderation_status = 'visible' AND (prnt.visibility != 'private' OR prnt.author_id = ?)
+          THEN prnt.content ELSE NULL END FROM posts prnt WHERE prnt.id = p.parent_id) AS parent_content,
+        (SELECT CASE WHEN prnt.moderation_status = 'visible' AND (prnt.visibility != 'private' OR prnt.author_id = ?)
+          THEN u2.pen_name ELSE NULL END FROM posts prnt JOIN users u2 ON prnt.author_id = u2.id WHERE prnt.id = p.parent_id) AS parent_author,
+        CASE
+          WHEN p.parent_id IS NULL THEN NULL
+          WHEN EXISTS (SELECT 1 FROM posts prnt WHERE prnt.id = p.parent_id AND prnt.moderation_status = 'visible'
+                 AND (prnt.visibility != 'private' OR prnt.author_id = ?)) THEN 'ok'
+          WHEN EXISTS (SELECT 1 FROM posts prnt WHERE prnt.id = p.parent_id) THEN 'hidden'
+          ELSE 'deleted'
+        END AS parent_state,
         CASE WHEN p.parent_id IS NULL OR EXISTS (SELECT 1 FROM posts prnt
           WHERE prnt.id = p.parent_id AND prnt.moderation_status = 'visible'
             AND (prnt.visibility != 'private' OR prnt.author_id = ?))
@@ -172,7 +183,8 @@ app.get('/api/users/:pen_name/posts', async (c: any) => {
       WHERE p.author_id = ? AND p.parent_id IS NOT NULL AND ${vis.sql}
       ORDER BY p.created_at DESC LIMIT 30
     `;
-    binds.push(viewer?.id || '', targetUser.id, ...vis.binds);
+    // Empat bind viewer id: parent_content, parent_author, parent_state('ok'), parent_id.
+    binds.push(viewer?.id || '', viewer?.id || '', viewer?.id || '', viewer?.id || '', targetUser.id, ...vis.binds);
   } else {
     // tab === 'original'
     const vis = visibilityClause(await getAuthUser(c));
@@ -189,6 +201,8 @@ app.get('/api/users/:pen_name/posts', async (c: any) => {
   const countQuery = query.replace(/ORDER BY [\w.]+ DESC LIMIT 30\s*$/, '');
   const total = await c.env.DB.prepare(`SELECT COUNT(*) AS n FROM (${countQuery})`).bind(...binds).first('n') || 0;
   const posts = await c.env.DB.prepare(query).bind(...binds).all().then((r: any) => r.results);
+  // parent_state (ok|hidden|deleted) dihitung di SQL: query mengosongkan parent_id milik
+  // induk yang tak boleh dilihat, jadi UI butuh keterangan eksplisit dari server.
   return c.json({ tab, total, posts: posts.map((p: any) => publicPost(hardenPost(p))) });
 });
 
@@ -217,7 +231,8 @@ app.get('/api/posts', async (c: any) => {
       (SELECT CASE WHEN prnt.moderation_status = 'visible' AND (prnt.visibility != 'private' OR prnt.author_id = ?) THEN prnt.content ELSE NULL END
          FROM posts prnt WHERE prnt.id = p.parent_id) as parent_content,
       (SELECT CASE WHEN prnt.moderation_status = 'visible' AND (prnt.visibility != 'private' OR prnt.author_id = ?) THEN u2.pen_name ELSE NULL END FROM posts prnt JOIN users u2 ON prnt.author_id = u2.id WHERE prnt.id = p.parent_id) as parent_author,
-      (SELECT CASE WHEN prnt.moderation_status = 'visible' THEN prnt.visibility ELSE NULL END FROM posts prnt WHERE prnt.id = p.parent_id) as parent_visibility
+      (SELECT CASE WHEN prnt.moderation_status = 'visible' THEN prnt.visibility ELSE NULL END FROM posts prnt WHERE prnt.id = p.parent_id) as parent_visibility,
+      EXISTS(SELECT 1 FROM posts prnt WHERE prnt.id = p.parent_id) as parent_exists
     FROM posts p
     JOIN users u ON p.author_id = u.id
   `;
@@ -296,9 +311,18 @@ app.get('/api/posts', async (c: any) => {
   }
 
   return c.json({ mode, posts: posts.map((p) => {
+    const rawParent = p.parent_id;
     const safe = { ...p };
     if (safe.parent_visibility == null || (safe.parent_visibility === 'private' && (!user || String(safe.parent_author || '') !== String(user.pen_name || '')))) safe.parent_id = null;
-    delete safe.parent_visibility;
+    // Status induk disimpan SEBELUM parent_id dikosongkan, agar UI tetap bisa
+    // menjelaskan "induk dihapus/privat" (bukan hilang tanpa keterangan).
+    // 'ok' = induk terlihat; 'hidden' = induk ada tapi tak boleh dilihat (privat/dimoderasi);
+    // 'deleted' = baris induk sudah tak ada. parent_exists dipakai agar induk yang sedang
+    // dimoderasi tidak salah dilabeli "telah dihapus".
+    safe.parent_state = !rawParent ? null
+      : (safe.parent_id ? 'ok' : (Number(safe.parent_exists) ? 'hidden' : 'deleted'));
+    delete safe.parent_visibility; // kolom internal server, tak perlu sampai ke klien
+    delete safe.parent_exists;
     return publicPost(hardenPost(safe));
   }) });
 });
