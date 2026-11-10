@@ -375,7 +375,21 @@ app.get('/chain/:id', async (c) => {
   ).bind(ownerEmail, orphans ? target.parent_id : root.id, ...vis.binds).all();
 
   const safeRoot = publicPost(hardenPost(root));
-  return c.html(renderChainPage({ user, root: safeRoot, rootAuthor, rootAvatarUrl: safeRoot.avatar_url, orphans, children: (results || []).map((p: any) => publicPost(hardenPost(p))) }));
+  const daftar = [safeRoot, ...(results || []).map((p: any) => publicPost(hardenPost(p)))];
+  // Status suka/simpan untuk SEMUA warkah di lembar ini — dua kueri IN(...) untuk seluruh
+  // id halaman (pola sama seperti linimasa), bukan satu kueri per kartu.
+  if (user && daftar.length) {
+    const ids = daftar.map((p: any) => p.id);
+    const ph = ids.map(() => '?').join(',');
+    const liked: Set<string> = await c.env.DB.prepare(
+      `SELECT post_id FROM likes WHERE user_id = ? AND post_id IN (${ph})`
+    ).bind(user.id, ...ids).all().then((r: any) => new Set(r.results.map((x: any) => x.post_id)));
+    const saved: Set<string> = await c.env.DB.prepare(
+      `SELECT post_id FROM bookmarks WHERE user_id = ? AND post_id IN (${ph})`
+    ).bind(user.id, ...ids).all().then((r: any) => new Set(r.results.map((x: any) => x.post_id)));
+    daftar.forEach((p: any) => { p.is_liked = liked.has(p.id); p.is_saved = saved.has(p.id); });
+  }
+  return c.html(renderChainPage({ user, root: safeRoot, rootAuthor, rootAvatarUrl: safeRoot.avatar_url, orphans, children: daftar.slice(1) }));
 });
 
 mountKurir(app);

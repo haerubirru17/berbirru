@@ -3,6 +3,9 @@
 // ponytail: satu sumber kebenaran, bukan edit 25 file halaman.
 
 export const INTERACTION_CSS = `<style id="bb-interaction">
+  /* Token yang dipakai lintas halaman tapi belum pernah didefinisikan: tanpa ini
+     var() gagal dan deklarasinya DIBUANG (badge love jadi transparan, titik lonceng hilang). */
+  :root { --accent-red: #E11D48; }
 *{-webkit-tap-highlight-color:transparent}
 html{touch-action:manipulation}
 button,a,[role=button],input[type=submit],input[type=button],select,label{cursor:pointer}

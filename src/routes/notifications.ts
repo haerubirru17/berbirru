@@ -13,7 +13,7 @@ app.get('/api/notifications', async (c: any) => {
     SELECT n.id AS id, n.user_id AS user_id, n.actor_id AS actor_id, n.type AS type,
            CASE WHEN p.moderation_status = 'visible' THEN n.post_id ELSE NULL END AS post_id,
            n.order_id AS order_id, n.is_read AS is_read, n.created_at AS created_at,
-           u.pen_name as actor_pen_name,
+           u.pen_name as actor_pen_name, u.avatar_key as actor_avatar_key,
            CASE WHEN p.moderation_status = 'visible' THEN p.title ELSE NULL END AS post_title,
            CASE WHEN p.moderation_status = 'visible' THEN p.content ELSE NULL END AS post_content,
            l.title as order_title
@@ -27,7 +27,18 @@ app.get('/api/notifications', async (c: any) => {
     LIMIT 50
   `).bind(user.id).all();
 
-  return c.json({ notifications: (results || []).map(hardenPost) });
+  // Foto pelaku ikut dikirim sebagai URL siap pakai (konvensi sama dengan publicPost);
+  // kolom mentah avatar_key tidak diteruskan ke klien.
+  return c.json({ notifications: (results || []).map((n: any) => {
+    const row = hardenPost(n);
+    // Bentuk key divalidasi sebelum dibentuk jadi URL yang nanti di-embed ke atribut style:
+    // hanya pola key media yang sah (dir/berkas.ext[?v=angka]) yang lolos.
+    const kunci = String(n.actor_avatar_key || '');
+    const sah = /^[a-z0-9_-]+\/[a-z0-9_-]+\.(jpg|png|webp)(\?v=\d+)?$/i.test(kunci);
+    row.actor_avatar_url = sah ? '/media/' + kunci : null;
+    delete row.actor_avatar_key;
+    return row;
+  }) });
 });
 
 app.get('/api/notifications/unread-count', async (c: any) => {

@@ -18,7 +18,10 @@ assert.match(shared, /sanitizeRich\(p\.parent_content\)/, 'shared boundary harus
 assert.match(shared, /sanitizeRich\(p\.post_content\)/, 'shared boundary harus sanitize post_content');
 assert.match(social, /posts\.map\(\(p: any\) => publicPost\(hardenPost\(p\)\)\)/, 'social profile/list API harus harden setiap post');
 assert.match(social, /results \|\| \[\]\)\.map\(\(p: any\) => publicPost\(hardenPost\(p\)\)\)/, 'social chains API harus harden setiap post');
-assert.match(notifications, /map\(hardenPost\)/, 'notifications API harus harden post_content');
+// Bentuk mapping notifikasi kini merakit URL foto pelaku setelah hardenPost — jaminannya
+// tetap: SETIAP baris lewat hardenPost sebelum dikirim (bukan cuma bentuk lama `map(hardenPost)`).
+assert.match(notifications, /const row = hardenPost\(n\);/, 'notifications API harus harden post_content');
+assert.match(notifications, /map\(\(n: any\) => \{\s*\n\s*const row = hardenPost\(n\);/, 'notifications API memanggil hardenPost di dalam map');
 
 
 console.log('OK — social renderers tidak memasukkan raw post content ke HTML');

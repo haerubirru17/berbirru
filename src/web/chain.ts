@@ -33,7 +33,17 @@ export function renderChainPage(opts: {
       </div>
       ${b.title ? `<div class="ttitle">${esc(b.title)}</div>` : ''}
       <div class="tbody">${b.content}</div>
-      <div class="tfoot-mini">♡ ${b.likes_count || 0} · ⛓ ${b.chains_count || 0}</div>
+      <div class="tfoot-mini">
+        <button class="act-btn ${b.is_liked ? 'active' : ''}" aria-label="Suka warkah ini" onclick="likePost('${esc(b.id)}', this)">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          <span>${b.likes_count || 0}</span>
+        </button>
+        <button class="act-btn ${b.is_saved ? 'saved' : ''}" aria-label="Simpan warkah ini" onclick="bookmarkPost('${esc(b.id)}', this)">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          <span>${b.saves_count || 0}</span>
+        </button>
+        <span class="tcount">⛓ ${b.chains_count || 0}</span>
+      </div>
     </div>
   `).join('');
 
@@ -87,7 +97,16 @@ export function renderChainPage(opts: {
     .font-sans { font-family: 'DM Sans', sans-serif !important; }
     .font-mono { font-family: 'Roboto Mono', monospace !important; font-size: 13.5px; }
     .tbody p { margin-bottom: 8px; }
-    .tfoot-mini { margin-top: 8px; font-size: 11px; font-weight: 800; color: var(--muted); }
+    .tfoot-mini { margin-top: 9px; display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 800; color: var(--muted); }
+    .tcount { color: var(--muted); }
+    .act-btn { display: inline-flex; align-items: center; gap: 4px; background: #FFF; border: 2px solid var(--ink); border-radius: 9px; padding: 3px 8px; font-family: inherit; font-size: 11px; font-weight: 800; color: var(--ink); cursor: pointer; box-shadow: 2px 2px 0 #C9D6E8; }
+    .act-btn:active { transform: translate(1.5px, 1.5px); box-shadow: none; }
+    .act-btn .ico { width: 13px; height: 13px; stroke: var(--ink); stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .act-btn.active { background: #FFE4E1; }
+    .act-btn.active .ico { fill: #FF3B1A; stroke: #FF3B1A; }
+    .act-btn.saved { background: #FFF3C4; }
+    .act-btn.saved .ico { fill: var(--ink); }
+    .act-btn:focus-visible { outline: 2px dashed var(--blue-primary); outline-offset: 2px; }
     .rail { position: relative; padding-left: 17px; margin-top: 14px; }
     .rail::before { content: ''; position: absolute; left: 5px; top: 6px; bottom: 30px; width: 2.5px; background: #B7D3F8; border-radius: 2px; }
     .rail .tcard .knob { position: absolute; left: -17px; top: 15px; width: 9px; height: 9px; background: #1D5FD6; border: 2px solid var(--ink); border-radius: 50%; }
@@ -157,12 +176,22 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
       </div>
       ${root.title ? `<div class="ttitle">${esc(root.title)}</div>` : ''}
       <div class="tbody">${root.content}</div>
-      <div class="tfoot-mini">♡ ${root.likes_count || 0} terpaut · ⛓ ${root.chains_count || 0} balasan</div>
+      <div class="tfoot-mini">
+        <button class="act-btn ${root.is_liked ? 'active' : ''}" aria-label="Suka warkah ini" onclick="likePost('${esc(root.id)}', this)">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          <span>${root.likes_count || 0}</span>
+        </button>
+        <button class="act-btn ${root.is_saved ? 'saved' : ''}" aria-label="Simpan warkah ini" onclick="bookmarkPost('${esc(root.id)}', this)">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          <span>${root.saves_count || 0}</span>
+        </button>
+        <span class="tcount">⛓ ${root.chains_count || 0} balasan</span>
+      </div>
     </div>
 
     <div class="lbl">Balasan (${children.length})</div>
     <div class="rail">
-      ${childrenHtml || '<div style="font-size:12.5px;font-weight:600;color:var(--muted);padding:6px 0;">Belum ada yang menyambung bait ini.</div>'}
+      ${childrenHtml || '<div style="font-size:12.5px;font-weight:600;color:var(--muted);padding:6px 0;">Belum ada balasan untuk bait ini.</div>'}
     </div>
 
     ${user ? `
@@ -174,9 +203,30 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
         <button class="reply-send" onclick="submitReply()">Balas</button>
       </div>
     </div>
-    ` : `<a class="cta" href="/login">Masuk untuk menyambung bait ini</a>`}
+    ` : `<a class="cta" href="/login">Masuk untuk membalas bait ini</a>`}
 
     <script>
+      const isUserLoggedIn = ${user ? 'true' : 'false'};
+      // Semantik SAMA dengan linimasa: tamu diarahkan masuk, tombol berubah optimistis
+      // mengikuti jawaban server (bukan menebak di klien).
+      window.likePost = async function(id, btn) {
+        if (!isUserLoggedIn) return window.location.href = '/login';
+        try {
+          const res = await fetch('/api/posts/' + id + '/like', { method: 'POST' });
+          const data = await res.json();
+          btn.classList.toggle('active', data.liked);
+          btn.querySelector('span').textContent = data.likes_count || 0;
+        } catch (e) { console.error(e); }
+      };
+      window.bookmarkPost = async function(id, btn) {
+        if (!isUserLoggedIn) return window.location.href = '/login';
+        try {
+          const res = await fetch('/api/posts/' + id + '/bookmark', { method: 'POST' });
+          const data = await res.json();
+          btn.classList.toggle('saved', data.bookmarked);
+          btn.querySelector('span').textContent = data.saves_count || 0;
+        } catch (e) { console.error(e); }
+      };
       window.submitReply = async function() {
         const ta = document.getElementById('quickReply');
         const msg = document.getElementById('replyMsg');
@@ -190,7 +240,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ content: content, parent_id: '${root.id}' })
           });
-          if (!res.ok) { const e = await res.json().catch(function(){return {};}); throw new Error(e.error || 'Gagal menyambungkan.'); }
+          if (!res.ok) { const e = await res.json().catch(function(){return {};}); throw new Error(e.error || 'Gagal membalas.'); }
           location.reload();
         } catch (e) {
           msg.textContent = e.message || 'Gagal. Coba lagi.';

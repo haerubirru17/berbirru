@@ -1,6 +1,6 @@
 // Global Kern editorial preset, injected only by the sandbox worker.
 export const KERN_THEME_HTML = `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,100..900,0..100,0..1&family=Recursive:slnt,wght,CASL,CRSV,MONO@-15..0,300..1000,0..1,0..1,0..1&family=Roboto+Flex:opsz,slnt,wdth,wght,GRAD@8..144,-10..0,25..151,100..1000,-200..150&display=swap" rel="stylesheet"><style id="kern-theme">
-:root{--kern-paper:#EFEBE3;--kern-card:#F6F3EB;--kern-ink:#0E0E0E;--kern-muted:#6E6A63;--kern-line:#D8D2C4;--kern-accent:#FF3B1A;--ink:var(--kern-ink);--ink-soft:#3A3733;--muted:var(--kern-muted);--line-soft:var(--kern-line);--blue:var(--kern-accent);--blue-deep:var(--kern-ink);--accent:var(--kern-accent);--paper:var(--kern-paper);--white:var(--kern-card);--bg-main:var(--kern-paper);--bg-card:var(--kern-card);--bg-blue-subtle:#E6E1D5;--shadow-offset:0 0 0;--radius:0;--radius-sm:0;--border-w:1px;--font-ui:'Roboto Flex',Arial,sans-serif;color-scheme:light}
+:root{--kern-paper:#EFEBE3;--kern-card:#F6F3EB;--kern-ink:#0E0E0E;--kern-muted:#6E6A63;--kern-line:#D8D2C4;--kern-accent:#FF3B1A;--ink:var(--kern-ink);--ink-soft:#3A3733;--muted:var(--kern-muted);--line-soft:var(--kern-line);--blue:var(--kern-accent);--blue-deep:var(--kern-ink);--accent:var(--kern-accent);--paper:var(--kern-paper);--white:var(--kern-card);--bg-main:var(--kern-paper);--bg-card:var(--kern-card);--bg-blue-subtle:#E6E1D5;--shadow-offset:0 0 0;--radius:0;--radius-sm:0;--border-w:1px;--font-ui:'Roboto Flex',Arial,sans-serif;--kui:'Roboto Flex',Arial,sans-serif;--kline:var(--kern-line);color-scheme:light}
 html,body{background:var(--kern-paper)!important;color:var(--kern-ink)!important;font-family:'Roboto Flex',Arial,sans-serif!important}
 body *{box-shadow:none!important;border-radius:0!important}
 body :is(h1,h2,h3,.title,.page-title,.thread-title){font-family:'Fraunces',Georgia,serif!important;color:var(--kern-ink)}
@@ -87,7 +87,12 @@ body:has(#notifListContainer) .notif-list{gap:0}
 body:has(#notifListContainer) #notifListContainer>div:not(.notif-card){background:transparent!important;border:0!important;border-bottom:1px solid var(--kern-ink)!important;border-radius:0!important;box-shadow:none!important;padding:24px 12px!important;text-align:left!important;font:400 16px/1.4 'Fraunces',Georgia,serif!important;color:var(--kern-ink)!important}
 body:has(#notifListContainer) .notif-card{background:transparent!important;border:0!important;border-bottom:1px solid var(--kern-ink)!important;border-radius:0!important;box-shadow:none!important;margin:0 -14px;padding:14px!important;color:var(--kern-ink)!important}
 body:has(#notifListContainer) .notif-card.unread{border-left:2px solid var(--kern-accent)!important;background:var(--kern-card)!important}
-body:has(#notifListContainer) .notif-avatar{background:var(--kern-card)!important;border:1px solid var(--kern-ink)!important;color:var(--kern-ink)!important;font-family:'Fraunces',Georgia,serif!important}
+body:has(#notifListContainer) .notif-avatar{background-color:var(--kern-card)!important;border:1px solid var(--kern-ink)!important;color:var(--kern-ink)!important;font-family:'Fraunces',Georgia,serif!important}
+/* Ada foto → huruf inisial disembunyikan; tanpa foto → tinta krem seperti biasa.
+   Selector atribut (bukan shorthand background) supaya background-image inline tak terhapus. */
+body:has(#notifListContainer) .notif-avatar[style*="background-image"]{color:transparent!important}
+body:has(#notifListContainer) .action-badge{background:var(--kern-card)!important;border:1px solid var(--kern-ink)!important}
+body:has(#notifListContainer) .action-badge svg{fill:var(--kern-ink)!important;stroke:var(--kern-ink)!important}
 body:has(#notifListContainer) .notif-text{color:var(--kern-ink)!important;font-weight:500!important}
 body:has(#notifListContainer) .notif-quote-preview{background:transparent!important;border-left:1px solid var(--kern-ink)!important;color:var(--kern-muted)!important}
 body:has(#notifListContainer) .hub-link{background:transparent!important;border:1px solid var(--kern-ink)!important;color:var(--kern-ink)!important;box-shadow:none!important}

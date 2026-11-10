@@ -151,7 +151,7 @@ ${WARKAH_CARD_CSS}
   .screen{height:100%;border-radius:1.6rem;overflow-y:auto;overflow-x:hidden;background:var(--page);-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:none}
   .screen::-webkit-scrollbar{display:none}
   .screen img{width:100%;height:auto;display:block}
-  .appbar{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;height:34px;padding:0 14px;background:#FAF7F2;font:700 12px var(--sans);color:#111;z-index:4}
+  .appbar{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;height:34px;padding:0 14px;background:#FAF7F2;font:700 12px var(--body);color:#111;z-index:4}
   .appbar svg{width:38px;height:10px;display:block}
   .appnav{position:sticky;bottom:0;display:grid;grid-template-columns:repeat(5,1fr);background:#fff;border-top:2px solid var(--ink);padding:6px 4px 8px;z-index:3}
   .appnav span{display:flex;flex-direction:column;align-items:center;gap:2px;font:800 8px var(--mono);color:#6A788D;line-height:1}

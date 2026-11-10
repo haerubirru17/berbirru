@@ -83,13 +83,13 @@ export function renderNotificationsPage(user: any = null): string {
       font-family: 'Archivo Black', sans-serif; font-size: 19px; font-weight: 900;
     }
     .action-badge {
-      position: absolute; bottom: -4px; right: -4px; width: 18px; height: 18px;
-      border: 1.5px solid var(--ink); border-radius: 50%; display: grid; place-items: center;
+      position: absolute; bottom: -4px; right: -4px; width: 19px; height: 19px;
+      border: 2px solid var(--ink); border-radius: 50%; display: grid; place-items: center;
     }
     .badge-like { background: var(--accent-red); color: #FFF; }
     .badge-chain { background: var(--accent-yellow); color: var(--ink); }
     .badge-save { background: var(--blue-primary); color: #FFF; }
-    .badge-follow { background: #10B981; color: #FFF; }
+    .badge-follow { background: var(--green); color: #FFF; }
   .hub-link { display:inline-block;font:800 10.5px 'DM Sans';color:var(--deep);text-decoration:none;background:#E0EEFD;
     border:2px solid var(--ink);padding:6px 10px;margin-bottom:12px;box-shadow:2px 2px 0 var(--ink-soft) }
     
@@ -246,6 +246,9 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
         is_read: g.actors.every(a => !!a.is_read),
         created_at: g.created_at,
         actor_pen_name: g.actors[0].actor_pen_name,
+        // Kolom apa pun yang ditambahkan API WAJIB diteruskan di sini: objek grup dibangun
+        // field-per-field, jadi kolom baru yang lupa disalin akan hilang tanpa gejala.
+        actor_avatar_url: g.actors[0].actor_avatar_url,
         actors: g.actors
       }));
     }
@@ -286,14 +289,17 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
       }
 
       // Avatar: tunggal normal; multi = tumpuk 2-3 lingkaran kecil
+      // Foto profil pelaku: foto menimpa inisial lewat background-image + teks transparan
+      // (pola sama seperti feed/profil/chain); inisial tetap jadi cadangan saat tanpa foto.
+      const avaStyle = (url) => url ? 'background-image:url(' + escapeHtml(url) + ');background-size:cover;background-position:center;color:transparent;' : '';
       let avatarHtml = '';
       if (multi) {
         const upTo = n.actors.slice(0, 3);
         avatarHtml = '<div class="notif-avatar-stack">' + upTo.map((a, i) =>
-          '<div class="notif-avatar mini" style="margin-left:' + (i * -8) + 'px;z-index:' + (10 - i) + '">' + ((a.actor_pen_name[0] || 'D').toUpperCase()) + '</div>'
+          '<div class="notif-avatar mini" style="margin-left:' + (i * -8) + 'px;z-index:' + (10 - i) + ';' + avaStyle(a.actor_avatar_url) + '">' + ((a.actor_pen_name[0] || 'D').toUpperCase()) + '</div>'
         ).join('') + badgeHtml + '</div>';
       } else {
-        avatarHtml = '<div class="notif-avatar-wrap"><div class="notif-avatar">' + ((n.actor_pen_name[0] || 'D').toUpperCase()) + '</div>' + badgeHtml + '</div>';
+        avatarHtml = '<div class="notif-avatar-wrap"><div class="notif-avatar" style="' + avaStyle(n.actor_avatar_url) + '">' + ((n.actor_pen_name[0] || 'D').toUpperCase()) + '</div>' + badgeHtml + '</div>';
       }
 
       const allIds = (n.ids || [n.id]).join("','");
