@@ -448,6 +448,66 @@ app.delete('/api/posts/:id', async (c: any) => {
   return c.json({ ok: true });
 });
 
+// Sunting warkah sendiri (keputusan owner 10 Nov 2026: bebas kapan saja, termasuk
+// warkah yang sudah disambung — layaknya sosmed). Ditolak bila warkah sudah tersentuh
+// moderasi owner. Guard snapshot sama dengan DELETE: balapan moderasi/suspend = nol mutasi.
+app.patch('/api/posts/:id', async (c: any) => {
+  const user = await getAuthUser(c);
+  if (!user) return c.json({ error: 'Silakan masuk untuk menyunting warkah.' }, 401);
+  const postId = c.req.param('id');
+
+  // Bucket sama dengan POST/DELETE — sunting massal tak lolos kuota.
+  if (await hitRate(c.env.DB, `post:${user.id}`, 20, 60)) {
+    return c.json({ error: 'Terlalu banyak operasi. Tunggu sebentar.' }, 429);
+  }
+
+  const post: any = await c.env.DB.prepare("SELECT author_id, COALESCE(moderation_action_id,'') AS moderation_marker FROM posts WHERE id = ? AND moderation_status = 'visible'").bind(postId).first();
+  if (!post) return c.json({ error: 'Postingan tidak ditemukan' }, 404);
+  if (post.author_id !== user.id) return c.json({ error: 'Anda tidak memiliki akses untuk menyunting postingan ini' }, 403);
+  if (post.moderation_marker) return c.json({ error: 'Warkah ini sedang dalam tinjauan moderasi dan tidak dapat disunting.' }, 403);
+
+  const { title, content, visibility } = await c.req.json().catch(() => ({}));
+
+  // Cek ukuran SEBELUM sanitasi (pola sama dengan POST — input raksasa tak menyentuh sanitizeRich).
+  if (typeof content === 'string' && content.length > 50_000) {
+    return c.json({ error: 'Warkah maksimal 50.000 karakter.' }, 400);
+  }
+  const cleanContent = sanitizeRich(content).trim();
+  if (cleanContent.length > 50_000) {
+    return c.json({ error: 'Warkah maksimal 50.000 karakter.' }, 400);
+  }
+  if (!cleanContent || stripTags(cleanContent).trim() === '') {
+    return c.json({ error: 'Isi warkah tidak boleh kosong.' }, 400);
+  }
+  const cleanTitle = title ? String(title).trim().slice(0, 200) : null;
+
+  const visRaw = visibility == null ? null : String(visibility);
+  if (visRaw && visRaw !== 'public' && visRaw !== 'private') {
+    return c.json({ error: "Visibilitas hanya 'public' atau 'private'." }, 400);
+  }
+
+  const contentText = stripTags(cleanContent);
+  const guard = `EXISTS (SELECT 1 FROM posts target JOIN users act ON act.id = target.author_id
+    WHERE target.id = ? AND target.author_id = ?
+    AND target.moderation_status = 'visible' AND COALESCE(target.moderation_action_id,'') = ?
+    AND act.account_status = 'active')`;
+  // Satu batch: isi warkah + indeks pencarian selalu sinkron (FTS dibersihkan lalu ditulis ulang).
+  const result: any[] = await c.env.DB.batch([
+    c.env.DB.prepare(`UPDATE posts SET title = ?, content = ?, visibility = COALESCE(?, visibility), edited_at = datetime('now')
+      WHERE id = ? AND author_id = ? AND moderation_status = 'visible'
+        AND COALESCE(moderation_action_id,'') = ? AND ${guard}`)
+      .bind(cleanTitle, cleanContent, visRaw, postId, user.id, post.moderation_marker, postId, user.id, post.moderation_marker),
+    c.env.DB.prepare(`DELETE FROM posts_fts WHERE id = ? AND ${guard}`)
+      .bind(postId, postId, user.id, post.moderation_marker),
+    c.env.DB.prepare(`INSERT INTO posts_fts (id, title, content_text)
+      SELECT ?, ?, ? WHERE EXISTS (SELECT 1 FROM posts p JOIN users au ON au.id = p.author_id
+        WHERE p.id = ? AND p.moderation_status = 'visible' AND au.account_status = 'active')`)
+      .bind(postId, cleanTitle || '', contentText, postId),
+  ]);
+  if (!result[0]?.meta?.changes) return c.json({ error: 'Status warkah sudah berubah. Coba lagi.' }, 409);
+  return c.json({ ok: true });
+});
+
 app.post('/api/posts/:id/like', async (c: any) => {
   const user = await getAuthUser(c);
   if (!user) return c.json({ error: 'Silakan masuk terlebih dahulu' }, 401);

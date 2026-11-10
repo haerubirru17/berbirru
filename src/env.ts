@@ -12,6 +12,8 @@ export interface Env {
   KLIKQRIS_API_URL?: string;
   KLIKQRIS_CALLBACK_URL?: string;
   KLIKQRIS_MOCK?: string;
+  // "1" = Pasar Buku ditutup (gate di index.ts) — hanya sandbox yang boleh "0".
+  PASAR_TUTUP?: string;
   OWNER_EMAIL?: string;
   BINDERBYTE_KEY?: string;
   KURIR_MOCK?: string;

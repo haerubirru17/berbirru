@@ -1127,7 +1127,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
           return;
         }
         container.innerHTML = data.posts.map(p => \`
-          <div class="thread-card">
+          <div class="thread-card" data-post-id="\${p.id}">
             <div class="thread-header-soft">
               <div class="thread-avatar-clip" style="background:\${getAvatarColor(p.pen_name)};\${p.avatar_url ? \`background-image:url(\${p.avatar_url});background-size:cover;background-position:center;color:transparent;\` : ''}">
                 \${(p.pen_name[0] || 'D').toUpperCase()}
@@ -1150,9 +1150,14 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
             <div class="thread-footer">
               <span style="font-size:11.5px;font-weight:800;color:var(--blue);">\${p.likes_count || 0} Terpaut · \${p.saves_count || 0} Simpan · \${p.chains_count || 0} Sambungan</span>
               ${isMe ? `
+                <span style="display:flex;align-items:center;gap:2px;flex-shrink:0;">
+                <button onclick="editPost('\${p.id}')" title="Sunting Warkah" style="background:transparent;border:none;cursor:pointer;color:var(--blue-primary);display:flex;align-items:center;padding:4px;" aria-label="Sunting Warkah">
+                  <svg style="width:15px;height:15px;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                </button>
                 <button onclick="deletePost('\${p.id}')" title="Hapus Warkah" style="background:transparent;border:none;cursor:pointer;color:#EF4444;display:flex;align-items:center;padding:4px;flex-shrink:0;" aria-label="Hapus Warkah">
                   <svg style="width:15px;height:15px;stroke:currentColor;stroke-width:2.2;fill:none;" viewBox="0 0 24 24"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                 </button>
+                </span>
               ` : ''}
             </div>
           </div>
@@ -1189,6 +1194,70 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
     window.toggleEditModal = toggleEditModal;
     window.handleLogout = handleLogout;
     window.switchProfileTab = switchProfileTab;
+    // Sunting warkah sendiri (keputusan owner 10 Nov 2026: bebas kapan saja, termasuk
+    // warkah yang sudah disambung). Server menolak bila warkah sedang dimoderasi.
+    // Canvas contenteditable = editor yang sama dengan fitur Tulis → format & baris utuh.
+    let postEditId = null;
+    document.body.insertAdjacentHTML('beforeend', \`
+      <div id="postEditModal" style="display:none;position:fixed;inset:0;z-index:130;background:rgba(11,25,44,.45);padding:16px;overflow:auto">
+        <div style="max-width:560px;margin:5vh auto;background:#fff;border:var(--border-thick);box-shadow:var(--shadow-hard);padding:16px">
+          <h3 style="margin:0 0 12px;font-size:16px;font-weight:900">Sunting Warkah</h3>
+          <input id="postEditTitle" class="form-input" maxlength="200" placeholder="Judul (opsional)" style="margin-bottom:10px">
+          <div id="postEditCanvas" contenteditable="true" class="rich-editor-canvas font-sans" style="min-height:170px;border:2.5px solid var(--ink);padding:12px;background:#fff;outline:none"></div>
+          <p id="postEditErr" style="color:#EF4444;font-size:12px;font-weight:700;margin:8px 0 0;min-height:15px"></p>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button type="button" onclick="closePostEdit()" style="flex:1;min-height:44px;border:2.5px solid var(--ink);background:#fff;font-weight:900;cursor:pointer">Batal</button>
+            <button type="button" id="postEditSave" onclick="savePostEdit()" style="flex:2;min-height:44px;border:2.5px solid var(--ink);background:var(--blue-primary);color:#fff;font-weight:900;cursor:pointer">Simpan</button>
+          </div>
+        </div>
+      </div>\`);
+
+    function editPost(id) {
+      const card = document.querySelector('.thread-card[data-post-id="' + id + '"]');
+      if (!card) return;
+      postEditId = id;
+      document.getElementById('postEditTitle').value = (card.querySelector('.thread-title')?.textContent || '').trim();
+      document.getElementById('postEditCanvas').innerHTML = (card.querySelector('.thread-text')?.innerHTML || '').trim();
+      document.getElementById('postEditErr').textContent = '';
+      document.getElementById('postEditModal').style.display = 'block';
+      document.getElementById('postEditCanvas').focus();
+    }
+
+    function closePostEdit() {
+      postEditId = null;
+      document.getElementById('postEditModal').style.display = 'none';
+    }
+
+    async function savePostEdit() {
+      if (!postEditId) return;
+      const btn = document.getElementById('postEditSave');
+      const err = document.getElementById('postEditErr');
+      err.textContent = '';
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api/posts/' + postEditId, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: document.getElementById('postEditTitle').value.trim(),
+            content: document.getElementById('postEditCanvas').innerHTML.trim(),
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'Gagal menyimpan');
+        const tab = activeProfileTab || 'original';
+        closePostEdit();
+        bbToast('Warkah tersimpan.', 'success');
+        loadProfilePosts(tab);
+      } catch (e) {
+        err.textContent = e.message || 'Gagal menyimpan.';
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    window.editPost = editPost; window.closePostEdit = closePostEdit; window.savePostEdit = savePostEdit;
+
     window.deletePost = deletePost;
     window.toggleSettingsMenu = toggleSettingsMenu;
     window.toggleFollow = toggleFollow;
