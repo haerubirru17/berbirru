@@ -30,7 +30,8 @@ assert.match(social, /binds\.push\(viewer\?\.id \|\| '', viewer\?\.id \|\| '', v
 assert.match(social, /safe\.parent_state = !rawParent/, 'feed mengirim parent_state sebelum parent_id dikosongkan');
 assert.match(social, /END AS parent_state,/, 'query chains menghitung parent_state di SQL');
 assert.match(social, /WHEN EXISTS \(SELECT 1 FROM posts prnt WHERE prnt.id = p.parent_id\) THEN 'hidden'/, 'state hidden utk induk tak terlihat');
-assert.match(profile, /p\.parent_state === 'hidden' \? 'Warkah induk tidak tersedia' : 'Warkah induk telah dihapus'/, 'profil membedakan tersembunyi vs dihapus');
+assert.match(profile, /p\.parent_state === 'hidden' \? 'Warkah induk tidak tersedia · tidak tampil di linimasa'/, 'profil membedakan tersembunyi (tak tampil di linimasa)');
+assert.match(profile, /'Warkah induk telah dihapus · balasanmu tetap tersimpan, tidak masuk linimasa umum'/, 'kartu menyatakan induk dihapus + nasib balasan');
 assert.match(feed, /p\.parent_state === 'hidden' \? 'Warkah induk tidak tersedia' : 'Warkah induk telah dihapus'/, 'feed membedakan tersembunyi vs dihapus');
 assert.ok(!/Menyambung warkah/.test(feed), 'feed memakai kata "Membalas warkah"');
 
@@ -61,6 +62,12 @@ assert.match(feed, /escapeHtml\(stripHtml\(p\.parent_content\)/, 'feed meng-esca
 // 2e. Sisa label lama juga dijaga di halaman rantai & kartu kurasi
 assert.ok(!/sambungan<\/div>|bait sambungannya/.test(chain), 'chain.ts tanpa label lama');
 assert.ok(!/Sambung Bait/.test(readFileSync(new URL('../src/web/warkahCard.ts', import.meta.url), 'utf8')), 'kartu kurasi tanpa label lama');
+
+
+// 2f. Opsi B: balasan tanpa induk publik keluar dari linimasa & pencarian (binds tetap kosong)
+assert.match(social, /AND \(p\.parent_id IS NULL OR EXISTS \(SELECT 1 FROM posts prnt/, 'linimasa menyaring balasan yatim');
+assert.match(social, /binds: \[\] as any\[\]/, 'filter baru tidak menambah bind (urutan bind aman)');
+assert.match(profile, /tidak masuk linimasa umum/, 'kartu balasan menjelaskan kenapa tak tampil di linimasa');
 
 // 3. Kartu balasan di profil menampilkan konteks / pernyataan induk hilang
 assert.match(profile, /class="reply-context"/, 'kartu balasan punya baris konteks');

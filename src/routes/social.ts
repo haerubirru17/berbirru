@@ -222,7 +222,16 @@ app.get('/api/posts', async (c: any) => {
   if (new TextEncoder().encode(q).byteLength > 48) return c.json({ error: 'Parameter pencarian terlalu panjang.' }, 400);
   const user = await getAuthUser(c);
   // Beranda = ruang publik. Warkah privat cuma muncul di tab Karya profil pemiliknya.
-  const vis = { sql: "p.moderation_status = 'visible' AND p.visibility = 'public'", binds: [] as any[] };
+  // Opsi B (keputusan owner): balasan yang induknya sudah dihapus/privat keluar dari
+  // linimasa & pencarian publik, tapi tetap tersimpan di tab Balasan penulisnya dan
+  // tetap bisa dibuka lewat tautan langsung /chain/<id>. Tanpa bind baru (binds tetap []),
+  // supaya urutan bind cabang FTS/mode tidak bergeser.
+  const vis = {
+    sql: `p.moderation_status = 'visible' AND p.visibility = 'public'
+      AND (p.parent_id IS NULL OR EXISTS (SELECT 1 FROM posts prnt
+        WHERE prnt.id = p.parent_id AND prnt.moderation_status = 'visible' AND prnt.visibility = 'public'))`,
+    binds: [] as any[]
+  };
 
   // Audit C-04: parent privat hanya dibocorkan ke pemiliknya/viewer-nya sendiri
   // (kondisional CASE pada subquery parent_content; bind pertama = viewer id).

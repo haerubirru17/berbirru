@@ -1153,7 +1153,7 @@ width:46px;height:46px;display:grid;place-items:center;background:var(--yellow);
             <div class="thread-body">
               \${p.parent_state ? \`<div class="reply-context">↳ \${p.parent_state === 'ok' && p.parent_author
                 ? 'Membalas warkah <b>@' + escapeHtml(p.parent_author) + '</b>: <i>"' + escapeHtml(String(p.parent_content || '').replace(/<[^>]*>/g, ' ').trim().slice(0, 45)) + '…"</i>'
-                : (p.parent_state === 'hidden' ? 'Warkah induk tidak tersedia' : 'Warkah induk telah dihapus')}</div>\` : ''}
+                : (p.parent_state === 'hidden' ? 'Warkah induk tidak tersedia · tidak tampil di linimasa' : 'Warkah induk telah dihapus · balasanmu tetap tersimpan, tidak masuk linimasa umum')}</div>\` : ''}
               \${p.title ? \`<h3 class="thread-title">\${escapeHtml(p.title)}</h3>\` : ''}
               <div class="thread-text">\${p.content}</div>
             </div>
