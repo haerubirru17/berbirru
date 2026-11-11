@@ -947,6 +947,12 @@ app.post('/api/klikqris/webhook', async (c: any) => {
 app.post('/api/pasar/order/:id/cancel', async (c: any) => {
   const me = await getAuthUser(c);
   if (!me) return c.json({ error: 'Masuk dulu' }, 401);
+
+  // Satu bucket untuk SEMUA aksi uang (batal/kirim/terima/sengketa): berganti endpoint
+  // tidak mereset hitungan. Pengaman uang lama (single-winner, guard status) TIDAK dicabut.
+  if (await hitRate(c.env.DB, `aksi-uang:${me.id}`, 20, 60)) {
+    return c.json({ error: 'Terlalu banyak aksi. Tunggu sebentar.' }, 429);
+  }
   const o: any = await c.env.DB.prepare(
     'SELECT id, buyer_id, seller_id, listing_id, status, paid_with, qris_final_amount, price, shipping FROM orders WHERE id = ?'
   ).bind(c.req.param('id')).first();
@@ -1041,6 +1047,10 @@ app.post('/api/pasar/order/:id/review', async (c: any) => {
 app.post('/pasar/order/:id/handover', async (c: any) => {
   const me = await getAuthUser(c);
   if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
+
+  if (await hitRate(c.env.DB, `aksi-uang:${me.id}`, 20, 60)) {
+    return c.json({ error: 'Terlalu banyak aksi. Tunggu sebentar.' }, 429);
+  }
   const body: any = await c.req.json().catch(() => ({}));
   const mode = body?.mode === 'ekspedisi' ? 'ekspedisi' : 'cod';
   let note = String(body?.note || '').trim().slice(0, 200);
@@ -1117,6 +1127,10 @@ app.post('/pasar/order/:id/track', async (c: any) => {
 app.post('/pasar/order/:id/receive', async (c: any) => {
   const me = await getAuthUser(c);
   if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
+
+  if (await hitRate(c.env.DB, `aksi-uang:${me.id}`, 20, 60)) {
+    return c.json({ error: 'Terlalu banyak aksi. Tunggu sebentar.' }, 429);
+  }
   const o: any = await c.env.DB.prepare('SELECT * FROM orders WHERE id = ?').bind(c.req.param('id')).first();
   if (!o || o.buyer_id !== me.id) return c.json({ error: 'Tidak ditemukan' }, 404);
   if (o.status !== 'handed') return c.json({ error: 'Pesanan belum ditandai diserahkan penjual' }, 409);
@@ -1144,6 +1158,10 @@ app.post('/pasar/order/:id/receive', async (c: any) => {
 app.post('/pasar/order/:id/dispute', async (c: any) => {
   const me = await getAuthUser(c);
   if (!me) return c.json({ error: 'Harus masuk dulu' }, 401);
+
+  if (await hitRate(c.env.DB, `aksi-uang:${me.id}`, 20, 60)) {
+    return c.json({ error: 'Terlalu banyak aksi. Tunggu sebentar.' }, 429);
+  }
   const body: any = await c.req.json().catch(() => null);
   const note = String(body?.note || '').trim().slice(0, 500);
   if (note.length < 10) return c.json({ error: 'Ceritakan masalah minimal 10 karakter' }, 400);

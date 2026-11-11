@@ -1,4 +1,4 @@
-import { getAuthUser, hardenPost } from '../lib/shared';
+import { getAuthUser, hardenPost, hitRate } from '../lib/shared';
 
 // Handlers notifikasi dipindah verbatim dari index.ts.
 export function mountNotifications(app: any) {
@@ -56,6 +56,9 @@ app.get('/api/notifications/unread-count', async (c: any) => {
 app.post('/api/notifications/read-all', async (c: any) => {
   const user = await getAuthUser(c);
   if (!user) return c.json({ error: 'Unauthorized' }, 401);
+  // Tiap panggilan = 1 baris TULIS di D1. Tanpa batas, satu akun bisa menghabiskan
+  // kuota tulis harian (100.000 baris) yang dibutuhkan SEMUA pengguna.
+  if (await hitRate(c.env.DB, `notif-read:${user.id}`, 60, 60)) return c.json({ error: 'Terlalu banyak permintaan. Tunggu sebentar.' }, 429);
 
   const scope = c.req.query('scope') === 'pasar' ? 'pasar' : 'sosial';
   const cond = scope === 'pasar' ? "AND type LIKE 'order_%'" : "AND (type IS NULL OR type NOT LIKE 'order_%')";
@@ -67,6 +70,7 @@ app.post('/api/notifications/read-all', async (c: any) => {
 app.post('/api/notifications/:id/read', async (c: any) => {
   const user = await getAuthUser(c);
   if (!user) return c.json({ error: 'Unauthorized' }, 401);
+  if (await hitRate(c.env.DB, `notif-read:${user.id}`, 60, 60)) return c.json({ error: 'Terlalu banyak permintaan. Tunggu sebentar.' }, 429);
 
   await c.env.DB.prepare("UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ? AND EXISTS (SELECT 1 FROM users WHERE id = ? AND account_status = 'active')").bind(c.req.param('id'), user.id, user.id).run();
   return c.json({ ok: true });

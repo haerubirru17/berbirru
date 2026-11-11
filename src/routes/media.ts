@@ -1,4 +1,4 @@
-import { getAuthUser } from '../lib/shared';
+import { getAuthUser, hitRate } from '../lib/shared';
 
 // Handlers + konstanta media dipindah verbatim dari index.ts.
 // ---- MEDIA PROFIL (R2): avatar & cover ----
@@ -21,6 +21,12 @@ app.put('/api/me/media/:kind', async (c: any) => {
 
   const spec = MEDIA_SPEC[c.req.param('kind')];
   if (!spec) return c.json({ error: 'Jenis media tak dikenal' }, 404);
+  // Batas unggah: tiap unggahan menulis objek ke R2 + mengubah data user. Tanpa batas,
+  // satu akun yang sudah masuk bisa membanjiri gudang foto (biaya + penuh).
+  // Ditaruh SEBELUM membaca body (maks 512 KB) supaya kerja mahal tak jalan saat limit kena.
+  if (await hitRate(c.env.DB, `media:${me.id}`, 10, 600)) {
+    return c.json({ error: 'Terlalu banyak unggah. Coba lagi beberapa menit lagi.' }, 429);
+  }
 
   const ct = (c.req.header('Content-Type') || '').split(';')[0].trim().toLowerCase();
   const ext = MEDIA_TYPES[ct];

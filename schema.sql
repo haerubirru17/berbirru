@@ -151,6 +151,7 @@ CREATE INDEX IF NOT EXISTS idx_posts_moderation_created
   ON posts(moderation_status, created_at DESC, id DESC);
 CREATE INDEX IF NOT EXISTS idx_notif_user_created ON notifications(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_notif_user_unread ON notifications(user_id, is_read);
+CREATE INDEX IF NOT EXISTS idx_rate_limits_expires ON rate_limits(expires_at);
 CREATE INDEX IF NOT EXISTS idx_social_admin_actions_post
   ON social_admin_actions(target_post_id, created_at DESC, id DESC);
 CREATE INDEX IF NOT EXISTS idx_social_admin_actions_time
