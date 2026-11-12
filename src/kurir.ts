@@ -1,8 +1,6 @@
 // BinderByte adapter — cek resi (v1.5): validasi + status singkat utk halaman order.
 // Pola ala klikqris.ts: env key + mode MOCK utk dev/test. API key [REDACTED] -> wrangler secret prod.
 const BASE = 'https://api.binderbyte.com/v1';
-// Wilayah TIDAK di bawah /v1 — path aslinya /wilayah/*.
-const ROOT = 'https://api.binderbyte.com';
 
 export interface TrackResult {
   ok: boolean;
@@ -105,22 +103,24 @@ export async function wilayahMock(parent?: string): Promise<{ ok: boolean; items
   return { ok: true, items: MOCK_WILAYAH[key] || [] };
 }
 
-/** Ambil provinsi (parent kosong) / kabupaten (parent=id provinsi) / kecamatan (parent=id kabupaten). */
+/**
+ * Ambil provinsi (parent kosong) / kabupaten (parent=id provinsi) / kecamatan (parent=id kabupaten).
+ * Fase 1 OpenOngkir: baca tabel D1 `wilayah` (migrasi 0038 + scripts/seed-wilayah.sql),
+ * bukan lagi live ke BinderByte /wilayah/*. ID kode bertitik Kemendagri — sama dengan
+ * ID BinderByte, jadi district_id yang tersimpan tetap berlaku.
+ */
 export async function ambilWilayah(env: any, parent?: string): Promise<{ ok: boolean; items: Wilayah[]; error?: string }> {
   if (env.KURIR_MOCK) return wilayahMock(parent);
-  if (!env.BINDERBYTE_KEY) return { ok: false, items: [], error: 'Layanan wilayah belum aktif' };
-  const level = !parent ? 'provinsi' : parent.length <= 2 ? 'kabupaten' : 'kecamatan';
-  const qs = level === 'provinsi' ? '' : level === 'kabupaten' ? `&id_provinsi=${encodeURIComponent(parent!)}` : `&id_kabupaten=${encodeURIComponent(parent!)}`;
+  if (!env.DB) return { ok: false, items: [], error: 'Layanan wilayah belum aktif' };
   try {
-    const r = await fetch(`${ROOT}/wilayah/${level}?api_key=${env.BINDERBYTE_KEY}${qs}`, { signal: AbortSignal.timeout(10_000) });
-    const j: any = await r.json().catch(() => null);
-    // Live: { code:"200", value:[...] } — tidak ada field `status`. Jangan cek status saja.
-    if (!j || !Array.isArray(j.value)) {
-      return { ok: false, items: [], error: j?.message || j?.messages || 'Gagal memuat wilayah' };
-    }
-    return { ok: true, items: j.value.map((x: any) => ({ id: String(x.id), name: String(x.name) })) };
+    const q = parent
+      ? { sql: 'SELECT id, name FROM wilayah WHERE parent_id = ? ORDER BY name', args: [parent] }
+      : { sql: "SELECT id, name FROM wilayah WHERE level = 'provinsi' ORDER BY name", args: [] as string[] };
+    const r: any = await env.DB.prepare(q.sql).bind(...q.args).all();
+    const rows: any[] = r?.results || [];
+    return { ok: true, items: rows.map((x) => ({ id: String(x.id), name: String(x.name) })) };
   } catch {
-    return { ok: false, items: [], error: 'Gagal menghubungi layanan wilayah' };
+    return { ok: false, items: [], error: 'Gagal memuat wilayah' };
   }
 }
 
